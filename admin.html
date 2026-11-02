@@ -31,14 +31,14 @@ function showLogin(msg) {
   app.innerHTML = `<div class="login"><div class="card"><h2 class="center">🔐 แอดมินครูบุ๊ค</h2>
     ${msg ? `<p class="center" style="color:var(--red)">${esc(msg)}</p>` : ""}
     <div class="field"><label>อีเมล</label><input id="em" type="email" autocomplete="username"></div>
-    <div class="field"><label>รหัสผ่าน</label><div style="position:relative"><input id="pw" type="password" autocomplete="current-password" style="font-family:system-ui,Arial,sans-serif;letter-spacing:.08em;padding-right:44px"><button type="button" id="eye" title="แสดง/ซ่อนรหัสผ่าน" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:18px">👁</button></div></div>
+    <div class="field"><label>รหัสผ่าน</label><div style="position:relative"><input id="pw" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" style="-webkit-text-security:disc;text-security:disc;font-family:system-ui,Arial,sans-serif;letter-spacing:.08em;padding-right:44px"><button type="button" id="eye" title="แสดง/ซ่อนรหัสผ่าน" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:18px">👁</button></div></div>
     <button class="btn gold" style="width:100%" id="go">เข้าสู่ระบบ</button></div></div>`;
   const go = async () => {
     const { error } = await sb.auth.signInWithPassword({ email: $("#em").value.trim(), password: $("#pw").value });
     if (error) return toast("เข้าสู่ระบบไม่สำเร็จ: " + error.message);
     start();
   };
-  $("#eye").onclick = () => { const p = $("#pw"); p.type = p.type === "password" ? "text" : "password"; p.focus(); };
+  $("#eye").onclick = () => { const p = $("#pw"); const hide = p.style.webkitTextSecurity !== "none"; p.style.webkitTextSecurity = hide ? "none" : "disc"; p.style.textSecurity = hide ? "none" : "disc"; p.focus(); };
   $("#go").onclick = go; $("#pw").onkeydown = (e) => e.key === "Enter" && go();
 }
 
