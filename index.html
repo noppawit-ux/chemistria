@@ -18,7 +18,7 @@
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
-  ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"],
+  ["class", "⚔️ คลาส"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"],
 ];
 let D = null, tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";
@@ -75,21 +75,41 @@ async function load() {
   }
 }
 
+/* ---------------- ตัวช่วยภาพ ---------------- */
+const clsOf = (k) => (D?.classes || []).find((c) => c.key === k);
+function avHtml(avatar, classKey) {
+  if (avatar && avatar.startsWith("assets/")) return `<img src="${esc(avatar)}" alt="">`;
+  if ((!avatar || avatar === "🧪") && clsOf(classKey)?.image) return `<img src="${esc(clsOf(classKey).image)}" alt="">`;
+  return esc(avatar || "🧪");
+}
+const frame = (avatar, classKey, ri, lv, sm) =>
+  `<div class="avf rk-${ri.key} ${sm ? "sm" : ""}"><div class="av">${avHtml(avatar, classKey)}</div>${lv && !sm ? `<span class="lv">Lv.${lv}</span>` : ""}</div>`;
+const itemImg = (img, emoji, cls = "ico") => img ? `<img class="${cls}" src="${esc(img)}" alt="">` : esc(emoji || "🎁");
+const rankName = (ri) => ri.name + (ri.division ? " " + ri.division : "");
+
 /* ---------------- วาดหน้า ---------------- */
 function render() {
-  const s = D.student;
+  const s = D.student, ri = D.rank_info, cls = clsOf(s.char_class);
   const span = s.exp_next_level - s.exp_this_level;
   const pct = Math.min(100, Math.round(((s.exp - s.exp_this_level) / span) * 100));
+  const lp = ri.top ? "" : `<div class="lpbar"><i style="width:${ri.lp}%"></i></div>
+      <div class="lvrow"><span>LP ${ri.lp} / ${ri.lp_max}</span><span>ถัดไป: ${esc(ri.next)} (EXP ${ri.exp_hi})</span></div>`;
   app.innerHTML = `
-    <div class="card profile">
-      <div class="avatar">${esc(s.avatar)}</div>
+    <div class="card profile rk-${ri.key}">
+      ${frame(s.avatar, s.char_class, ri, s.level)}
       <div class="grow">
         <h2 style="margin:0">${esc(s.name)} <span class="muted">เลขที่ ${s.no} · ${esc(D.class.name)}</span></h2>
         <div class="row" style="margin:6px 0">
-          <span class="pill">Lv.${s.level}</span><span class="pill" style="color:var(--gold2)">${esc(s.rank)}</span>
-          <span class="coin">🪙 ${s.coins}</span><span class="muted">EXP ${s.exp}/${s.exp_next_level}</span>
+          ${cls ? `<span class="pill" style="color:var(--gold2);cursor:pointer" onclick="go('class')">${esc(cls.emoji)} ${esc(cls.name)}</span>`
+                : `<button class="btn small gold" onclick="go('class')">⚔️ เลือกคลาส</button>`}
+          <span class="coin">🪙 ${s.coins}</span><span class="muted">EXP ${s.exp}</span>
         </div>
-        <div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="lvrow"><b style="color:var(--text)">Lv.${s.level}</b><span>${s.exp - s.exp_this_level} / ${span} EXP ถึงเลเวล ${s.level + 1}</span></div>
+        <div class="lvgauge"><i style="width:${pct}%"></i></div>
+      </div>
+      <div class="rankcard" style="flex-basis:100%">
+        <img class="emb" src="${esc(ri.image)}" alt="${esc(ri.name)}" onerror="this.remove()">
+        <div class="grow"><div class="rn">${esc(rankName(ri))}</div>${lp || `<div class="muted">แรงค์สูงสุด · LP ${ri.lp}</div>`}</div>
       </div>
     </div>
     <div class="tabs">${TABS.map(([k, l]) => `<button class="tab ${k === tab ? "on" : ""}" onclick="go('${k}')">${l}</button>`).join("")}</div>
@@ -183,6 +203,20 @@ const VIEWS = {
     }).join("") || '<div class="card"><p class="muted">ยังไม่มีคะแนน</p></div>';
   },
 
+  class() {
+    const s = D.student, cost = D.class_change_cost;
+    return `<div class="card"><h3>⚔️ เลือกคลาสของคุณ</h3>
+      <p class="muted">แต่ละคลาสมีความสามารถพิเศษต่างกัน เลือกครั้งแรกฟรี หลังจากนั้นเปลี่ยนคลาสครั้งละ ${cost} 🪙</p>
+      <div class="clsgrid">${D.classes.map((c) => `<div class="clscard ${c.key === s.char_class ? "on" : ""}">
+        <img src="${esc(c.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(c.emoji)}'))">
+        <h3 style="margin:.2em 0">${esc(c.emoji)} ${esc(c.name)}</h3>
+        <div class="muted">${esc(c.description || "")}</div>
+        <div class="ability">✨ ${esc(c.ability || "")}</div>
+        ${c.key === s.char_class ? '<span class="tag ok">คลาสปัจจุบัน</span>'
+          : `<button class="btn small gold" ${!D.class_free && s.coins < cost ? "disabled" : ""} onclick="pickClass('${c.key}','${esc(c.name)}')">${D.class_free ? "เลือกคลาสนี้ (ฟรี)" : `เปลี่ยน (${cost} 🪙)`}</button>`}
+      </div>`).join("")}</div></div>`;
+  },
+
   quest() {
     return `<div class="card"><h3>🗺️ เควสวันนี้ & รายสัปดาห์</h3><p class="muted">ทำเสร็จแล้วกดขอรับรางวัล ครูจะตรวจแล้วให้ EXP/เหรียญ</p>
       ${D.quests.map((q) => `<div class="item"><div class="grow"><b>${esc(q.title)}</b> ${q.kind === "weekly" ? '<span class="pill">รายสัปดาห์</span>' : ""}
@@ -200,7 +234,7 @@ const VIEWS = {
         <button class="btn gold" ${s.coins < c ? "disabled" : ""} onclick="pull(1)">สุ่ม ×1 (${c}🪙)</button>
         <button class="btn gold" ${s.coins < c * 10 ? "disabled" : ""} onclick="pull(10)">สุ่ม ×10 (${c * 10}🪙)</button></div></div>
       <div class="card"><h3>ของรางวัลที่มีในตู้</h3><div class="row">
-      ${D.gacha_pool.map((g) => `<span class="pill rar-${g.rarity}" style="border-color:var(--c)">${esc(g.emoji)} ${esc(g.name)} <b class="rar">${g.rarity}</b></span>`).join("")}</div></div>`;
+      ${D.gacha_pool.map((g) => `<span class="pill rar-${g.rarity}" style="border-color:var(--c)">${itemImg(g.image, g.emoji)} ${esc(g.name)} <b class="rar">${g.rarity}</b></span>`).join("")}</div></div>`;
   },
 
   bag() {
@@ -222,7 +256,7 @@ const VIEWS = {
           : p.status === "approved" ? '<span class="tag ok">ใช้แล้ว</span>' : '<span class="tag no">ไม่อนุมัติ</span>'}</div>`).join("") || '<p class="muted">ยังไม่มีสิทธิพิเศษ ลองสุ่มกาชาหรือแลกในร้านค้า</p>'}</div>
     <div class="card"><h3>🧑‍🔬 อวาตาร์ที่สะสม</h3><div class="row">
       <button class="btn small ghost" onclick="setAv(null)">🧪 ค่าเริ่มต้น</button>
-      ${D.inventory.map((i) => `<button class="btn small ${i.equipped ? "gold" : "ghost"}" onclick="setAv('${i.item_id}')">${esc(i.emoji)} ${esc(i.name)}${i.qty > 1 ? " ×" + i.qty : ""}</button>`).join("")}</div></div>`;
+      ${D.inventory.map((i) => `<button class="btn small ${i.equipped ? "gold" : "ghost"}" onclick="setAv('${i.item_id}')">${itemImg(i.image, i.emoji)} ${esc(i.name)}${i.qty > 1 ? " ×" + i.qty : ""}</button>`).join("")}</div></div>`;
   },
 
   shop() {
@@ -233,10 +267,14 @@ const VIEWS = {
   },
 
   rank() {
+    const me = D.rank_info;
     return `<div class="card"><h3>🏆 อันดับห้อง ${esc(D.class.name)} (Top 10)</h3>
       ${D.leaderboard.map((l, i) => `<div class="item" ${l.me ? 'style="background:#3a2a6b;border-radius:10px;padding-left:8px"' : ""}>
-        <b style="width:28px">${["🥇", "🥈", "🥉"][i] || i + 1}</b><span style="font-size:24px">${esc(l.avatar)}</span>
-        <div class="grow">${esc(l.name)}</div><span class="pill">Lv.${l.level}</span><b>${l.exp}</b></div>`).join("")}</div>`;
+        <b style="width:28px">${["🥇", "🥈", "🥉"][i] || i + 1}</b>${frame(l.avatar, l.char_class, l.rank_info, 0, true)}
+        <div class="grow">${esc(l.name)}<div class="muted rk-${l.rank_info.key}" style="color:var(--rc)">${esc(rankName(l.rank_info))}${clsOf(l.char_class) ? " · " + esc(clsOf(l.char_class).name) : ""}</div></div>
+        <span class="pill">Lv.${l.level}</span><b>${l.exp}</b></div>`).join("")}</div>
+      <div class="card"><h3>🎖️ บันไดแรงค์</h3><p class="muted">ได้ EXP จากเช็คชื่อ ส่งงาน เควส และ Achievement เพื่อไต่แรงค์ (แต่ละแรงค์มีดิวิชัน IV → I)</p>
+      <div class="ranktable">${(D.ranks || []).map((r) => `<div class="rk-${r.key} ${r.key === me.key ? "me" : ""}"><img src="${esc(r.image)}" alt=""><br><b style="color:var(--rc)">${esc(r.name)}</b><br><span class="muted">${r.min_exp}+ EXP</span></div>`).join("")}</div></div>`;
   },
 };
 
@@ -249,6 +287,7 @@ const claim = (id) => act(() => rpc("claim_quest", { p_token: tk(), p_quest: id 
 const buy = (id) => confirm("ยืนยันการแลกสิทธิพิเศษ?") && act(() => rpc("buy_privilege", { p_token: tk(), p_privilege: id }), "แลกสำเร็จ 🎉 ดูได้ในหน้า “คลัง”");
 const usePriv = (id) => confirm("ขอใช้สิทธิ์นี้ ครูจะเป็นผู้อนุมัติ")
   && act(() => rpc("request_privilege", { p_token: tk(), p_redemption: id }), "ส่งคำขอให้ครูแล้ว");
+const pickClass = (k, n) => confirm("เลือกคลาส “" + n + "” ?") && act(() => rpc("choose_class", { p_token: tk(), p_key: k }), "เปลี่ยนคลาสแล้ว ⚔️");
 const setAv = (id) => act(() => rpc("set_avatar", { p_token: tk(), p_item: id }), "เปลี่ยนอวาตาร์แล้ว");
 
 async function pull(n) {
@@ -257,7 +296,7 @@ async function pull(n) {
     const ov = $("#overlay");
     ov.innerHTML = `<h2>✨ ผลการสุ่ม</h2><div id="cards">${r.items.map((it, i) => `
       <div class="gcard rar-${it.rarity}" id="gc${i}"><div class="in"><div class="b"></div>
-      <div class="f"><div><div class="e">${esc(it.emoji)}</div><div class="rar">${it.rarity}</div><div class="n">${esc(it.name)}</div></div></div></div></div>`).join("")}</div>
+      <div class="f"><div><div class="e">${itemImg(it.image, it.emoji, "gi")}</div><div class="rar">${it.rarity}</div><div class="n">${esc(it.name)}</div></div></div></div></div>`).join("")}</div>
       <p><button class="btn gold" onclick="closeOv()">รับของ</button></p>`;
     ov.classList.add("on");
     r.items.forEach((_, i) => setTimeout(() => $("#gc" + i)?.classList.add("flip"), 350 + i * 330));
