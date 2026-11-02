@@ -15,10 +15,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="lib.js"></script>
+<script src="games.js"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
-  ["class", "⚔️ คลาส"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"],
+  ["class", "⚔️ คลาส"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"],
 ];
 let D = null, tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";
@@ -127,6 +128,7 @@ const statusTag = (st) => ({
 }[st] || "");
 
 const VIEWS = {
+  game() { return GAMES.view(); },
   home() {
     const a = D.attendance_summary;
     return `

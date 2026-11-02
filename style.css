@@ -218,3 +218,23 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
+
+/* ================= มินิเกม ================= */
+.gm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.gm-card{text-align:center}.gm-ico{font-size:46px;filter:drop-shadow(0 0 12px #9b6bff)}
+.gm-choices{display:grid;gap:10px}
+.gm-choice{display:flex;gap:10px;align-items:center;text-align:left;background:#170f31;border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;cursor:pointer;transition:transform .12s,border-color .2s,box-shadow .2s}
+.gm-choice b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--card2);flex:none}
+.gm-choice:hover{border-color:var(--violet);box-shadow:0 0 16px #9b6bff66;transform:translateX(4px)}
+.gm-board{display:grid;grid-template-columns:1fr 1fr;gap:12px}.gm-board>div{display:grid;gap:8px;align-content:start}
+.gm-tile{background:#170f31;border:2px solid var(--line);border-radius:12px;padding:12px 6px;cursor:pointer;min-height:52px;
+  font-size:1em;transition:transform .12s,border-color .2s,box-shadow .2s}
+.gm-tile .sym{font-family:"Prompt",sans-serif;font-size:1.25em;line-height:1.2;color:var(--gold2)}
+.gm-tile:hover:not(:disabled){border-color:var(--violet)}
+.gm-tile.sel{border-color:var(--gold);box-shadow:0 0 16px #f6c45388;transform:scale(1.04)}
+.gm-tile.done{border-color:var(--mint);background:#0f3a2e;color:var(--mint);opacity:.7;box-shadow:0 0 12px #4fe3b055}
+.gm-tile.bad{border-color:var(--red);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.gm-res.perfect{box-shadow:0 0 30px #f6c45377}
+.gm-res h2{text-shadow:0 0 18px var(--gold)}
