@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chemistria · ห้องเรียนครูบุ๊ค</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="wrap"></div>
+<div id="overlay" class="overlay"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="lib.js"></script>
+<script>
+const TABS = [
+  ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
+  ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"],
+];
+let D = null, tab = "home", calMonth = new Date(), calSel = todayStr();
+const TOKEN_KEY = "kb_token";
+const app = $("#app");
+
+/* ---------------- ล็อกอิน ---------------- */
+async function showLogin(msg) {
+  let classes = [];
+  try { classes = (await rpc("list_classes")) || []; } catch (e) { msg = msg || e.message; }
+  app.innerHTML = `
+  <div class="login">
+    <img class="hero" src="assets/hero-banner.jpg" alt="" onerror="this.remove()">
+    <div class="card">
+      <h2 class="center">⚗️ Chemistria <span class="muted" style="font-size:.6em">ห้องเรียนครูบุ๊ค</span></h2>
+      ${msg ? `<p class="center" style="color:var(--red)">${esc(msg)}</p>` : ""}
+      <div class="field"><label>ห้อง</label>
+        <select id="lc">${classes.map((c) => `<option value="${esc(c.code)}">${esc(c.name)} · ${esc(c.subject || "")}</option>`).join("")}</select></div>
+      <div class="field"><label>เลขที่</label><input id="ln" type="number" inputmode="numeric" min="1"></div>
+      <div class="field"><label>PIN (ตัวเลข)</label><input id="lp" type="password" inputmode="numeric" autocomplete="off"></div>
+      <button class="btn gold" style="width:100%" id="lbtn">เข้าสู่ระบบ</button>
+      <p class="muted center" style="margin-top:10px">ครั้งแรกใช้ PIN ที่ครูแจก แล้วเปลี่ยนเองได้ในหน้า “หน้าหลัก”</p>
+    </div>
+  </div>`;
+  const go = async () => {
+    const btn = $("#lbtn"); btn.disabled = true;
+    try {
+      const r = await rpc("student_login", { p_class_code: $("#lc").value, p_no: Number($("#ln").value), p_pin: $("#lp").value });
+      if (r.error) throw new Error(r.error);
+      localStorage.setItem(TOKEN_KEY, r.token);
+      await load();
+    } catch (e) { toast(e.message); btn.disabled = false; }
+  };
+  $("#lbtn").onclick = go;
+  $("#lp").onkeydown = (e) => e.key === "Enter" && go();
+}
+
+function logout() { localStorage.removeItem(TOKEN_KEY); D = null; showLogin(); }
+async function changePin() {
+  const o = prompt("PIN เดิม"); if (o === null) return;
+  const n = prompt("PIN ใหม่ (ตัวเลข 4-6 หลัก)"); if (n === null) return;
+  try { await rpc("change_pin", { p_token: tk(), p_old: o, p_new: n }); toast("เปลี่ยน PIN แล้ว ✅"); }
+  catch (e) { toast(e.message); }
+}
+const tk = () => localStorage.getItem(TOKEN_KEY);
+
+async function load() {
+  if (!tk()) return showLogin();
+  try {
+    D = await rpc("student_dashboard", { p_token: tk() });
+    render();
+  } catch (e) {
+    localStorage.removeItem(TOKEN_KEY);
+    showLogin(e.message);
+  }
+}
+
+/* ---------------- วาดหน้า ---------------- */
+function render() {
+  const s = D.student;
+  const span = s.exp_next_level - s.exp_this_level;
+  const pct = Math.min(100, Math.round(((s.exp - s.exp_this_level) / span) * 100));
+  app.innerHTML = `
+    <div class="card profile">
+      <div class="avatar">${esc(s.avatar)}</div>
+      <div class="grow">
+        <h2 style="margin:0">${esc(s.name)} <span class="muted">เลขที่ ${s.no} · ${esc(D.class.name)}</span></h2>
+        <div class="row" style="margin:6px 0">
+          <span class="pill">Lv.${s.level}</span><span class="pill" style="color:var(--gold2)">${esc(s.rank)}</span>
+          <span class="coin">🪙 ${s.coins}</span><span class="muted">EXP ${s.exp}/${s.exp_next_level}</span>
+        </div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+      </div>
+    </div>
+    <div class="tabs">${TABS.map(([k, l]) => `<button class="tab ${k === tab ? "on" : ""}" onclick="go('${k}')">${l}</button>`).join("")}</div>
+    <div id="view"></div>`;
+  $("#view").innerHTML = VIEWS[tab]();
+}
+const go = (k) => { tab = k; render(); };
+
+const statusTag = (st) => ({
+  present: '<span class="tag ok">มา</span>', late: '<span class="tag late">สาย</span>',
+  absent: '<span class="tag no">ขาด</span>', leave: '<span class="tag leave">ลา</span>',
+  submitted: '<span class="tag ok">ส่งแล้ว</span>', missing: '<span class="tag no">ไม่ส่ง</span>',
+  pending: '<span class="tag wait">รอครูตรวจ</span>', approved: '<span class="tag ok">สำเร็จ ✔</span>',
+  rejected: '<span class="tag no">ไม่ผ่าน</span>',
+}[st] || "");
+
+const VIEWS = {
+  home() {
+    const a = D.attendance_summary;
+    return `
+    <div class="grid">
+      <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
+      <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
+      <div class="card stat"><span class="muted">มาสาย / ขาด</span><b>${a.late} / ${a.absent}</b>ครั้ง</div>
+    </div>
+    <div class="card"><h3>🗺️ เควสวันนี้</h3>
+      ${D.quests.map((q) => `<div class="item"><div class="grow"><b>${esc(q.title)}</b>
+        <div class="muted">+${q.exp} EXP · +${q.coins} 🪙</div></div>${q.status ? statusTag(q.status) : '<span class="tag wait">ยังไม่ทำ</span>'}</div>`).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}
+      <button class="btn small ghost" onclick="go('quest')">ไปหน้าเควส</button></div>
+    <div class="card"><h3>📜 ความเคลื่อนไหวล่าสุด</h3>
+      ${D.ledger.slice(0, 8).map((l) => `<div class="item"><div class="grow">${esc(l.reason)}</div>
+        <span class="muted">${l.exp ? `+${l.exp} EXP ` : ""}${l.coins ? `${l.coins > 0 ? "+" : ""}${l.coins} 🪙` : ""}</span></div>`).join("") || '<p class="muted">ยังไม่มีรายการ</p>'}</div>
+    <div class="row"><button class="btn ghost" onclick="changePin()">🔑 เปลี่ยน PIN</button><button class="btn ghost" onclick="logout()">ออกจากระบบ</button></div>`;
+  },
+
+  att() {
+    const today = todayStr();
+    const todo = D.assignments.filter((a) => !a.status);
+    const done = D.assignments.filter((a) => a.status);
+    const row = (a) => {
+      const overdue = !a.status && a.due_date && a.due_date < today;
+      return `<div class="item"><div class="grow"><b>${esc(a.title)}</b>
+        <div class="muted">${a.due_date ? "กำหนดส่ง " + fmtDate(a.due_date) : "ไม่กำหนดวันส่ง"} · ${a.exp} EXP</div></div>
+        ${a.score != null ? `<span class="pill">${a.score}/${a.max_score}</span>` : ""}
+        ${a.status ? statusTag(a.status) : overdue ? '<span class="tag no">เลยกำหนด</span>' : '<span class="tag wait">ยังไม่ส่ง</span>'}</div>`;
+    };
+    return `
+    <div class="card"><h3>📝 งาน</h3>${todo.map(row).join("")}${done.map(row).join("") || ""}
+      ${D.assignments.length ? "" : '<p class="muted">ยังไม่มีงาน</p>'}</div>
+    <div class="card"><h3>📋 ประวัติการเข้าเรียน</h3>
+      <div class="row">${D.attendance.map((a) => `<span class="pill">${fmtDate(a.date)} ${statusTag(a.status)}</span>`).join("") || '<span class="muted">ยังไม่มีข้อมูล</span>'}</div></div>`;
+  },
+
+  cal() {
+    const y = calMonth.getFullYear(), m = calMonth.getMonth();
+    const first = new Date(y, m, 1), start = new Date(y, m, 1 - first.getDay());
+    const byDay = {};
+    const add = (d, o) => ((byDay[String(d).slice(0, 10)] ||= []).push(o));
+    D.events.forEach((e) => {
+      const s = new Date(e.date), en = e.end_date ? new Date(e.end_date) : s;
+      for (let d = new Date(s); d <= en; d.setDate(d.getDate() + 1)) add(ymd(d), { kind: e.kind, title: e.title, note: e.note });
+    });
+    D.assignments.forEach((a) => a.due_date && add(a.due_date, { kind: "assignment", title: "ส่งงาน: " + a.title, note: a.status ? "" : "ยังไม่ส่ง" }));
+    D.attendance.forEach((a) => add(a.date, { kind: "att", title: "เช็คชื่อ: " + STATUS_LABEL[a.status], note: "" }));
+    let cells = "";
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i); const k = ymd(d);
+      const items = byDay[k] || [];
+      cells += `<div class="d ${d.getMonth() !== m ? "out" : ""} ${k === todayStr() ? "today" : ""} ${k === calSel ? "sel" : ""}" onclick="calSel='${k}';render()">
+        <b>${d.getDate()}</b><br>${items.filter((x) => x.kind !== "att").slice(0, 4).map((x) => `<span class="dot k-${x.kind}"></span>`).join("")}${items.some((x) => x.kind === "att") ? "✓" : ""}</div>`;
+    }
+    const sel = byDay[calSel] || [];
+    return `<div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <button class="btn small ghost" onclick="calMonth=new Date(${y},${m - 1},1);render()">◀</button>
+        <h3 style="margin:0">${TH_MONTHS[m]} ${y + 543}</h3>
+        <button class="btn small ghost" onclick="calMonth=new Date(${y},${m + 1},1);render()">▶</button></div>
+      <div class="cal">${TH_DAYS.map((d) => `<div class="h">${d}</div>`).join("")}${cells}</div>
+      <div class="row muted" style="margin-top:8px">${Object.entries(KIND_LABEL).map(([k, l]) => `<span><span class="dot k-${k}"></span>${l}</span>`).join("")}</div></div>
+      <div class="card"><h3>${fmtDate(calSel)}</h3>${sel.map((x) => `<div class="item"><span class="dot k-${x.kind === "att" ? "lesson" : x.kind}"></span><div class="grow">${esc(x.title)}<div class="muted">${esc(x.note || "")}</div></div></div>`).join("") || '<p class="muted">ไม่มีรายการ</p>'}</div>`;
+  },
+
+  score() {
+    if (!D.settings.show_scores) return '<div class="card"><p class="muted">ครูปิดการแสดงคะแนนไว้ชั่วคราว</p></div>';
+    const g = {};
+    D.scores.forEach((s) => (g[s.category] ||= []).push(s));
+    return Object.keys(CAT_LABEL).filter((c) => g[c]).map((c) => {
+      const got = g[c].reduce((a, s) => a + (s.score ?? 0), 0), max = g[c].reduce((a, s) => a + Number(s.max), 0);
+      return `<div class="card"><h3>${CAT_LABEL[c]} <span class="pill">${got} / ${max}</span></h3>
+        ${g[c].map((s) => `<div class="item"><div class="grow">${esc(s.title)}</div><b>${s.score ?? "–"}</b><span class="muted">/ ${s.max}</span></div>`).join("")}</div>`;
+    }).join("") || '<div class="card"><p class="muted">ยังไม่มีคะแนน</p></div>';
+  },
+
+  quest() {
+    return `<div class="card"><h3>🗺️ เควสวันนี้ & รายสัปดาห์</h3><p class="muted">ทำเสร็จแล้วกดขอรับรางวัล ครูจะตรวจแล้วให้ EXP/เหรียญ</p>
+      ${D.quests.map((q) => `<div class="item"><div class="grow"><b>${esc(q.title)}</b> ${q.kind === "weekly" ? '<span class="pill">รายสัปดาห์</span>' : ""}
+        <div class="muted">${esc(q.description || "")}</div><div>+${q.exp} EXP · +${q.coins} 🪙</div></div>
+        ${q.status ? statusTag(q.status) : `<button class="btn small mint" onclick="claim('${q.id}')">ทำแล้ว ✔</button>`}</div>`).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}</div>`;
+  },
+
+  gacha() {
+    const c = D.settings.gacha_cost, s = D.student, pm = D.settings.pity_max;
+    return `<div class="card center"><h3>🎰 กาชาห้องทดลอง</h3>
+      <p>เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span> · ครั้งละ ${c} เหรียญ</p>
+      <div class="bar" style="max-width:320px;margin:0 auto"><i style="width:${(s.pity / pm) * 100}%"></i></div>
+      <p class="muted">การันตี SR ขึ้นไปเมื่อสุ่มไม่ได้ครบ ${pm} ครั้ง (สะสม ${s.pity}/${pm - 1})</p>
+      <div class="row" style="justify-content:center">
+        <button class="btn gold" ${s.coins < c ? "disabled" : ""} onclick="pull(1)">สุ่ม ×1 (${c}🪙)</button>
+        <button class="btn gold" ${s.coins < c * 10 ? "disabled" : ""} onclick="pull(10)">สุ่ม ×10 (${c * 10}🪙)</button></div></div>
+      <div class="card"><h3>ของรางวัลที่มีในตู้</h3><div class="row">
+      ${D.gacha_pool.map((g) => `<span class="pill rar-${g.rarity}" style="border-color:var(--c)">${esc(g.emoji)} ${esc(g.name)} <b class="rar">${g.rarity}</b></span>`).join("")}</div></div>`;
+  },
+
+  bag() {
+    return `<div class="card"><h3>🏅 Achievement</h3><div class="grid">
+      ${D.achievements.map((a) => {
+        const p = Math.min(100, Math.round((a.progress / a.threshold) * 100));
+        return `<div class="card" style="margin:0;${a.earned_at ? "border-color:var(--gold)" : "opacity:.8"}">
+          <div style="font-size:30px">${esc(a.emoji)}</div><b>${esc(a.name)}</b>
+          <div class="muted">${esc(a.description || "")}</div>
+          ${a.earned_at ? `<span class="tag ok">ได้รับแล้ว ${fmtDate(a.earned_at)}</span>`
+            : `<div class="bar" style="margin-top:6px"><i style="width:${p}%"></i></div><span class="muted">${Math.min(a.progress, a.threshold)}/${a.threshold}</span>`}
+          <div class="muted">รางวัล ${a.reward_exp ? `+${a.reward_exp} EXP ` : ""}${a.reward_coins ? `+${a.reward_coins} 🪙` : ""}</div></div>`;
+      }).join("")}</div></div>
+    <div class="card"><h3>🎟️ สิทธิพิเศษของฉัน</h3>
+      ${D.privileges.map((p) => `<div class="item"><span style="font-size:26px">${esc(p.emoji)}</span><div class="grow"><b>${esc(p.name)}</b>
+        <div class="muted">${esc(p.description || "")}</div></div>
+        ${p.status === "available" ? `<button class="btn small gold" onclick="usePriv('${p.id}')">ขอใช้สิทธิ์</button>`
+          : p.status === "requested" ? '<span class="tag wait">รอครูอนุมัติ</span>'
+          : p.status === "approved" ? '<span class="tag ok">ใช้แล้ว</span>' : '<span class="tag no">ไม่อนุมัติ</span>'}</div>`).join("") || '<p class="muted">ยังไม่มีสิทธิพิเศษ ลองสุ่มกาชาหรือแลกในร้านค้า</p>'}</div>
+    <div class="card"><h3>🧑‍🔬 อวาตาร์ที่สะสม</h3><div class="row">
+      <button class="btn small ghost" onclick="setAv(null)">🧪 ค่าเริ่มต้น</button>
+      ${D.inventory.map((i) => `<button class="btn small ${i.equipped ? "gold" : "ghost"}" onclick="setAv('${i.item_id}')">${esc(i.emoji)} ${esc(i.name)}${i.qty > 1 ? " ×" + i.qty : ""}</button>`).join("")}</div></div>`;
+  },
+
+  shop() {
+    return `<div class="card"><h3>🛒 ร้านสิทธิพิเศษ</h3><p class="muted">เหรียญของคุณ <span class="coin">🪙 ${D.student.coins}</span></p>
+      ${D.shop.map((p) => `<div class="item"><span style="font-size:26px">${esc(p.emoji)}</span><div class="grow"><b>${esc(p.name)}</b>
+        <div class="muted">${esc(p.description || "")}</div></div>
+        <button class="btn small gold" ${D.student.coins < p.cost ? "disabled" : ""} onclick="buy('${p.id}')">${p.cost} 🪙</button></div>`).join("") || '<p class="muted">ยังไม่มีสินค้า</p>'}</div>`;
+  },
+
+  rank() {
+    return `<div class="card"><h3>🏆 อันดับห้อง ${esc(D.class.name)} (Top 10)</h3>
+      ${D.leaderboard.map((l, i) => `<div class="item" ${l.me ? 'style="background:#3a2a6b;border-radius:10px;padding-left:8px"' : ""}>
+        <b style="width:28px">${["🥇", "🥈", "🥉"][i] || i + 1}</b><span style="font-size:24px">${esc(l.avatar)}</span>
+        <div class="grow">${esc(l.name)}</div><span class="pill">Lv.${l.level}</span><b>${l.exp}</b></div>`).join("")}</div>`;
+  },
+};
+
+/* ---------------- การกระทำ ---------------- */
+async function act(fn, okMsg) {
+  try { const r = await fn(); await load(); if (okMsg) toast(okMsg); return r; }
+  catch (e) { toast(e.message); }
+}
+const claim = (id) => act(() => rpc("claim_quest", { p_token: tk(), p_quest: id }), "ส่งเควสแล้ว รอครูตรวจ ✅");
+const buy = (id) => confirm("ยืนยันการแลกสิทธิพิเศษ?") && act(() => rpc("buy_privilege", { p_token: tk(), p_privilege: id }), "แลกสำเร็จ 🎉 ดูได้ในหน้า “คลัง”");
+const usePriv = (id) => confirm("ขอใช้สิทธิ์นี้ ครูจะเป็นผู้อนุมัติ")
+  && act(() => rpc("request_privilege", { p_token: tk(), p_redemption: id }), "ส่งคำขอให้ครูแล้ว");
+const setAv = (id) => act(() => rpc("set_avatar", { p_token: tk(), p_item: id }), "เปลี่ยนอวาตาร์แล้ว");
+
+async function pull(n) {
+  try {
+    const r = await rpc("gacha_pull", { p_token: tk(), p_n: n });
+    const ov = $("#overlay");
+    ov.innerHTML = `<h2>✨ ผลการสุ่ม</h2><div id="cards">${r.items.map((it, i) => `
+      <div class="gcard rar-${it.rarity}" id="gc${i}"><div class="in"><div class="b"></div>
+      <div class="f"><div><div class="e">${esc(it.emoji)}</div><div class="rar">${it.rarity}</div><div class="n">${esc(it.name)}</div></div></div></div></div>`).join("")}</div>
+      <p><button class="btn gold" onclick="closeOv()">รับของ</button></p>`;
+    ov.classList.add("on");
+    r.items.forEach((_, i) => setTimeout(() => $("#gc" + i)?.classList.add("flip"), 350 + i * 330));
+    await load();
+  } catch (e) { toast(e.message); }
+}
+function closeOv() { $("#overlay").classList.remove("on"); }
+
+load();
+</script>
+</body>
+</html>

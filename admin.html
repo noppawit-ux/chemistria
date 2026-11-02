@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chemistria · แอดมินครูบุ๊ค</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>.wrap{max-width:1180px} h4{margin:14px 0 6px} .inbox .item{flex-wrap:wrap}</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="lib.js"></script>
+<script>
+const app = $("#app");
+const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
+const TABS = [
+  ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
+  ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
+  ["achv", "🏅 Achievement"], ["settings", "⚙️ ตั้งค่า"],
+];
+const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
+const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };
+const must = ({ data, error }) => { if (error) throw new Error(error.message); return data; };
+
+/* ---------------- ล็อกอินครู ---------------- */
+function showLogin(msg) {
+  app.innerHTML = `<div class="login"><div class="card"><h2 class="center">🔐 แอดมินครูบุ๊ค</h2>
+    ${msg ? `<p class="center" style="color:var(--red)">${esc(msg)}</p>` : ""}
+    <div class="field"><label>อีเมล</label><input id="em" type="email" autocomplete="username"></div>
+    <div class="field"><label>รหัสผ่าน</label><input id="pw" type="password" autocomplete="current-password"></div>
+    <button class="btn gold" style="width:100%" id="go">เข้าสู่ระบบ</button></div></div>`;
+  const go = async () => {
+    const { error } = await sb.auth.signInWithPassword({ email: $("#em").value.trim(), password: $("#pw").value });
+    if (error) return toast("เข้าสู่ระบบไม่สำเร็จ: " + error.message);
+    start();
+  };
+  $("#go").onclick = go; $("#pw").onkeydown = (e) => e.key === "Enter" && go();
+}
+
+async function start() {
+  const { data } = await sb.auth.getSession();
+  if (!data.session) return showLogin();
+  let ok = false;
+  try { ok = await rpc("is_teacher"); } catch (e) {}
+  if (!ok) { await sb.auth.signOut(); return showLogin("บัญชีนี้ไม่ได้อยู่ในรายชื่อครู (ตาราง teachers)"); }
+  S.classes = must(await sb.from("classes").select("*").order("name"));
+  S.cls ||= S.classes[0]?.id;
+  shell();
+}
+
+function shell() {
+  app.innerHTML = `
+    <div class="row" style="margin-bottom:10px">
+      <h2 class="grow" style="margin:0">⚗️ Chemistria · แอดมินครูบุ๊ค</h2>
+      <select id="clsSel" style="width:auto">${S.classes.map((c) => `<option value="${c.id}" ${c.id === S.cls ? "selected" : ""}>${esc(c.name)} · ${esc(c.subject_code || "")}</option>`).join("")}</select>
+      <a class="btn ghost small" href="index.html" target="_blank">หน้านักเรียน</a>
+      <button class="btn ghost small" id="out">ออกจากระบบ</button></div>
+    <div class="tabs">${TABS.map(([k, l]) => `<button class="tab ${k === S.tab ? "on" : ""}" data-t="${k}">${l}</button>`).join("")}</div>
+    <div id="view"></div>`;
+  $("#clsSel").onchange = (e) => { S.cls = e.target.value; S.asg = S.item = null; renderTab(); };
+  $("#out").onclick = async () => { await sb.auth.signOut(); showLogin(); };
+  $$(".tab").forEach((b) => (b.onclick = () => { S.tab = b.dataset.t; $$(".tab").forEach((x) => x.classList.toggle("on", x === b)); renderTab(); }));
+  renderTab();
+}
+
+async function renderTab() {
+  const v = $("#view"); v.innerHTML = '<p class="muted">กำลังโหลด…</p>';
+  v.onclick = v.onchange = null; // ล้างตัวจัดการของแท็บก่อนหน้า กันทำงานซ้อนกัน
+  try { await TAB[S.tab](v); } catch (e) { v.innerHTML = `<div class="card" style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+
+/* ---------------- ตัวช่วย CRUD แก้ไขได้ในตาราง ---------------- */
+function cellInput(c, val, id) {
+  const a = `data-id="${id}" data-k="${c.k}" data-t="${c.t || "text"}"`;
+  if (c.t === "bool") return `<input type="checkbox" ${a} ${val ? "checked" : ""}>`;
+  if (c.t === "select")
+    return `<select ${a}>${c.opts().map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(val ?? "") ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  const type = c.t === "number" ? "number" : c.t === "date" ? "date" : "text";
+  return `<input type="${type}" ${c.t === "number" ? 'step="any"' : ""} value="${esc(val ?? "")}" ${a} style="min-width:${c.w || 80}px">`;
+}
+const conv = (el) => {
+  const t = el.dataset.t;
+  if (t === "bool") return el.checked;
+  if (t === "number") return el.value === "" ? null : Number(el.value);
+  if (t === "date" || t === "select") return el.value === "" ? null : el.value;
+  return el.value;
+};
+
+async function crud(host, { table, cols, filter = {}, defaults = {}, order, noDelete, addLabel = "เพิ่มรายการ" }) {
+  let q = sb.from(table).select("*");
+  for (const [k, v] of Object.entries(filter)) q = v === null ? q.is(k, null) : q.eq(k, v);
+  if (order) q = q.order(order);
+  const rows = must(await q);
+  host.innerHTML = `<div class="scroll"><table><thead><tr>${cols.map((c) => `<th>${c.label}</th>`).join("")}<th></th></tr></thead>
+    <tbody>${rows.map((r) => `<tr>${cols.map((c) => `<td>${cellInput(c, r[c.k], r.id)}</td>`).join("")}
+      <td>${noDelete ? "" : `<button class="btn red small" data-del="${r.id}">ลบ</button>`}</td></tr>`).join("")}
+    <tr style="background:#1b1238">${cols.map((c) => `<td>${cellInput(c, defaults[c.k] ?? (c.t === "bool" ? true : ""), "new")}</td>`).join("")}
+      <td><button class="btn mint small" data-add="1">${addLabel}</button></td></tr></tbody></table></div>`;
+  host.onchange = async (e) => {
+    const el = e.target; if (!el.dataset.id || el.dataset.id === "new") return;
+    await run(async () => must(await sb.from(table).update({ [el.dataset.k]: conv(el) }).eq("id", el.dataset.id)), "บันทึกแล้ว ✅");
+  };
+  host.onclick = async (e) => {
+    const d = e.target.dataset;
+    if (d.del) {
+      if (!confirm("ลบรายการนี้? (ข้อมูลที่เกี่ยวข้องอาจถูกลบด้วย)")) return;
+      await run(async () => must(await sb.from(table).delete().eq("id", d.del)), "ลบแล้ว");
+      crud(host, arguments[1]);
+    } else if (d.add) {
+      const obj = { ...filter, ...defaults };
+      $$('[data-id="new"]', host).forEach((el) => { const v = conv(el); if (v !== "" && v !== null) obj[el.dataset.k] = v; });
+      await run(async () => must(await sb.from(table).insert(obj)), "เพิ่มแล้ว ✅");
+      crud(host, arguments[1]);
+    }
+  };
+}
+const holder = (v, title, note = "") => {
+  const c = document.createElement("div"); c.className = "card";
+  c.innerHTML = `<h3>${title}</h3>${note ? `<p class="muted">${note}</p>` : ""}<div></div>`;
+  v.appendChild(c); return c.lastElementChild;
+};
+const classOpts = (allLabel) => () => [["", allLabel], ...S.classes.map((c) => [c.id, c.name])];
+
+/* ---------------- แต่ละแท็บ ---------------- */
+const TAB = {
+  async students(v) {
+    const st = must(await sb.from("students").select("*").eq("class_id", S.cls).order("no"));
+    v.innerHTML = `<div class="card"><h3>นักเรียน ${esc(clsName())} (${st.length} คน)</h3>
+      <div class="scroll"><table><thead><tr><th>เลขที่</th><th>ชื่อ</th><th>อวาตาร์</th><th>Lv</th><th>EXP</th><th>เหรียญ</th><th></th></tr></thead><tbody>
+      ${st.map((s) => `<tr><td>${s.no}</td><td><input value="${esc(s.name)}" data-id="${s.id}" data-k="name" style="min-width:160px"></td>
+        <td>${esc(s.avatar)}</td><td>${Math.floor(Math.sqrt(s.exp / 40)) + 1}</td><td>${s.exp}</td><td>${s.coins}</td>
+        <td><button class="btn small ghost" data-adj="${s.id}">± EXP/เหรียญ</button>
+        <button class="btn small ghost" data-pin="${s.id}">รีเซ็ต PIN</button>
+        <button class="btn small red" data-del="${s.id}">ลบ</button></td></tr>`).join("")}</tbody></table></div></div>
+    <div class="card"><h3>เพิ่ม/อัปเดตรายชื่อ (วางจาก Excel ได้)</h3>
+      <p class="muted">บรรทัดละคน รูปแบบ: <code>เลขที่ ชื่อ-นามสกุล</code> (คั่นด้วยแท็บ จุลภาค หรือเว้นวรรค) ถ้าเลขที่ซ้ำจะอัปเดตชื่อ</p>
+      <textarea id="paste" rows="6" placeholder="1&#9;สมชาย ใจดี&#10;2&#9;สมหญิง รักเรียน"></textarea>
+      <div class="row" style="margin-top:8px"><div style="width:140px"><label>PIN เริ่มต้น</label><input id="pin0" value="1234"></div>
+      <button class="btn gold" id="addSt">เพิ่มรายชื่อ</button></div></div>`;
+    v.onchange = async (e) => { const el = e.target; if (el.dataset.k === "name")
+      await run(async () => must(await sb.from("students").update({ name: el.value }).eq("id", el.dataset.id)), "บันทึกแล้ว ✅"); };
+    v.onclick = async (e) => {
+      const d = e.target.dataset;
+      if (d.adj) {
+        const x = prompt("เพิ่ม/ลบ EXP (ใส่เลข เช่น 10 หรือ -5)", "0"); if (x === null) return;
+        const c = prompt("เพิ่ม/ลบ เหรียญ", "0"); if (c === null) return;
+        const r = prompt("เหตุผล", "ครูปรับให้"); if (r === null) return;
+        await run(() => rpc("admin_adjust", { p_student: d.adj, p_exp: Number(x) || 0, p_coins: Number(c) || 0, p_reason: r }), "ปรับแล้ว ✅"); renderTab();
+      } else if (d.pin) {
+        const p = prompt("PIN ใหม่ (ตัวเลข)", "1234"); if (!p) return;
+        await run(() => rpc("admin_reset_pin", { p_student: d.pin, p_pin: p }), "รีเซ็ต PIN แล้ว ✅");
+      } else if (d.del) {
+        if (confirm("ลบนักเรียนคนนี้และข้อมูลทั้งหมดของเขา?")) { await run(async () => must(await sb.from("students").delete().eq("id", d.del)), "ลบแล้ว"); renderTab(); }
+      }
+    };
+    $("#addSt").onclick = async () => {
+      const list = $("#paste").value.split("\n").map((l) => l.match(/^\s*(\d+)[\s,.\t]+(.+?)\s*$/)).filter(Boolean).map((m) => ({ no: Number(m[1]), name: m[2] }));
+      if (!list.length) return toast("ไม่พบรายชื่อที่อ่านได้");
+      const n = await run(() => rpc("admin_add_students", { p_class: S.cls, p_students: list, p_pin: $("#pin0").value || "1234" }), null);
+      toast(`เพิ่ม/อัปเดต ${n} คนแล้ว ✅`); renderTab();
+    };
+  },
+
+  async attend(v) {
+    const [st, at] = await Promise.all([
+      sb.from("students").select("id,no,name").eq("class_id", S.cls).order("no").then(must),
+      sb.from("ch_attendance").select("student_id,status").eq("class_id", S.cls).eq("att_date", S.attDate).then(must),
+    ]);
+    const cur = Object.fromEntries(at.map((a) => [a.student_id, a.status]));
+    const opts = [["present", "มา"], ["late", "สาย"], ["leave", "ลา"], ["absent", "ขาด"]];
+    v.innerHTML = `<div class="card"><div class="row"><h3 class="grow" style="margin:0">เช็คชื่อ ${esc(clsName())}</h3>
+      <input type="date" id="ad" value="${S.attDate}" style="width:auto">
+      <button class="btn ghost small" id="allp">ทุกคนมา</button><button class="btn gold" id="saveA">บันทึก</button></div>
+      <p class="muted">มา = +5 EXP/+2 เหรียญ · สาย = +2 EXP/+1 เหรียญ (ให้อัตโนมัติ ไม่ซ้ำแม้บันทึกหลายรอบ) · แถวที่ไม่เลือกจะไม่ถูกบันทึก</p>
+      <div class="scroll"><table><tbody>${st.map((s) => `<tr><td>${s.no}</td><td>${esc(s.name)}</td><td class="seg">
+      ${opts.map(([k, l]) => `<label><input type="radio" name="a_${s.id}" value="${k}" ${cur[s.id] === k ? "checked" : ""}>${l}</label>`).join("")}</td></tr>`).join("")}</tbody></table></div></div>`;
+    $("#ad").onchange = (e) => { S.attDate = e.target.value || todayStr(); renderTab(); };
+    $("#allp").onclick = () => $$('input[value="present"]').forEach((r) => (r.checked = true));
+    $("#saveA").onclick = async () => {
+      const recs = st.map((s) => ({ student_id: s.id, status: $(`input[name="a_${s.id}"]:checked`)?.value })).filter((r) => r.status);
+      if (!recs.length) return toast("ยังไม่ได้เลือกสถานะ");
+      const n = await run(() => rpc("admin_mark_attendance", { p_class: S.cls, p_date: S.attDate, p_records: recs }), null);
+      toast(`บันทึกเช็คชื่อ ${n} คนแล้ว ✅`);
+    };
+  },
+
+  async assign(v) {
+    const h = holder(v, "📝 งานที่มอบหมาย", "เลือกงานด้านล่างเพื่อบันทึกการส่ง · EXP/เหรียญจะให้อัตโนมัติเมื่อบันทึกสถานะ “ส่งแล้ว” (ส่งช้าได้ครึ่งหนึ่ง)");
+    await crud(h, { table: "ch_assignments", filter: { class_id: S.cls }, order: "due_date", defaults: { max_score: 10, exp_reward: 20, coin_reward: 5 },
+      cols: [{ k: "title", label: "ชื่องาน", w: 180 }, { k: "due_date", label: "กำหนดส่ง", t: "date" }, { k: "max_score", label: "เต็ม", t: "number", w: 60 },
+        { k: "exp_reward", label: "EXP", t: "number", w: 60 }, { k: "coin_reward", label: "เหรียญ", t: "number", w: 60 }, { k: "description", label: "รายละเอียด", w: 160 }] });
+    const as = must(await sb.from("ch_assignments").select("id,title").eq("class_id", S.cls).order("due_date"));
+    if (!as.length) return;
+    S.asg = as.find((a) => a.id === S.asg) ? S.asg : as[0].id;
+    const [st, sub] = await Promise.all([
+      sb.from("students").select("id,no,name").eq("class_id", S.cls).order("no").then(must),
+      sb.from("ch_submissions").select("student_id,status,score").eq("assignment_id", S.asg).then(must),
+    ]);
+    const cur = Object.fromEntries(sub.map((s) => [s.student_id, s]));
+    const g = holder(v, "✅ บันทึกการส่งงาน");
+    g.innerHTML = `<div class="row"><select id="asel" style="width:auto">${as.map((a) => `<option value="${a.id}" ${a.id === S.asg ? "selected" : ""}>${esc(a.title)}</option>`).join("")}</select>
+      <button class="btn ghost small" id="allS">ทุกคนส่งแล้ว</button><button class="btn gold" id="saveS">บันทึก</button></div>
+      <div class="scroll"><table><thead><tr><th>#</th><th>ชื่อ</th><th>สถานะ</th><th>คะแนน</th></tr></thead><tbody>
+      ${st.map((s) => `<tr><td>${s.no}</td><td>${esc(s.name)}</td><td class="seg">
+        ${[["submitted", "ส่ง"], ["late", "ช้า"], ["missing", "ไม่ส่ง"]].map(([k, l]) => `<label><input type="radio" name="s_${s.id}" value="${k}" ${cur[s.id]?.status === k ? "checked" : ""}>${l}</label>`).join("")}</td>
+        <td><input type="number" step="any" id="sc_${s.id}" value="${cur[s.id]?.score ?? ""}" style="width:80px"></td></tr>`).join("")}</tbody></table></div>`;
+    $("#asel").onchange = (e) => { S.asg = e.target.value; renderTab(); };
+    $("#allS").onclick = () => $$('input[value="submitted"]', g).forEach((r) => (r.checked = true));
+    $("#saveS").onclick = async () => {
+      const recs = st.map((s) => ({ student_id: s.id, status: $(`input[name="s_${s.id}"]:checked`)?.value, score: $("#sc_" + s.id).value })).filter((r) => r.status);
+      if (!recs.length) return toast("ยังไม่ได้เลือกสถานะ");
+      const n = await run(() => rpc("admin_mark_submissions", { p_assignment: S.asg, p_records: recs }), null);
+      toast(`บันทึกการส่งงาน ${n} คนแล้ว ✅`);
+    };
+  },
+
+  async calendar(v) {
+    const h = holder(v, "📅 ปฏิทินรายวิชา", "เว้นห้องว่างไว้ = แสดงให้ทุกห้อง · วันกำหนดส่งงานจะขึ้นในปฏิทินนักเรียนอัตโนมัติ");
+    await crud(h, { table: "events", order: "event_date", defaults: { kind: "lesson", event_date: todayStr(), class_id: S.cls },
+      cols: [{ k: "event_date", label: "วันที่", t: "date" }, { k: "end_date", label: "ถึงวันที่", t: "date" }, { k: "title", label: "หัวข้อ", w: 200 },
+        { k: "kind", label: "ประเภท", t: "select", opts: () => Object.entries(KIND_LABEL) }, { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "note", label: "หมายเหตุ", w: 160 }] });
+  },
+
+  async scores(v) {
+    const h = holder(v, "🧮 หัวข้อคะแนน", "คะแนนหมวดเป็นผลรวมคะแนนดิบ (ไม่ปรับสัดส่วน) · คะแนนพิเศษรวมกันไม่เกินเพดานที่ตั้งในแท็บ “ตั้งค่า”");
+    await crud(h, { table: "score_items", filter: { class_id: S.cls }, order: "created_at", defaults: { category: "pre_mid", max_score: 10 },
+      cols: [{ k: "category", label: "หมวด", t: "select", opts: () => Object.entries(CAT_LABEL) }, { k: "title", label: "ชื่อรายการ", w: 200 }, { k: "max_score", label: "เต็ม", t: "number", w: 70 }] });
+    const items = must(await sb.from("score_items").select("*").eq("class_id", S.cls).order("created_at"));
+    const st = must(await sb.from("students").select("id,no,name").eq("class_id", S.cls).order("no"));
+    if (items.length) {
+      S.item = items.find((i) => i.id === S.item) ? S.item : items[0].id;
+      const sc = must(await sb.from("scores").select("student_id,score").eq("item_id", S.item));
+      const cur = Object.fromEntries(sc.map((s) => [s.student_id, s.score]));
+      const it = items.find((i) => i.id === S.item);
+      const g = holder(v, "✏️ กรอกคะแนน");
+      g.innerHTML = `<div class="row"><select id="isel" style="width:auto">${items.map((i) => `<option value="${i.id}" ${i.id === S.item ? "selected" : ""}>${CAT_LABEL[i.category]} · ${esc(i.title)}</option>`).join("")}</select>
+        <span class="muted">เต็ม ${it.max_score}</span><button class="btn gold" id="saveSc">บันทึกคะแนน</button></div>
+        <div class="scroll"><table><tbody>${st.map((s) => `<tr><td>${s.no}</td><td>${esc(s.name)}</td><td><input type="number" step="any" max="${it.max_score}" id="sv_${s.id}" value="${cur[s.id] ?? ""}" style="width:90px"></td></tr>`).join("")}</tbody></table></div>`;
+      $("#isel").onchange = (e) => { S.item = e.target.value; renderTab(); };
+      $("#saveSc").onclick = async () => {
+        const rows = st.map((s) => ({ item_id: S.item, student_id: s.id, score: $("#sv_" + s.id).value })).filter((r) => r.score !== "").map((r) => ({ ...r, score: Number(r.score) }));
+        const bad = rows.find((r) => r.score > Number(it.max_score) || r.score < 0);
+        if (bad) return toast("มีคะแนนเกินเต็มหรือติดลบ กรุณาตรวจสอบ");
+        await run(async () => must(await sb.from("scores").upsert(rows, { onConflict: "item_id,student_id" })), `บันทึก ${rows.length} รายการแล้ว ✅`);
+      };
+    }
+    const gb = must(await sb.from("v_gradebook").select("*").eq("class_id", S.cls).order("no"));
+    const cols = [["pre_mid", "ก่อนกลาง"], ["midterm", "กลางภาค"], ["post_mid", "หลังกลาง"], ["final", "ปลายภาค"], ["behavior", "จิตพิสัย"], ["bonus", "พิเศษ"], ["total", "รวม"], ["total_with_bonus", "รวม+พิเศษ"]];
+    const gh = holder(v, "📊 สมุดคะแนนรวม", "กดชื่อคอลัมน์เพื่อคัดลอกเป็นแนวตั้งตามเลขที่ ไปวางใน Google Sheet ได้ทันที");
+    gh.innerHTML = `<div class="scroll"><table><thead><tr><th>#</th><th>ชื่อ</th>${cols.map(([k, l]) => `<th><button class="btn small ghost" data-copy="${k}">${l} 📋</button></th>`).join("")}</tr></thead>
+      <tbody>${gb.map((r) => `<tr><td>${r.no}</td><td>${esc(r.name)}</td>${cols.map(([k]) => `<td>${r[k]}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    gh.onclick = async (e) => { const k = e.target.dataset.copy; if (!k) return;
+      await navigator.clipboard.writeText(gb.map((r) => r[k]).join("\n")); toast("คัดลอกคอลัมน์แล้ว ✅"); };
+  },
+
+  async quests(v) {
+    const inbox = holder(v, "📥 เควสรอตรวจ");
+    const pend = must(await sb.from("quest_claims").select("id,claim_date,students(no,name,class_id),quests(title,exp,coins)").eq("status", "pending").order("created_at"));
+    const mine = pend.filter((p) => p.students?.class_id === S.cls);
+    inbox.className += " inbox";
+    inbox.innerHTML = (mine.length ? `<button class="btn mint small" id="apAll">อนุมัติทั้งหมด (${mine.length})</button>` : "") +
+      (mine.map((p) => `<div class="item"><div class="grow"><b>${p.students.no}. ${esc(p.students.name)}</b> — ${esc(p.quests.title)}
+        <span class="muted">${fmtDate(p.claim_date)} · +${p.quests.exp} EXP +${p.quests.coins}🪙</span></div>
+        <button class="btn mint small" data-ap="${p.id}">อนุมัติ</button><button class="btn red small" data-rj="${p.id}">ไม่ผ่าน</button></div>`).join("") || '<p class="muted">ไม่มีเควสรอตรวจ</p>');
+    inbox.onclick = async (e) => {
+      const d = e.target.dataset;
+      if (d.ap || d.rj) { await run(() => rpc("admin_review_quest", { p_claim: d.ap || d.rj, p_approve: !!d.ap }), "ดำเนินการแล้ว"); renderTab(); }
+      if (e.target.id === "apAll") { for (const p of mine) await rpc("admin_review_quest", { p_claim: p.id, p_approve: true }); toast("อนุมัติทั้งหมดแล้ว ✅"); renderTab(); }
+    };
+    const h = holder(v, "🗺️ คลังเควส", "ประจำวัน: ระบบสุ่มให้วันละ N ข้อ (ตั้ง N ในแท็บตั้งค่า) · รายสัปดาห์: แสดงทุกข้อ · ห้อง “ทุกห้อง” = ใช้กับทุกห้อง");
+    await crud(h, { table: "quests", order: "title", defaults: { kind: "daily", exp: 10, coins: 3, needs_approval: true, active: true },
+      cols: [{ k: "title", label: "ชื่อเควส", w: 180 }, { k: "description", label: "รายละเอียด", w: 200 }, { k: "kind", label: "ชนิด", t: "select", opts: () => [["daily", "ประจำวัน"], ["weekly", "รายสัปดาห์"]] },
+        { k: "exp", label: "EXP", t: "number", w: 60 }, { k: "coins", label: "เหรียญ", t: "number", w: 60 }, { k: "needs_approval", label: "ครูตรวจ", t: "bool" },
+        { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async gacha(v) {
+    const items = must(await sb.from("gacha_items").select("rarity,weight,active"));
+    const tot = items.filter((i) => i.active).reduce((a, i) => a + i.weight, 0) || 1;
+    const by = {}; items.filter((i) => i.active).forEach((i) => (by[i.rarity] = (by[i.rarity] || 0) + i.weight));
+    const privs = must(await sb.from("privileges").select("id,name").order("name"));
+    const h = holder(v, "🎰 ไอเทมในตู้กาชา",
+      `โอกาสออกต่อชนิด: ${["N", "R", "SR", "SSR"].map((r) => `${r} ${(((by[r] || 0) / tot) * 100).toFixed(1)}%`).join(" · ")} (ยังไม่รวมการันตี) · ชนิด coins/exp ใช้ช่อง “ค่า” เป็นจำนวน · ชนิด privilege เลือกสิทธิพิเศษ · cosmetic = อีโมจิอวาตาร์`);
+    await crud(h, { table: "gacha_items", order: "rarity", defaults: { rarity: "N", kind: "coins", value: 10, weight: 10, active: true, emoji: "🎁" },
+      cols: [{ k: "emoji", label: "อีโมจิ", w: 50 }, { k: "name", label: "ชื่อ", w: 160 }, { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) },
+        { k: "kind", label: "ชนิด", t: "select", opts: () => [["coins", "เหรียญ"], ["exp", "EXP"], ["cosmetic", "อวาตาร์"], ["privilege", "สิทธิพิเศษ"]] },
+        { k: "value", label: "ค่า", t: "number", w: 60 }, { k: "privilege_id", label: "สิทธิพิเศษ", t: "select", opts: () => [["", "—"], ...privs.map((p) => [p.id, p.name])] },
+        { k: "weight", label: "น้ำหนัก", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async privs(v) {
+    const inbox = holder(v, "📥 คำขอใช้สิทธิพิเศษ");
+    const rq = must(await sb.from("redemptions").select("id,created_at,students(no,name,class_id),privileges(name,emoji)").eq("status", "requested").order("created_at"));
+    const mine = rq.filter((p) => p.students?.class_id === S.cls);
+    inbox.className += " inbox";
+    inbox.innerHTML = mine.map((p) => `<div class="item"><div class="grow"><b>${p.students.no}. ${esc(p.students.name)}</b> ขอใช้ ${esc(p.privileges.emoji)} ${esc(p.privileges.name)}</div>
+      <button class="btn mint small" data-ap="${p.id}">อนุมัติ</button><button class="btn red small" data-rj="${p.id}">ไม่อนุมัติ</button></div>`).join("") || '<p class="muted">ไม่มีคำขอ</p>';
+    inbox.onclick = async (e) => { const d = e.target.dataset; if (!(d.ap || d.rj)) return;
+      await run(() => rpc("admin_review_privilege", { p_redemption: d.ap || d.rj, p_approve: !!d.ap }), "ดำเนินการแล้ว"); renderTab(); };
+    const h = holder(v, "🎟️ รายการสิทธิพิเศษ", "ใส่ราคา = วางขายในร้านค้า · เว้นราคาว่าง = ได้จากกาชา/achievement เท่านั้น · ครูเป็นผู้อนุมัติการใช้สิทธิ์ทุกครั้ง");
+    await crud(h, { table: "privileges", order: "name", defaults: { active: true, emoji: "🎟️" },
+      cols: [{ k: "emoji", label: "อีโมจิ", w: 50 }, { k: "name", label: "ชื่อ", w: 180 }, { k: "description", label: "รายละเอียด", w: 240 }, { k: "cost", label: "ราคา(เหรียญ)", t: "number", w: 80 }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async achv(v) {
+    const privs = must(await sb.from("privileges").select("id,name").order("name"));
+    const h = holder(v, "🏅 Achievement", "“เก็บเวลา” = มาตรงเวลา/สตรีคการมาเรียน/ส่งงานตรงเวลา · ได้รับอัตโนมัติเมื่อถึงเกณฑ์ พร้อมรางวัล EXP/เหรียญ/สิทธิพิเศษ");
+    await crud(h, { table: "achievements", order: "metric", defaults: { metric: "present_count", threshold: 5, reward_exp: 20, reward_coins: 5, active: true, emoji: "🏅" },
+      cols: [{ k: "emoji", label: "อีโมจิ", w: 50 }, { k: "key", label: "รหัส(ไม่ซ้ำ)", w: 100 }, { k: "name", label: "ชื่อ", w: 150 }, { k: "description", label: "คำอธิบาย", w: 180 },
+        { k: "metric", label: "เงื่อนไข", t: "select", opts: () => [["present_count", "มาตรงเวลา (คาบ)"], ["attendance_count", "มาเรียนทั้งหมด"], ["attendance_streak", "มาตรงเวลาติดกัน"], ["ontime_submissions", "ส่งงานตรงเวลา"],
+          ["quests_done", "ทำเควสสำเร็จ"], ["gacha_pulls", "สุ่มกาชา"], ["total_exp", "EXP รวม"], ["level", "เลเวล"]] },
+        { k: "threshold", label: "ถึง", t: "number", w: 60 }, { k: "reward_exp", label: "+EXP", t: "number", w: 60 }, { k: "reward_coins", label: "+เหรียญ", t: "number", w: 60 },
+        { k: "reward_privilege_id", label: "+สิทธิพิเศษ", t: "select", opts: () => [["", "—"], ...privs.map((p) => [p.id, p.name])] }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async settings(v) {
+    const set = Object.fromEntries(must(await sb.from("app_settings").select("*")).map((s) => [s.key, s.value]));
+    const f = [["gacha_cost", "ราคากาชาต่อครั้ง (เหรียญ)"], ["pity_max", "การันตี SR+ ทุกกี่ครั้ง"], ["daily_quest_count", "จำนวนเควสประจำวันที่สุ่มให้"]];
+    v.innerHTML = `<div class="card"><h3>⚙️ ตั้งค่าระบบ</h3><div class="row">${f.map(([k, l]) => `<div style="width:220px"><label>${l}</label><input type="number" data-set="${k}" value="${esc(set[k] ?? "")}"></div>`).join("")}
+      <div style="width:220px"><label>ให้นักเรียนเห็นคะแนนตัวเอง</label><select data-set="show_scores"><option value="1" ${set.show_scores !== "0" ? "selected" : ""}>แสดง</option><option value="0" ${set.show_scores === "0" ? "selected" : ""}>ซ่อน</option></select></div></div></div>`;
+    v.onchange = async (e) => { const k = e.target.dataset.set; if (!k) return;
+      await run(async () => must(await sb.from("app_settings").upsert({ key: k, value: String(e.target.value) })), "บันทึกแล้ว ✅"); };
+    const h = holder(v, "🏫 ห้องเรียน", "รหัสห้องใช้ตอนนักเรียนล็อกอิน (เช่น M6-2) · เพดานคะแนนพิเศษคือคะแนนพิเศษสูงสุดที่รวมได้");
+    await crud(h, { table: "classes", order: "name", noDelete: false, defaults: { bonus_cap: 5, term: "2569/2" },
+      cols: [{ k: "code", label: "รหัสห้อง", w: 80 }, { k: "name", label: "ชื่อห้อง", w: 80 }, { k: "subject_code", label: "รหัสวิชา", w: 80 }, { k: "subject_name", label: "ชื่อวิชา", w: 160 },
+        { k: "term", label: "ภาคเรียน", w: 80 }, { k: "bonus_cap", label: "เพดานคะแนนพิเศษ", t: "number", w: 80 }] });
+    const note = document.createElement("p"); note.className = "muted"; note.textContent = "หลังเพิ่ม/ลบห้อง ให้โหลดหน้าใหม่เพื่ออัปเดตรายการห้องด้านบน"; v.appendChild(note);
+  },
+};
+
+sb.auth.onAuthStateChange(() => {});
+start();
+</script>
+</body>
+</html>
