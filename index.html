@@ -307,5 +307,28 @@ function closeOv() { $("#overlay").classList.remove("on"); }
 
 load();
 </script>
+
+<canvas id="fx"></canvas>
+<script>
+/* เอฟเฟกต์แสง: ประกายลอย + แสงตามเมาส์บนการ์ด */
+(function(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  var c=document.getElementById("fx"),x=c.getContext("2d"),P=[],W,H;
+  function rs(){W=c.width=innerWidth;H=c.height=innerHeight}
+  rs();addEventListener("resize",rs);
+  var n=innerWidth<600?28:55,cols=["#ffd75a","#b48cff","#7fe9ff","#ffffff"];
+  for(var i=0;i<n;i++)P.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.8+.4,
+    v:Math.random()*.35+.08,t:Math.random()*6.28,c:cols[i%4]});
+  (function f(){x.clearRect(0,0,W,H);
+    P.forEach(function(p){p.y-=p.v;p.t+=.03;if(p.y<-5){p.y=H+5;p.x=Math.random()*W}
+      x.globalAlpha=.25+.55*Math.abs(Math.sin(p.t));x.fillStyle=p.c;x.shadowColor=p.c;x.shadowBlur=8;
+      x.beginPath();x.arc(p.x+Math.sin(p.t)*6,p.y,p.r,0,6.28);x.fill()});
+    requestAnimationFrame(f)})();
+  document.addEventListener("pointermove",function(e){
+    var el=e.target.closest&&e.target.closest(".card");if(!el)return;
+    var b=el.getBoundingClientRect();
+    el.style.setProperty("--mx",(e.clientX-b.left)+"px");el.style.setProperty("--my",(e.clientY-b.top)+"px")});
+})();
+</script>
 </body>
 </html>
