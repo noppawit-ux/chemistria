@@ -52,7 +52,7 @@ async function showLogin(msg) {
     } catch (e) { toast(e.message); btn.disabled = false; }
   };
   $("#lbtn").onclick = go;
-  $("#lp").onkeydown = (e) => e.key === "Enter" && go();
+  $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
 
 function logout() { localStorage.removeItem(TOKEN_KEY); D = null; showLogin(); }
