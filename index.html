@@ -94,6 +94,24 @@ function frame(avatar, classKey, ri, lv, sz, dc) {
     ${lv && !size ? `<span class="lv">Lv.${lv}</span>` : ""}</div>`;
 }
 const titleTag = (dc) => (dc && dc.title ? `<span class="pill dc-title">${esc(dc.title.emoji)} ${esc(dc.title.name)}</span>` : "");
+
+/* ตัวละครเต็มตัว: ชุด + เอฟเฟค + ไอเทมลอย + หมวก + สัตว์เลี้ยง บนพื้นหลังและกรอบ · sz: "sm" | "md" | "lg" */
+function fxHtml(fx) {
+  if (!fx) return "";
+  const n = fx.key === "orbit" || fx.key === "lightning" ? 4 : 11;
+  let h = "";
+  for (let k = 0; k < n; k++) h += `<i style="--x:${(k * 37 + 11) % 86 + 6}%;--sz:${3 + (k % 4) * 2}px;--t:${2.6 + (k % 5) * 0.6}s;--dl:-${(k * 0.55).toFixed(2)}s;--k:${k}"></i>`;
+  return `<div class="fx fx-${esc(fx.key)}">${h}</div>`;
+}
+function stage(cls, ri, dc, sz) {
+  dc = dc || {}; const f = dc.frame, b = dc.bg, o = dc.outfit, base = "assets/chars/" + (cls || "novice");
+  return `<div class="avf stg rk-${ri.key} ${sz || "md"} ${f ? "dc-f-" + esc(f.key) : ""}" style="${dcVar(f)}">
+    <div class="av stage ${b ? "dc-b-" + esc(b.key) : "stg-default"}" style="${dcVar(b)}">
+      ${fxHtml(dc.fx)}<div class="st-floor"></div>
+      <img class="st-char" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">
+      ${dc.hat ? `<span class="st-hat">${esc(dc.hat.emoji)}</span>` : ""}${dc.pet ? `<span class="st-pet">${esc(dc.pet.emoji)}</span>` : ""}
+      ${dc.item && dc.item.image ? `<img class="st-item" src="${esc(dc.item.image)}" alt="">` : ""}</div></div>`;
+}
 const itemImg = (img, emoji, cls = "ico") => img ? `<img class="${cls}" src="${esc(img)}" alt="">` : esc(emoji || "🎁");
 const rankName = (ri) => ri.name + (ri.division ? " " + ri.division : "");
 
@@ -137,24 +155,28 @@ const statusTag = (st) => ({
   rejected: '<span class="tag no">ไม่ผ่าน</span>',
 }[st] || "");
 
-/* หอเกียรติยศ: Top 3 ของแต่ละห้อง */
+/* หอเกียรติยศ: Top 3 ของห้องตัวเอง (ตัวละครเต็มตัว) */
 function hallHtml() {
-  if (!HOF.length) return "";
+  const r = (HOF || [])[0]; if (!r) return "";
   const pod = (x, place) => !x ? '<div class="pod empty"></div>' : `<div class="pod p${place}">
-      ${place === 1 ? '<div class="crown">👑</div>' : ""}${frame(x.avatar, x.char_class, x.rank_info, 0, place === 1 ? "lg" : "md", x.decor)}
+      ${place === 1 ? '<div class="crown">👑</div>' : ""}${stage(x.char_class, x.rank_info, x.decor, place === 1 ? "md" : "sm")}
       <div class="pn ${x.me ? "me" : ""}">${esc(x.name)}</div>${titleTag(x.decor)}
-      <div class="muted rk-${x.rank_info.key}" style="color:var(--rc)">${esc(rankName(x.rank_info))}</div>
+      <div class="muted" style="color:var(--rc)" ><span class="rk-${x.rank_info.key}">${esc(rankName(x.rank_info))}</span></div>
       <div class="muted">Lv.${x.level} · ${x.exp} EXP</div><div class="base">${place}</div></div>`;
-  return `<div class="card hof"><h3>🏆 หอเกียรติยศประจำห้อง</h3><div class="hofrow">${HOF.map((r) => `
-    <div class="room ${r.mine ? "mine" : ""}"><div class="rt">${esc(r.name)}${r.mine ? ' <span class="pill">ห้องของฉัน</span>' : ""}</div>
-      <div class="podium">${pod(r.top[1], 2)}${pod(r.top[0], 1)}${pod(r.top[2], 3)}</div></div>`).join("")}</div></div>`;
+  return `<div class="card hof"><h3>🏆 หอเกียรติยศ ${esc(r.name)}</h3>
+    <div class="podium">${pod(r.top[1], 2)}${pod(r.top[0], 1)}${pod(r.top[2], 3)}</div></div>`;
 }
 
 const VIEWS = {
   game() { return GAMES.view(); },
   home() {
     const a = D.attendance_summary;
-    return hallHtml() + `
+    const me = D.student;
+    return `<div class="homehero"><div class="card mychar center"><h3 style="margin-bottom:6px">🧍 ตัวละครของฉัน</h3>
+      ${stage(me.char_class, D.rank_info, me.decor, "lg")}
+      <div style="margin-top:8px">${titleTag(me.decor)}</div>
+      <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
+      ${hallHtml() || '<div class="card hof center"><h3>🏆 หอเกียรติยศ</h3><p class="muted">ยังไม่มีอันดับ — สะสม EXP จากเช็คชื่อ ส่งงาน เควส และมินิเกมเพื่อขึ้นโพเดียม</p></div>'}</div>
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
@@ -285,22 +307,24 @@ const VIEWS = {
   },
 
   decor() {
-    const SL = [["frame", "🖼️ กรอบ"], ["bg", "🌄 พื้นหลัง"], ["hat", "🎩 หมวก"], ["pet", "🐾 สัตว์เลี้ยง"], ["title", "🏷️ ฉายา"]];
-    const s = D.student, eq = s.decor || {}, items = (D.decor_catalog || []).filter((d) => d.slot === decSlot);
+    const SL = [["outfit", "👕 ชุด"], ["fx", "✨ เอฟเฟค"], ["item", "🧪 ไอเทม"], ["frame", "🖼️ กรอบ"], ["bg", "🌄 พื้นหลัง"], ["hat", "🎩 หมวก"], ["pet", "🐾 สัตว์เลี้ยง"], ["title", "🏷️ ฉายา"]];
+    const s = D.student, eq = s.decor || {}, ri = D.rank_info;
+    let items = (D.decor_catalog || []).filter((d) => d.slot === decSlot);
+    if (decSlot === "outfit") items = [{ id: null, slot: "outfit", name: "ชุดเริ่มต้น", emoji: "👤", rarity: "N", owned: true, price: null }, ...items];
     const owned = (D.decor_catalog || []).filter((d) => d.owned).length, all = (D.decor_catalog || []).length;
     const tile = (d) => {
-      const worn = eq[d.slot] && eq[d.slot].id === d.id;
-      const prev = d.slot === "title" ? titleTag({ title: d })
-        : frame(s.avatar, s.char_class, D.rank_info, 0, "md", { ...eq, [d.slot]: d });
+      const worn = d.id === null ? !eq.outfit : eq[d.slot] && eq[d.slot].id === d.id;
+      const next = { ...eq }; if (d.id === null) delete next.outfit; else next[d.slot] = d;
+      const prev = d.slot === "title" ? titleTag({ title: d }) : stage(s.char_class, ri, next, "sm");
       return `<div class="dtile rar-${d.rarity} ${worn ? "worn" : ""} ${d.owned ? "" : "locked"}">
-        <div class="dprev">${prev}</div><b>${esc(d.emoji)} ${esc(d.name)}</b><span class="rar">${d.rarity}</span>
-        ${d.owned ? (worn ? `<button class="btn small ghost" onclick="equipDecor('${d.slot}',null)">ถอดออก</button>`
-              : `<button class="btn small gold" onclick="equipDecor('${d.slot}','${d.id}')">สวมใส่</button>`)
+        <div class="dprev">${prev}</div><b>${esc(d.emoji)} ${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>
+        ${d.owned ? (worn ? (d.id === null ? '<span class="tag ok">กำลังใส่</span>' : `<button class="btn small ghost" onclick="equipDecor('${d.slot}',null)">ถอดออก</button>`)
+              : `<button class="btn small gold" onclick="equipDecor('${d.slot}',${d.id === null ? "null" : `'${d.id}'`})">${d.id === null ? "ใส่ชุดเริ่มต้น" : "สวมใส่"}</button>`)
           : d.price != null ? `<button class="btn small" ${s.coins < d.price ? "disabled" : ""} onclick="buyDecor('${d.id}','${esc(d.name)}',${d.price})">ซื้อ ${d.price} 🪙</button>`
           : '<span class="muted">🔒 ได้จากกาชา</span>'}</div>`;
     };
-    return `<div class="card center"><h3>🎨 ตกแต่งตัวละคร</h3>
-      <div style="display:flex;justify-content:center;margin:34px 0 18px">${frame(s.avatar, s.char_class, D.rank_info, s.level, "lg", eq)}</div>
+    return `<div class="card center"><h3>🎨 ตัวละครของฉัน</h3>
+      <div style="display:flex;justify-content:center;margin:6px 0 10px">${stage(s.char_class, ri, eq, "lg")}</div>
       ${titleTag(eq)}<p class="muted">สะสมแล้ว ${owned}/${all} ชิ้น · เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span> · ได้ไอเทมจาก <a href="#" onclick="go('gacha');return false" style="color:var(--gold2)">กาชา</a> หรือซื้อด้านล่าง</p></div>
       <div class="tabs" style="position:static">${SL.map(([k, l]) => `<button class="tab ${k === decSlot ? "on" : ""}" onclick="decSlot='${k}';render()">${l}</button>`).join("")}</div>
       <div class="dgrid">${items.map(tile).join("") || '<p class="muted">ยังไม่มีไอเทมในหมวดนี้</p>'}</div>`;

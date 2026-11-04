@@ -290,3 +290,54 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
 .pod.p2 .base{background:linear-gradient(#f1f5ff,#9aa8c2);height:32px}
 .pod.p3 .base{background:linear-gradient(#e6a06a,#9c5d2b);height:24px}
 .pod .dc-title{font-size:.9em;padding:0 6px}
+
+/* ================= ตัวละครเต็มตัว (stage) ================= */
+.avf.stg{--s:150px;width:var(--s);height:calc(var(--s)*1.5);border-radius:20px;padding:4px;animation:none}
+.avf.stg.sm{--s:104px;padding:3px;border-radius:15px}.avf.stg.lg{--s:210px;padding:5px;border-radius:24px}
+.avf.stg::after{display:none}.avf.stg.dc-f-rainbow::before{border-radius:inherit}
+.avf.stg .av.stage{position:relative;display:block;width:100%;height:100%;overflow:hidden;border-radius:calc(20px - 4px);font-size:inherit}
+.stg-default{background:radial-gradient(circle at 50% 85%,#5a37b866,#1a0f3a 70%),#170f31}
+.st-floor{position:absolute;left:50%;bottom:1%;transform:translateX(-50%);width:62%;height:7%;border-radius:50%;
+  background:radial-gradient(#000a,transparent 70%);z-index:1}
+.avf.stg .av img.st-char{position:absolute;left:50%;bottom:3%;transform:translateX(-50%);height:91%;width:auto;max-width:100%;object-fit:contain;object-position:50% 100%;
+  z-index:2;filter:drop-shadow(0 4px 6px #0009);animation:breathe 3.2s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes breathe{50%{transform:translateX(-50%) scale(1.012,1.02)}}
+.st-hat{position:absolute;top:0;left:50%;transform:translateX(-50%) rotate(-6deg);z-index:4;font-size:calc(var(--s)*.22);line-height:1;filter:drop-shadow(0 2px 3px #000a)}
+.st-pet{position:absolute;left:3%;bottom:3%;z-index:3;font-size:calc(var(--s)*.2);line-height:1;animation:hop 2.4s ease-in-out infinite;filter:drop-shadow(0 2px 3px #000a)}
+.avf.stg .av img.st-item{position:absolute;right:2%;bottom:30%;z-index:3;width:calc(var(--s)*.27);height:auto;object-fit:contain;animation:bob 2.8s ease-in-out infinite;filter:drop-shadow(0 0 8px #ffe27a99)}
+@keyframes bob{50%{transform:translateY(-6px) rotate(4deg)}}
+/* เอฟเฟค */
+.fx{position:absolute;inset:0;pointer-events:none}
+.fx::before{content:"";position:absolute;inset:0;z-index:1;opacity:.85}
+.fx i{position:absolute;z-index:3;left:var(--x);bottom:-6%;width:var(--sz);height:var(--sz);border-radius:50%;
+  animation:rise var(--t) linear var(--dl) infinite}
+@keyframes rise{0%{bottom:-6%;opacity:0}15%{opacity:1}100%{bottom:104%;opacity:0}}
+@keyframes fall{0%{top:-6%;opacity:0}15%{opacity:1}100%{top:104%;opacity:0}}
+@keyframes sway{50%{margin-left:6px}}
+.fx-sparkle::before{background:radial-gradient(circle at 50% 70%,#ffe27a33,transparent 65%)}
+.fx-sparkle i{background:#fff6c4;box-shadow:0 0 6px 2px #ffd75a;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);border-radius:0;width:calc(var(--sz)*2.2);height:calc(var(--sz)*2.2)}
+.fx-bubbles::before{background:radial-gradient(circle at 50% 100%,#3bf0d033,transparent 70%)}
+.fx-bubbles i{border:1.5px solid #9ffbea;background:#9ffbea22;width:calc(var(--sz)*2.4);height:calc(var(--sz)*2.4);animation:rise var(--t) linear var(--dl) infinite,sway 2s ease-in-out infinite}
+.fx-flame::before{background:radial-gradient(circle at 50% 105%,#ff6a00bb,#ff3d0044 45%,transparent 70%);animation:flicker2 1s ease-in-out infinite alternate}
+@keyframes flicker2{to{opacity:.55;transform:scale(1.04)}}
+.fx-flame i{background:#ffb347;box-shadow:0 0 6px 2px #ff6a00}
+.fx-ice::before{background:radial-gradient(circle at 50% 50%,transparent 40%,#7fd8ff44 100%)}
+.fx-ice i{bottom:auto;top:-6%;background:#fff;box-shadow:0 0 5px #bfeaff;animation:fall var(--t) linear var(--dl) infinite,sway 2.4s ease-in-out infinite}
+.fx-lightning::before{background:radial-gradient(circle at 50% 50%,transparent 35%,#6fa8ff55 100%);animation:flicker2 .5s steps(2) infinite alternate}
+.fx-lightning i{bottom:auto;top:calc(8% + var(--k)*20%);width:auto;height:auto;border-radius:0;background:none;font-style:normal;
+  font-size:calc(var(--s)*.2);filter:drop-shadow(0 0 6px #7fb0ff);animation:flash 1.8s steps(1) var(--dl) infinite}
+.fx-lightning i::before{content:"⚡"}
+@keyframes flash{0%,60%,100%{opacity:0}64%,72%{opacity:1}}
+.fx-orbit::before{background:radial-gradient(circle at 50% 55%,#b48cff44,transparent 70%)}
+.fx-orbit i{bottom:auto;left:50%;top:50%;width:auto;height:auto;border-radius:0;background:none;font-style:normal;--r:calc(var(--s)*.38);
+  font-size:calc(var(--s)*.14);filter:drop-shadow(0 0 6px #ffd75a);animation:orbit 6s linear calc(var(--k)*-1.5s) infinite}
+.fx-orbit i::before{content:"⭐"}
+@keyframes orbit{from{transform:translate(-50%,-50%) rotate(0deg) translateX(var(--r)) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg) translateX(var(--r)) rotate(-360deg)}}
+/* หน้าแรก */
+.homehero{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
+.mychar{min-width:250px}
+@media (max-width:700px){.homehero{grid-template-columns:1fr}}
+.hof .podium{align-items:end;gap:8px}
+.pod{font-size:.8em}.pod .stg{margin:0 auto}
+.dprev{padding-top:0;min-height:160px}
+.dtile{min-width:0}

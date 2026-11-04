@@ -322,12 +322,12 @@ const TAB = {
 
   async decor(v) {
     const h = holder(v, "🎨 ไอเทมตกแต่งตัวละคร",
-      "ใส่ราคา = วางขายในร้านของนักเรียน · เว้นราคาว่าง = ได้จากกาชาเท่านั้น (ต้องไปเพิ่มในแท็บกาชา ชนิด “ไอเทมตกแต่ง” ด้วย) · สไตล์ที่ใช้ได้: กรอบ = solid(ใส่สี) ice flame neon gold rainbow · พื้นหลัง = solid(ใส่สี) sunset forest lab galaxy aurora · หมวก/สัตว์เลี้ยง = ใช้ emoji ในช่อง “อีโมจิ” (สไตล์ emoji) · ฉายา = text");
+      "ใส่ราคา = วางขายในร้านของนักเรียน · เว้นราคาว่าง = ได้จากกาชาเท่านั้น (ต้องไปเพิ่มในแท็บกาชา ชนิด “ไอเทมตกแต่ง” ด้วย) · สไตล์ที่ใช้ได้: กรอบ = solid(ใส่สี) ice flame neon gold rainbow · พื้นหลัง = solid(ใส่สี) sunset forest lab galaxy aurora · หมวก/สัตว์เลี้ยง = ใช้ emoji ในช่อง “อีโมจิ” (สไตล์ emoji) · ฉายา = text · ชุด = ใส่ชื่อไฟล์ท้ายในช่องสไตล์ (เช่น space → assets/chars/<คลาส>_space.png) · เอฟเฟค = sparkle bubbles flame ice lightning orbit · ไอเทมถือ = สไตล์ img + ใส่พาธภาพ เช่น assets/items/wand.png");
     await crud(h, { table: "decor_items", order: "slot", defaults: { slot: "frame", key: "solid", rarity: "N", sort: 0, emoji: "✨", active: true },
-      cols: [{ k: "slot", label: "ช่อง", t: "select", opts: () => [["frame", "กรอบ"], ["bg", "พื้นหลัง"], ["hat", "หมวก"], ["pet", "สัตว์เลี้ยง"], ["title", "ฉายา"]] },
+      cols: [{ k: "slot", label: "ช่อง", t: "select", opts: () => [["frame", "กรอบ"], ["bg", "พื้นหลัง"], ["hat", "หมวก"], ["pet", "สัตว์เลี้ยง"], ["title", "ฉายา"], ["outfit", "ชุด"], ["fx", "เอฟเฟค"], ["item", "ไอเทมถือ"]] },
         { k: "name", label: "ชื่อ", w: 140 }, { k: "emoji", label: "อีโมจิ", w: 50 }, { k: "key", label: "สไตล์", w: 80 }, { k: "color", label: "สี (#hex)", w: 80 },
         { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) }, { k: "price", label: "ราคา(เหรียญ)", t: "number", w: 80 },
-        { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
+        { k: "image", label: "ภาพ (ไอเทมถือ)", w: 150 }, { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
   async games(v) {
