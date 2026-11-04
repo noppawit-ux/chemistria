@@ -20,7 +20,7 @@ const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: n
 const TABS = [
   ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
   ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
-  ["achv", "🏅 Achievement"], ["games", "🎮 มินิเกม"], ["settings", "⚙️ ตั้งค่า"],
+  ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["settings", "⚙️ ตั้งค่า"],
 ];
 const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
 const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };
@@ -284,12 +284,14 @@ const TAB = {
     const tot = items.filter((i) => i.active).reduce((a, i) => a + i.weight, 0) || 1;
     const by = {}; items.filter((i) => i.active).forEach((i) => (by[i.rarity] = (by[i.rarity] || 0) + i.weight));
     const privs = must(await sb.from("privileges").select("id,name").order("name"));
+    const decs = must(await sb.from("decor_items").select("id,name").order("name"));
     const h = holder(v, "🎰 ไอเทมในตู้กาชา",
-      `โอกาสออกต่อชนิด: ${["N", "R", "SR", "SSR"].map((r) => `${r} ${(((by[r] || 0) / tot) * 100).toFixed(1)}%`).join(" · ")} (ยังไม่รวมการันตี) · ชนิด coins/exp ใช้ช่อง “ค่า” เป็นจำนวน · ชนิด privilege เลือกสิทธิพิเศษ · cosmetic = อีโมจิอวาตาร์`);
+      `โอกาสออกต่อชนิด: ${["N", "R", "SR", "SSR"].map((r) => `${r} ${(((by[r] || 0) / tot) * 100).toFixed(1)}%`).join(" · ")} (ยังไม่รวมการันตี) · ชนิด coins/exp ใช้ช่อง “ค่า” เป็นจำนวน · ชนิด privilege เลือกสิทธิพิเศษ · ชนิด “ไอเทมตกแต่ง” เลือกไอเทมจากแท็บ 🎨 ตกแต่ง · cosmetic = อีโมจิอวาตาร์`);
     await crud(h, { table: "gacha_items", order: "rarity", defaults: { rarity: "N", kind: "coins", value: 10, weight: 10, active: true, emoji: "🎁" },
       cols: [{ k: "emoji", label: "อีโมจิ", w: 50 }, { k: "name", label: "ชื่อ", w: 160 }, { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) },
-        { k: "kind", label: "ชนิด", t: "select", opts: () => [["coins", "เหรียญ"], ["exp", "EXP"], ["cosmetic", "อวาตาร์"], ["privilege", "สิทธิพิเศษ"]] },
+        { k: "kind", label: "ชนิด", t: "select", opts: () => [["coins", "เหรียญ"], ["exp", "EXP"], ["cosmetic", "อวาตาร์"], ["privilege", "สิทธิพิเศษ"], ["decor", "ไอเทมตกแต่ง"]] },
         { k: "value", label: "ค่า", t: "number", w: 60 }, { k: "privilege_id", label: "สิทธิพิเศษ", t: "select", opts: () => [["", "—"], ...privs.map((p) => [p.id, p.name])] },
+        { k: "decor_id", label: "ไอเทมตกแต่ง", t: "select", opts: () => [["", "—"], ...decs.map((p) => [p.id, p.name])] },
         { k: "image_url", label: "รูป (assets/items/…png)", w: 190 }, { k: "weight", label: "น้ำหนัก", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
@@ -316,6 +318,16 @@ const TAB = {
           ["quests_done", "ทำเควสสำเร็จ"], ["gacha_pulls", "สุ่มกาชา"], ["total_exp", "EXP รวม"], ["level", "เลเวล"]] },
         { k: "threshold", label: "ถึง", t: "number", w: 60 }, { k: "reward_exp", label: "+EXP", t: "number", w: 60 }, { k: "reward_coins", label: "+เหรียญ", t: "number", w: 60 },
         { k: "reward_privilege_id", label: "+สิทธิพิเศษ", t: "select", opts: () => [["", "—"], ...privs.map((p) => [p.id, p.name])] }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async decor(v) {
+    const h = holder(v, "🎨 ไอเทมตกแต่งตัวละคร",
+      "ใส่ราคา = วางขายในร้านของนักเรียน · เว้นราคาว่าง = ได้จากกาชาเท่านั้น (ต้องไปเพิ่มในแท็บกาชา ชนิด “ไอเทมตกแต่ง” ด้วย) · สไตล์ที่ใช้ได้: กรอบ = solid(ใส่สี) ice flame neon gold rainbow · พื้นหลัง = solid(ใส่สี) sunset forest lab galaxy aurora · หมวก/สัตว์เลี้ยง = ใช้ emoji ในช่อง “อีโมจิ” (สไตล์ emoji) · ฉายา = text");
+    await crud(h, { table: "decor_items", order: "slot", defaults: { slot: "frame", key: "solid", rarity: "N", sort: 0, emoji: "✨", active: true },
+      cols: [{ k: "slot", label: "ช่อง", t: "select", opts: () => [["frame", "กรอบ"], ["bg", "พื้นหลัง"], ["hat", "หมวก"], ["pet", "สัตว์เลี้ยง"], ["title", "ฉายา"]] },
+        { k: "name", label: "ชื่อ", w: 140 }, { k: "emoji", label: "อีโมจิ", w: 50 }, { k: "key", label: "สไตล์", w: 80 }, { k: "color", label: "สี (#hex)", w: 80 },
+        { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) }, { k: "price", label: "ราคา(เหรียญ)", t: "number", w: 80 },
+        { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
   async games(v) {
