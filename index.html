@@ -30,17 +30,23 @@ async function showLogin(msg) {
   let classes = [];
   try { classes = (await rpc("list_classes")) || []; } catch (e) { msg = msg || e.message; }
   app.innerHTML = `
-  <div class="login">
-    <img class="hero" src="assets/hero-banner.jpg" alt="" onerror="this.remove()">
-    <div class="card">
-      <h2 class="center">⚗️ Chemistria <span class="muted" style="font-size:.6em">ห้องเรียนครูบุ๊ค</span></h2>
-      ${msg ? `<p class="center" style="color:var(--red)">${esc(msg)}</p>` : ""}
-      <div class="field"><label>ห้อง</label>
-        <select id="lc">${classes.map((c) => `<option value="${esc(c.code)}">${esc(c.name)} · ${esc(c.subject || "")}</option>`).join("")}</select></div>
-      <div class="field"><label>เลขที่</label><input id="ln" type="number" inputmode="numeric" min="1"></div>
-      <div class="field"><label>PIN (ตัวเลข)</label><input id="lp" type="password" inputmode="numeric" autocomplete="off"></div>
-      <button class="btn gold" style="width:100%" id="lbtn">เข้าสู่ระบบ</button>
-      <p class="muted center" style="margin-top:10px">ครั้งแรกใช้ PIN ที่ครูแจก แล้วเปลี่ยนเองได้ในหน้า “หน้าหลัก”</p>
+  <div class="login2">
+    <div class="lg-orbs"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="lg-sym"><span style="--i:0">H</span><span style="--i:1">C</span><span style="--i:2">O</span><span style="--i:3">N</span><span style="--i:4">Na</span><span style="--i:5">Fe</span></div>
+    <div class="lg-cast">
+      <img src="assets/avatars/alchemist.png" alt="" onerror="this.remove()"><img src="assets/avatars/scientist.png" alt="" onerror="this.remove()">
+      <img src="assets/avatars/guardian.png" alt="" onerror="this.remove()"><img src="assets/avatars/seeker.png" alt="" onerror="this.remove()">
+    </div>
+    <div class="lg-card">
+      <div class="lg-logo">⚗️</div>
+      <h1 class="lg-title">Chemistria</h1>
+      <p class="lg-sub">ห้องเรียนเคมีผจญภัย · ครูบุ๊ค</p>
+      ${msg ? `<p class="center" style="color:var(--red);margin:0 0 8px">${esc(msg)}</p>` : ""}
+      <div class="lg-f"><span>🏫</span><select id="lc">${classes.map((c) => `<option value="${esc(c.code)}">${esc(c.name)} · ${esc(c.subject || "")}</option>`).join("")}</select></div>
+      <div class="lg-f"><span>🎫</span><input id="ln" type="number" inputmode="numeric" min="1" placeholder="เลขที่"></div>
+      <div class="lg-f"><span>🔑</span><input id="lp" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN (ตัวเลข)"></div>
+      <button class="btn gold lg-btn" id="lbtn">✨ เข้าสู่ห้องแล็บ</button>
+      <p class="muted center" style="margin:12px 0 0;font-size:.8em">ครั้งแรกใช้ PIN ที่ครูแจก แล้วเปลี่ยนเองได้ในหน้า “หน้าหลัก”</p>
     </div>
   </div>`;
   const go = async () => {
@@ -109,7 +115,7 @@ function stage(cls, ri, dc, sz) {
     <div class="av stage ${b ? "dc-b-" + esc(b.key) : "stg-default"}" style="${dcVar(b)}">
       ${fxHtml(dc.fx)}<div class="st-floor"></div>
       <img class="st-char" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">
-      ${dc.hat ? `<span class="st-hat">${esc(dc.hat.emoji)}</span>` : ""}${dc.pet ? `<span class="st-pet">${esc(dc.pet.emoji)}</span>` : ""}
+      ${dc.hat ? (dc.hat.image ? `<img class="st-hat st-himg" src="${esc(dc.hat.image)}" alt="">` : `<span class="st-hat">${esc(dc.hat.emoji)}</span>`) : ""}${dc.pet ? (dc.pet.image ? `<img class="st-pet st-pimg" src="${esc(dc.pet.image)}" alt="">` : `<span class="st-pet">${esc(dc.pet.emoji)}</span>`) : ""}
       ${dc.item && dc.item.image ? `<img class="st-item" src="${esc(dc.item.image)}" alt="">` : ""}</div></div>`;
 }
 const itemImg = (img, emoji, cls = "ico") => img ? `<img class="${cls}" src="${esc(img)}" alt="">` : esc(emoji || "🎁");
