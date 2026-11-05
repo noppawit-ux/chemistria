@@ -115,6 +115,7 @@ const BATTLE = (() => {
   const pop = (cls, el) => { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 600); };
   /* ----- สไปรต์พิกเซลจาก pixelfx (MIT) ----- */
   function pfx(name, x, y, o = {}) {
+    if (typeof SFX !== "undefined") SFX.fromFx(name, o);
     if (typeof PFX_DATA === "undefined" || !PFX_DATA[name]) return null;
     const m = PFX_DATA[name], sc = o.scale || 1, W = m.w * sc, H = m.h * sc, el = document.createElement("div"); el.className = "pfx";
     Object.assign(el.style, { position: "absolute", width: W + "px", height: H + "px", backgroundImage: `url(assets/pixelfx/${name}.png)`, backgroundSize: `${m.cols * W}px auto`, imageRendering: "pixelated", pointerEvents: "none" });

@@ -693,7 +693,7 @@ body:not([data-tab="home"]) .kbpop{display:none}
 .sp-flash::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,#fff8c4aa,transparent 65%);animation:spflash .7s forwards;pointer-events:none}
 @keyframes spflash{from{opacity:1}to{opacity:0}}
 .sp-fly{position:fixed;z-index:9500;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#ffe27a,#ff9a3c);color:#2a1030;font-weight:800;display:flex;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 0 14px #ffd54a}
-.sp-pop{position:absolute;left:50%;top:38%;transform:translateX(-50%);font-weight:900;font-size:26px;white-space:nowrap;pointer-events:none;animation:sppop 1.2s forwards;text-shadow:0 0 12px #000}
+.sp-pop{position:absolute;left:50%;top:15%;transform:translateX(-50%);font-weight:900;font-size:26px;white-space:nowrap;pointer-events:none;animation:sppop 1.2s forwards;text-shadow:0 0 12px #000}
 .sp-pop.good{color:#7dffb3}.sp-pop.combo{color:#ffb03c;font-size:32px}.sp-pop.bad{color:#ff6b6b}
 @keyframes sppop{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}20%{opacity:1;transform:translate(-50%,0) scale(1.2)}100%{opacity:0;transform:translate(-50%,-46px) scale(1)}}
 .sp-cb{background:#ff7a1c;color:#fff;animation:sppulse .5s}

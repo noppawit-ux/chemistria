@@ -5,6 +5,7 @@ const FX = (() => {
   const L = () => { if (!layer || !layer.isConnected) { layer = document.createElement("div"); layer.id = "fxlayer"; document.body.appendChild(layer); } return layer; };
   const cache = {};
   function play(name, x, y, o = {}) {              // x,y = พิกัดหน้าจอ (px) จุดยึดของเอฟเฟกต์
+    if (typeof SFX !== "undefined") SFX.fromFx(name, o);
     const m = !off() && PFX_DATA[name]; if (!m) return null;
     if (!cache[name]) { cache[name] = new Image(); cache[name].src = `assets/pixelfx/${name}.png`; }
     const sc = o.scale || 2, W = m.w * sc, H = m.h * sc, el = document.createElement("div"); el.className = "pfxg";

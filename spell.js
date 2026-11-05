@@ -38,7 +38,11 @@ const SPELL = (() => {
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const paint = () => GAMES.paint();
   const cur = () => S.spells[S.i];
-  const stageFx = (n) => { try { FX.screen(n, 0.5, 0.45, { scale: 3 }); } catch (e) {} };
+  /* เอฟเฟกต์ในกล่อง: วางในพิกัดของกล่อง (หม้อ/กระดานลิวอิส) แล้วตัดขอบ ไม่ให้ล้นออกนอกกล่อง · fx=สัดส่วน 0–1 ของกว้าง/สูงกล่อง */
+  function box(el, name, fx = 0.5, fy = 0.5, o = {}) {
+    if (!el) return null; el.style.position = "relative"; el.style.overflow = "hidden";
+    return FX.play(name, el.clientWidth * fx + (o.dx || 0), el.clientHeight * fy + (o.dy || 0), { ...o, parent: el });
+  }
   const same = (a, b) => { const k = new Set([...Object.keys(a), ...Object.keys(b)]); for (const x of k) if ((a[x] || 0) !== (b[x] || 0)) return false; return true; };
 
   async function open() { S.screen = "home"; S.st = null; GAMES.setMode("spell"); paint(); try { S.st = await rpc("spell_status", { p_token: tk() }); } catch (e) {} paint(); }
@@ -47,7 +51,7 @@ const SPELL = (() => {
     // ผสมโจทย์สูตรผสมธาตุกับโจทย์โครงสร้างลิวอิส สลับตำแหน่งแบบสุ่ม
     const sp = shuffle(R[level]).slice(0, L.n - L.lw).map((x) => ({ t: "mix", d: x })), lw = shuffle(LW[level]).slice(0, L.lw).map((x) => ({ t: "lew", d: x }));
     S.spells = shuffle(sp.concat(lw));
-    S.t0 = Date.now(); S.screen = "play"; S.msg = ""; setPal(); paint(); stageFx("spell-charge");
+    S.t0 = Date.now(); S.screen = "play"; S.msg = ""; setPal(); paint();
   }
   function setPal() {
     const c = cur(); S.bowl = {}; S.shown = false; S.lw = null;
@@ -71,29 +75,29 @@ const SPELL = (() => {
     const w = $q(".sp-play"); if (!w) return; const e = document.createElement("div"); e.className = "sp-pop " + (cls || ""); e.textContent = t; w.appendChild(e); setTimeout(() => e.remove(), 1300);
   }
   const cls = (q, c, ms) => { const e = $q(q); if (!e) return; e.classList.remove(c); void e.offsetWidth; e.classList.add(c); setTimeout(() => e.classList.remove(c), ms || 600); };
-  function okFx(pot) {
+  function okFx(bx) {
     S.combo++; S.best = Math.max(S.best, S.combo);
-    cls(".sp-play", "sp-flash", 700); cls(".sp-pot", "sp-glow", 900);
-    if (pot) { FX.at(pot, "spell-charge", { scale: 2 }); setTimeout(() => { FX.at(pot, "mana-burst", { scale: 2.4 }); FX.at(pot, "power-star", { scale: 1.8 }); }, 220); }
-    setTimeout(() => FX.screen("magic-missile", 0.5, 0.3, { scale: 3 }), 120);
-    if (S.combo >= 2) { popText("🔥 COMBO ×" + S.combo, "combo"); FX.screen(S.combo >= 4 ? "firework-burst" : "star-fall", 0.5, 0.35, { scale: 3 }); if (S.combo >= 3) FX.later(300, () => FX.screen("sunburst", 0.5, 0.4, { scale: 3 })); }
+    cls(".sp-play", "sp-flash", 700); cls(bx === $q(".sp-lew") ? ".sp-lew" : ".sp-pot", "sp-glow", 900);
+    SFX.play("ok");
+    box(bx, "spell-charge", 0.5, 0.62, { scale: 1.1 });
+    setTimeout(() => { box(bx, "mana-burst", 0.5, 0.6, { scale: 1.5 }); box(bx, "collect-burst", 0.3, 0.55, { scale: 1.1 }); box(bx, "collect-burst", 0.7, 0.55, { scale: 1.1 }); }, 200);
+    if (S.combo >= 2) { popText("🔥 COMBO ×" + S.combo, "combo"); setTimeout(() => { box(bx, S.combo >= 4 ? "firework-burst" : "star-fall", 0.5, 0.7, { scale: 1.0 }); SFX.play("star"); }, 380); }
     else popText("✨ สำเร็จ!", "good");
   }
-  function badFx(pot) {
-    S.combo = 0; cls(".sp-play", "sp-shake", 500); cls(".sp-pot", "sp-boom", 600);
-    if (pot) { FX.at(pot, "small-explosion", { scale: 2 }); FX.at(pot, "hit-spark", { scale: 2 }); }
-    FX.screen("curse", 0.5, 0.5, { scale: 2 }); popText("💥 พลาด!", "bad");
+  function badFx(bx) {
+    S.combo = 0; cls(".sp-play", "sp-shake", 500); cls(bx === $q(".sp-lew") ? ".sp-lew" : ".sp-pot", "sp-boom", 600);
+    SFX.play("bad"); box(bx, "small-explosion", 0.5, 0.75, { scale: 0.9 }); box(bx, "hit-spark", 0.5, 0.5, { scale: 1.2 }); popText("💥 พลาด!", "bad");
   }
 
   /* ---------- สูตรผสมธาตุ ---------- */
-  function add(sym, btn) { if (S.over || S.busy) return; S.bowl[sym] = (S.bowl[sym] || 0) + 1; S.msg = ""; const pot = $q(".sp-pot"); fly(btn, pot, sym); paint(); cls(".sp-pot", "sp-pulse", 350); const b = $q(".sp-pot"); if (b) FX.at(b, "collect-burst", { scale: 1.2 }); }
+  function add(sym, btn) { if (S.over || S.busy) return; S.bowl[sym] = (S.bowl[sym] || 0) + 1; S.msg = ""; const pot = $q(".sp-pot"); fly(btn, pot, sym); paint(); cls(".sp-pot", "sp-pulse", 350); box($q(".sp-pot"), "collect-burst", 0.5, 0.7, { scale: 0.9 }); }
   function remove(sym) { if (S.over || S.busy) return; if (S.bowl[sym] > 1) S.bowl[sym]--; else delete S.bowl[sym]; paint(); }
   function clear() { if (S.busy) return; if (S.lw) { S.lw = { b: S.lw.b.map(() => 1), a: S.lw.a.map(() => 0) }; } else S.bowl = {}; S.msg = ""; paint(); }
   function hint() { if (S.shown || S.busy) return; S.shown = true; S.hints++; paint(); }
 
   /* ---------- โครงสร้างลิวอิส ---------- */
-  function lwBond(i) { if (S.over || S.busy) return; S.lw.b[i] = (S.lw.b[i] % 3) + 1; S.msg = ""; paint(); cls(".sp-lew", "sp-pulse", 300); const e = $q(".sp-lew"); if (e) FX.at(e, "zap-hit", { scale: 1.2, dx: (POS[i][0] - 150) * 0.5, dy: (POS[i][1] - 110) * 0.5 }); }
-  function lwAtom(i) { if (S.over || S.busy) return; S.lw.a[i] = (S.lw.a[i] + 1) % 5; S.msg = ""; paint(); const e = $q(".sp-lew"); if (e) FX.at(e, "mana-burst", { scale: 1, dx: (i ? POS[i - 1][0] : CEN[0]) - 150, dy: (i ? POS[i - 1][1] : CEN[1]) - 110 }); }
+  function lwBond(i) { if (S.over || S.busy) return; S.lw.b[i] = (S.lw.b[i] % 3) + 1; S.msg = ""; paint(); cls(".sp-lew", "sp-pulse", 300); const e = $q(".sp-lew"), pr = (POS[i][0] + CEN[0]) / 2 / 300, py = (POS[i][1] + CEN[1]) / 2 / 220; box(e, "zap-hit", 0.05 + pr * 0.9, 0.12 + py * 0.78, { scale: 0.7 }); SFX.play("zap"); }
+  function lwAtom(i) { if (S.over || S.busy) return; S.lw.a[i] = (S.lw.a[i] + 1) % 5; S.msg = ""; paint(); const e = $q(".sp-lew"), ax = (i ? POS[i - 1][0] : CEN[0]) / 300, ay = (i ? POS[i - 1][1] : CEN[1]) / 220; box(e, "collect-burst", 0.05 + ax * 0.9, 0.12 + ay * 0.78, { scale: 0.8 }); }
   const lwTotal = () => S.lw.b.reduce((x, y) => x + y * 2, 0) + S.lw.a.reduce((x, y) => x + y * 2, 0);
   const lwWant = (d) => d[4].reduce((x, t) => x + t[1] * 2 + t[2] * 2, 0) + d[5] * 2;
   const lwOk = (d) => S.lw.a[0] === d[5] && d[4].every((t, i) => S.lw.b[i] === t[1] && S.lw.a[i + 1] === t[2]);
@@ -118,7 +122,7 @@ const SPELL = (() => {
     try {
       const r = await rpc("spell_submit", { p_token: tk(), p_score: score, p_spells: n, p_seconds: secs });
       S.res = { ...r, secs, wrong: S.wrong, hints: S.hints, level: S.level, combo: S.best }; S.screen = "res"; await load();
-      setTimeout(() => { if (score >= 90) { FX.victory(); FX.screen("firework-burst", 0.3, 0.4, { scale: 3 }); FX.later(350, () => FX.screen("firework-burst", 0.7, 0.35, { scale: 3 })); } else FX.screen("confetti", 0.5, 0.7, { scale: 3 }); }, 300);
+      setTimeout(() => { if (score >= 90) { FX.victory(); SFX.play("win"); } else FX.screen("confetti", 0.5, 0.7, { scale: 3 }); }, 300);
     } catch (e) { toast(e.message); S.screen = "home"; }
     S.busy = false; go("game");
   }

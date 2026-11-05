@@ -73,13 +73,16 @@ const BGM = (() => {
 
   /* ---------- UI ---------- */
   let btn = null, panel = null;
-  function paintBtn() { if (btn) btn.textContent = st.on ? "🎵" : "🔇"; const sw = panel && panel.querySelector("input[type=checkbox]"); if (sw) sw.checked = st.on; }
+  function paintBtn() { if (btn) btn.textContent = st.on ? "🎵" : "🔇"; const sw = panel && panel.querySelector("input[type=checkbox]:not(.sfxon)"); if (sw) sw.checked = st.on; }
   function ui() {
     btn = document.createElement("button"); btn.className = "bgm-btn"; btn.type = "button"; btn.title = "เพลงประกอบ"; btn.setAttribute("aria-label", "ตั้งค่าเพลงประกอบ");
     panel = document.createElement("div"); panel.className = "bgm-panel"; panel.hidden = true;
-    panel.innerHTML = `<label class="bgm-row"><span>🎵 เพลงประกอบ</span><input type="checkbox"></label><label class="bgm-row"><span>🔈</span><input type="range" min="0" max="100"><span>🔊</span></label><small>เพลงสังเคราะห์สด ไม่ใช้ไฟล์เสียง</small>`;
+    panel.innerHTML = `<label class="bgm-row"><span>🎵 เพลงประกอบ</span><input type="checkbox"></label><label class="bgm-row"><span>🔈</span><input type="range" min="0" max="100"><span>🔊</span></label>
+      <label class="bgm-row"><span>🔔 เสียงเอฟเฟกต์</span><input type="checkbox" class="sfxon"></label><label class="bgm-row"><span>🔈</span><input type="range" min="0" max="100" class="sfxvol"><span>🔊</span></label><small>เพลงสังเคราะห์สด ไม่ใช้ไฟล์เสียง</small>`;
     document.body.appendChild(btn); document.body.appendChild(panel);
-    const sw = panel.querySelector("input[type=checkbox]"), rg = panel.querySelector("input[type=range]"); rg.value = Math.round(st.vol * 100);
+    const sw = panel.querySelector("input[type=checkbox]:not(.sfxon)"), rg = panel.querySelector("input[type=range]:not(.sfxvol)"); rg.value = Math.round(st.vol * 100);
+    const fo = panel.querySelector(".sfxon"), fv = panel.querySelector(".sfxvol");
+    if (typeof SFX !== "undefined") { const s0 = SFX.state(); fo.checked = s0.on; fv.value = Math.round(s0.vol * 100); fo.onchange = () => { SFX.set(fo.checked); if (fo.checked) SFX.play("ok"); }; fv.onchange = () => { SFX.set(null, fv.value / 100); SFX.play("coin"); }; fv.oninput = () => SFX.set(null, fv.value / 100); }
     btn.onclick = (e) => { e.stopPropagation(); panel.hidden = !panel.hidden; };
     document.addEventListener("click", (e) => { if (!panel.hidden && !panel.contains(e.target) && e.target !== btn) panel.hidden = true; });
     sw.onchange = () => { st.on = sw.checked; save(); started = true; init(); if (ctx.state === "suspended") ctx.resume(); apply(); };
