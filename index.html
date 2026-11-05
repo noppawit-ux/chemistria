@@ -47,6 +47,7 @@ async function showLogin(msg) {
       <div class="lg-f"><span>🔑</span><input id="lp" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN (ตัวเลข)"></div>
       <button class="btn gold lg-btn" id="lbtn">✨ เข้าสู่ห้องแล็บ</button>
       <p class="muted center" style="margin:12px 0 0;font-size:.8em">ครั้งแรกใช้ PIN ที่ครูแจก แล้วเปลี่ยนเองได้ในหน้า “หน้าหลัก”</p>
+      <p class="center" style="margin:6px 0 0"><a href="#" id="gmlink" style="color:var(--muted,#9a8fc9);font-size:.75em;text-decoration:none">🛠️ ไอดี GM</a></p>
     </div>
   </div>`;
   const go = async () => {
@@ -59,6 +60,7 @@ async function showLogin(msg) {
     } catch (e) { toast(e.message); btn.disabled = false; }
   };
   $("#lbtn").onclick = go;
+  $("#gmlink").onclick = (e) => { e.preventDefault(); const sel = $("#lc"); if (![...sel.options].some((o) => o.value === "GM")) sel.add(new Option("🛠️ GM (ห้องทดสอบ)", "GM")); sel.value = "GM"; $("#ln").value = 1; $("#lp").focus(); };
   $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
 
