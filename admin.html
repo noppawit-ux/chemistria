@@ -540,6 +540,15 @@ const TAB = {
       <div style="width:220px"><label>ให้นักเรียนเห็นคะแนนตัวเอง</label><select data-set="show_scores"><option value="1" ${set.show_scores !== "0" ? "selected" : ""}>แสดง</option><option value="0" ${set.show_scores === "0" ? "selected" : ""}>ซ่อน</option></select></div></div></div>`;
     v.onchange = async (e) => { const k = e.target.dataset.set; if (!k) return;
       await run(async () => must(await sb.from("app_settings").upsert({ key: k, value: String(e.target.value) })), "บันทึกแล้ว ✅"); };
+    const hg = holder(v, "🛠️ ไอดี GM (ปลดล็อคทุกอย่าง)", "บัญชีนักเรียนพิเศษสำหรับทดสอบ/สาธิต: ปลดล็อคไอเทมตกแต่ง ไอเทมกาชา Achievement สิทธิพิเศษ ทั้งหมด · EXP/เหรียญสูงสุด · สเตตัสเต็ม · อยู่ในห้องลับ “GM” แยกจากห้องจริง (ไม่ปรากฏในรายชื่อห้องหน้าล็อกอิน และไม่กระทบอันดับ/บอส/ทีม) · ล็อกอิน: รหัสห้อง GM · เลขที่ 1 · PIN ที่ตั้งไว้");
+    hg.innerHTML = `<div class="row"><div style="width:200px"><label>PIN ของไอดี GM (ตัวเลข 4-8 หลัก)</label><input id="gmPin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="ตั้ง PIN เอง"></div>
+      <button class="btn gold" id="gmMake">🛠️ สร้าง / รีเซ็ต PIN + ปลดล็อคทุกอย่าง</button><button class="btn ghost" id="gmSync">🔄 ซิงก์ของใหม่ให้ GM</button></div><p class="muted" id="gmMsg"></p>`;
+    $("#gmMake").onclick = () => run(async () => {
+      const pin = $("#gmPin").value.trim(); if (!/^[0-9]{4,8}$/.test(pin)) throw new Error("PIN ต้องเป็นตัวเลข 4-8 หลัก");
+      must(await sb.rpc("admin_create_gm", { p_pin: pin })); $("#gmPin").value = "";
+      $("#gmMsg").textContent = "✅ พร้อมใช้งาน — ล็อกอินที่หน้านักเรียนด้วยรหัสห้อง GM · เลขที่ 1 · PIN ที่ตั้งไว้ (รีโหลดหน้านี้เพื่อให้ห้อง GM ขึ้นในตัวเลือกห้อง)";
+    }, "สร้างไอดี GM แล้ว ✅");
+    $("#gmSync").onclick = () => run(async () => { const n = must(await sb.rpc("admin_gm_sync")); $("#gmMsg").textContent = n ? "ซิงก์ของใหม่แล้ว ✅" : "ยังไม่มีไอดี GM — กดสร้างก่อน"; }, "ซิงก์แล้ว");
     const h = holder(v, "🏫 ห้องเรียน", "รหัสห้องใช้ตอนนักเรียนล็อกอิน (เช่น M6-2) · เพดานคะแนนพิเศษคือคะแนนพิเศษสูงสุดที่รวมได้");
     await crud(h, { table: "classes", order: "name", noDelete: false, defaults: { bonus_cap: 5, term: "2569/2" },
       cols: [{ k: "code", label: "รหัสห้อง", w: 80 }, { k: "name", label: "ชื่อห้อง", w: 80 }, { k: "subject_code", label: "รหัสวิชา", w: 80 }, { k: "subject_name", label: "ชื่อวิชา", w: 160 },
