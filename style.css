@@ -716,3 +716,44 @@ body:not([data-tab="home"]) .kbpop{display:none}
 .bgm-panel[hidden]{display:none}
 .bgm-row{display:flex;align-items:center;gap:8px;justify-content:space-between}.bgm-row input[type=range]{flex:1}
 .bgm-panel small{opacity:.6;font-size:.7em}
+
+/* ===== รอบ 30: จัดวางองค์ประกอบใหม่ให้ใช้งานง่ายขึ้น (มือถือเป็นหลัก) ===== */
+html{-webkit-text-size-adjust:100%}
+body{padding-bottom:max(64px,env(safe-area-inset-bottom))}
+img,svg,video,canvas{max-width:100%}
+.card p,.card .muted,.card .item .grow{overflow-wrap:anywhere}
+.btn.small,.btn.ghost.small{min-height:36px}
+.btn,.tab,.navbtn,.gm-tile,.sp-el{touch-action:manipulation}
+/* ปุ่มเพลง/เสียง: เล็กลง โปร่งใสขึ้น ไม่บังเนื้อหา */
+.bgm-btn{width:36px;height:36px;font-size:17px;opacity:.72;left:10px;bottom:max(10px,env(safe-area-inset-bottom));transition:opacity .2s}
+.bgm-btn:hover,.bgm-btn:focus{opacity:1}
+.bgm-panel{left:10px;bottom:max(54px,calc(env(safe-area-inset-bottom) + 44px))}
+@media(max-width:560px){
+  /* รายการ: ป้าย/ปุ่มด้านขวาลงมาอยู่ใต้ข้อความ แทนการบีบข้อความเป็นหลายบรรทัด */
+  .item{flex-wrap:wrap;row-gap:6px}
+  .item>.grow{flex:1 1 58%;min-width:0}
+  .item>.tag,.item>.pill,.item>.btn{margin-left:auto}
+  /* หัวโปรไฟล์: ย่อให้กระชับ */
+  .profile{gap:8px}
+  .profile .avwrap{margin:4px 6px 16px 10px}
+  .profile h2{font-size:1.15rem;line-height:1.25}
+  .profile h2 .muted{display:block;font-size:.78rem;font-weight:500}
+  /* แท็บอื่นที่ไม่ใช่หน้าหลัก: ซ่อนการ์ดแรงค์ใหญ่ ให้เนื้อหาขึ้นมาอยู่ในจอเร็วขึ้น */
+  body:not([data-tab="home"]) .rankcard{display:none}
+  /* การ์ดเกม/รายการ */
+  .gm-card{padding:12px}.gm-ico{font-size:34px}
+  .gm-grid{gap:10px}
+  .card{padding:12px}
+  .gm-board{gap:8px}
+  .sp-pal{grid-template-columns:repeat(4,1fr);gap:6px}
+  .sp-el small{display:none}
+  .celbox{padding:18px 14px 14px}
+}
+/* จอกว้าง: จำกัดความกว้างอ่านง่าย และตารางไม่ล้นจอ */
+.tbl-wrap,.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{max-width:100%}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:700px){
+  .scroll>table{min-width:640px}
+  .scroll>table td:last-child{white-space:nowrap}
+}
