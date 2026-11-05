@@ -65,7 +65,7 @@ async function showLogin(msg) {
   $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
 
-function logout() { localStorage.removeItem(TOKEN_KEY); D = null; showLogin(); }
+function logout() { localStorage.removeItem(TOKEN_KEY); D = null; try { sessionStorage.removeItem("kb_seen"); } catch (e) {} const k = document.getElementById("kbpop"); if (k) k.remove(); showLogin(); }
 async function changePin() {
   const o = prompt("PIN เดิม"); if (o === null) return;
   const n = prompt("PIN ใหม่ (ตัวเลข 4-6 หลัก)"); if (n === null) return;
@@ -82,7 +82,7 @@ async function load() {
     try { X = (await rpc("student_extras", { p_token: tk() })) || {}; } catch (e) { X = {}; }
     DRAFT = null;
     try { B = (await rpc("board_list", { p_token: tk() })) || { posts: [], unread: 0 }; } catch (e) { B = { posts: [], unread: 0 }; }
-    render();
+    render(); kbAuto();
   } catch (e) {
     localStorage.removeItem(TOKEN_KEY);
     showLogin(e.message);
@@ -259,6 +259,41 @@ function submitBtn(a) {
   if (!canSubmit(a)) return "";
   if (m === "photo") return `<label class="btn small mint" style="cursor:pointer">📷 ส่งรูปงาน<input type="file" accept="image/*" hidden onchange="submitPhoto('${a.id}',this)"></label>`;
   return `<button class="btn small mint" onclick="submitOnline('${a.id}','${esc(a.title).replace(/'/g, "")}')">ส่งงาน ✔</button>`;
+}
+/* ===== ป๊อปอัปครูบุ๊ค: คำแนะนำ/กำลังใจ ===== */
+const KB_CHEER = ["ตั้งใจเรียนนะ แล้วเคมีจะเป็นเรื่องสนุก! ⚗️", "ผิดไม่เป็นไร ลองใหม่ได้เสมอ นักเคมีเก่งๆ ก็เริ่มจากทดลองพลาดมาก่อน 💪", "เก่งมากที่เข้ามาวันนี้ ครูภูมิใจนะ ✨", "สะสมไอเทมไปแต่งตัวให้เท่ที่สุดในห้อง 🎨", "ทำเควสประจำวันให้ครบ EXP จะขึ้นไวมาก 🗺️", "จำไว้นะ ความสม่ำเสมอชนะความเก่งเสมอ 🔥", "ถามครูได้ทุกเรื่องเลย ไม่มีคำถามโง่ๆ ในห้องแล็บของเรา 🧪"];
+function kbMessages() {
+  const m = [], now = D.assignments.filter((a) => !a.status && a.due_date).map((a) => ({ a, n: dayDiff(a.due_date) })).sort((x, y) => x.n - y.n);
+  const late = now.filter((x) => x.n < 0), soon = now.filter((x) => x.n >= 0 && x.n <= 3);
+  if (late.length) m.push(`📌 มีงานเลยกำหนด ${late.length} ชิ้น (${late[0].a.title || "งาน"}) ส่งช้ายังได้ EXP ครึ่งหนึ่งนะ รีบส่งเลย!`);
+  if (soon.length) m.push(`⏰ “${soon[0].a.title || "งาน"}” ${soon[0].n === 0 ? "ครบกำหนดวันนี้" : "อีก " + soon[0].n + " วันครบกำหนด"} อย่าลืมส่งนะ`);
+  if (!now.length) m.push("✅ ไม่มีงานค้างเลย เยี่ยมมาก! ไปทำเควสหรือเล่นมินิเกมต่อได้เลย");
+  if ((X.free_pulls || 0) > 0) m.push(`🎟️ เธอมีตั๋วสุ่มกาชาฟรี ${X.free_pulls} ใบ อย่าลืมไปหมุนนะ`);
+  const b = X.boss; if (b && !b.defeated && !b.ended) m.push(`⚔️ บอส ${b.name || "ประจำสัปดาห์"} เหลือ HP ${b.hp}/${b.max_hp} ช่วยกันทำเควสโจมตีเลย!`);
+  if (b && b.can_claim) m.push("🎁 ปราบบอสสำเร็จแล้ว! กดรับรางวัลได้เลย");
+  const st = (D.attendance_summary || {}).streak; if (st >= 2) m.push(`🔥 มาติดกัน ${st} คาบแล้ว รักษาสตรีคไว้นะ!`);
+  if (D.rank_info && D.rank_info.next_exp != null && D.rank_info.exp_to_next != null && D.rank_info.exp_to_next <= 60) m.push(`🏆 อีกแค่ ${D.rank_info.exp_to_next} EXP ก็เลื่อนแรงค์แล้ว สู้ๆ!`);
+  return m.concat(KB_CHEER.slice().sort(() => Math.random() - 0.5).slice(0, 3));
+}
+let KBI = 0, KBMSGS = [], KBT = null;
+function kbShow(open) {
+  let el = $("#kbpop"); if (!el) { el = document.createElement("div"); el.id = "kbpop"; document.body.appendChild(el); }
+  if (!D) { el.remove(); return; }
+  if (!KBMSGS.length) KBMSGS = kbMessages();
+  const msg = KBMSGS[KBI % KBMSGS.length];
+  el.className = "kbpop" + (open ? " open" : "");
+  el.innerHTML = `<div class="kbbub"><button class="kbx" aria-label="ปิด" onclick="kbClose()">✕</button><div class="kbn">ครูบุ๊ค</div><div class="kbm">${esc(msg)}</div>
+      <div class="kbb"><button class="btn small ghost" onclick="kbNext()">ข้อความถัดไป ›</button></div></div>
+    <button class="kbav" aria-label="ครูบุ๊ค" onclick="kbToggle()"><img src="assets/chars/krubook.png" alt="" onerror="this.replaceWith(document.createTextNode('🧙'))"></button>`;
+  clearTimeout(KBT); if (open) KBT = setTimeout(kbClose, 14000);
+}
+const kbNext = () => { KBI++; kbShow(true); };
+const kbClose = () => { clearTimeout(KBT); const e = $("#kbpop"); if (e) e.classList.remove("open"); };
+const kbToggle = () => { const e = $("#kbpop"); if (e && e.classList.contains("open")) kbClose(); else { KBI++; kbShow(true); } };
+function kbAuto() {   // เด้งอัตโนมัติ 1 ครั้งต่อการเข้าสู่ระบบ/โหลดหน้า เฉพาะหน้าหลัก
+  KBMSGS = []; KBI = 0; kbShow(false);
+  let seen = false; try { seen = sessionStorage.getItem("kb_seen") === "1"; } catch (e) {}
+  if (!seen && tab === "home") { setTimeout(() => { if (tab === "home") kbShow(true); }, 700); try { sessionStorage.setItem("kb_seen", "1"); } catch (e) {} }
 }
 function remindHtml() {
   const list = D.assignments.filter((a) => !a.status && a.due_date).map((a) => ({ a, n: dayDiff(a.due_date) }))
