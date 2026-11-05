@@ -412,3 +412,4 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
 @media(max-width:560px){.bemoji{width:76px}.bemoji img{width:76px;height:76px}}
 .stb{display:block;font-size:11px;color:var(--gold2);margin-top:2px}
 .medal{height:72px;display:flex;align-items:center;justify-content:center;margin-bottom:4px}.medal img{max-height:72px;max-width:100%;filter:drop-shadow(0 2px 6px #0008)}.medal.off img{filter:grayscale(1) brightness(.6)}
+.abl{display:block;font-size:11px;color:#c9b8ff;margin-top:2px;line-height:1.3}
