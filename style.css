@@ -365,7 +365,7 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:lgspin 6s linear infinite}
 @property --a{syntax:"<angle>";inherits:false;initial-value:0deg}
 @keyframes lgspin{to{--a:360deg}}
-.lg-logo{text-align:center;font-size:40px;line-height:1;filter:drop-shadow(0 0 14px #9b6bff)}
+.lg-logo{text-align:center;line-height:1;filter:drop-shadow(0 0 14px #9b6bff)}.lg-logo img{border-radius:20px;display:block;margin:0 auto}
 .lg-title{text-align:center;margin:4px 0 0;font-size:2.1rem;letter-spacing:.5px;background:linear-gradient(90deg,#ffdf8a,#f6c453,#ff9ad5,#9b6bff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lg-sub{text-align:center;color:var(--muted);margin:0 0 18px;font-size:.9rem}
 .lg-f{display:flex;align-items:center;gap:10px;background:#0006;border:1px solid #ffffff22;border-radius:14px;padding:4px 12px;margin-bottom:10px;transition:.2s}
