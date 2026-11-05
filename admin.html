@@ -138,7 +138,7 @@ const TAB = {
     v.innerHTML = `<div class="card"><h3>นักเรียน ${esc(clsName())} (${st.length} คน)</h3>
       <div class="scroll"><table><thead><tr><th>เลขที่</th><th>ชื่อ</th><th>อวาตาร์</th><th>Lv</th><th>EXP</th><th>เหรียญ</th><th></th></tr></thead><tbody>
       ${st.map((s) => `<tr><td>${s.no}</td><td><input value="${esc(s.name)}" data-id="${s.id}" data-k="name" style="min-width:160px"></td>
-        <td>${esc(s.avatar)}</td><td>${Math.floor(Math.sqrt(s.exp / 40)) + 1}</td><td>${s.exp}</td><td>${s.coins}</td>
+        <td>${(s.avatar || "").startsWith("data:image/") ? `<img src="${esc(s.avatar)}" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;vertical-align:middle"> <button class="btn small ghost" data-clrph="${s.id}">ลบรูป</button>` : esc(s.avatar)}</td><td>${Math.floor(Math.sqrt(s.exp / 40)) + 1}</td><td>${s.exp}</td><td>${s.coins}</td>
         <td><button class="btn small ghost" data-adj="${s.id}">± EXP/เหรียญ</button>
         <button class="btn small ghost" data-pin="${s.id}">รีเซ็ต PIN</button>
         <button class="btn small red" data-del="${s.id}">ลบ</button></td></tr>`).join("")}</tbody></table></div></div>
@@ -156,6 +156,8 @@ const TAB = {
         const c = prompt("เพิ่ม/ลบ เหรียญ", "0"); if (c === null) return;
         const r = prompt("เหตุผล", "ครูปรับให้"); if (r === null) return;
         await run(() => rpc("admin_adjust", { p_student: d.adj, p_exp: Number(x) || 0, p_coins: Number(c) || 0, p_reason: r }), "ปรับแล้ว ✅"); renderTab();
+      } else if (d.clrph) {
+        if (confirm("ลบรูปโปรไฟล์ที่นักเรียนอัปโหลด (กลับเป็นรูปเริ่มต้น)?")) { await run(async () => must(await sb.from("students").update({ avatar: "🧪" }).eq("id", d.clrph)), "ลบรูปแล้ว ✅"); renderTab(); }
       } else if (d.pin) {
         const p = prompt("PIN ใหม่ (ตัวเลข)", "1234"); if (!p) return;
         await run(() => rpc("admin_reset_pin", { p_student: d.pin, p_pin: p }), "รีเซ็ต PIN แล้ว ✅");
@@ -493,7 +495,7 @@ const TAB = {
   async games(v) {
     const set = Object.fromEntries(must(await sb.from("app_settings").select("*")).map((x) => [x.key, x.value]));
     const f = [["game_daily_cap_exp", "เพดาน EXP จากมินิเกมต่อวัน", 40], ["quiz_count", "จำนวนข้อควิซประจำวัน", 5], ["quiz_exp_per_correct", "EXP ต่อข้อที่ตอบถูก", 4],
-      ["quiz_perfect_bonus", "โบนัส EXP เมื่อถูกทุกข้อ", 5], ["battle_rewards_per_day", "รอบต่อสู้มอนสเตอร์ที่ได้รางวัลต่อวัน", 3], ["duel_rewards_per_day", "รอบท้าดวลเพื่อนที่ได้รางวัลต่อวัน", 5], ["match_max_exp", "EXP สูงสุดต่อรอบเกมจับคู่ธาตุ", 10], ["match_plays_per_day", "จำนวนรอบจับคู่ที่ได้รางวัลต่อวัน", 3]];
+      ["quiz_perfect_bonus", "โบนัส EXP เมื่อถูกทุกข้อ", 5], ["battle_rewards_per_day", "รอบต่อสู้มอนสเตอร์ที่ได้รางวัลต่อวัน", 3], ["duel_rewards_per_day", "รอบท้าดวลเพื่อนที่ได้รางวัลต่อวัน", 5], ["allow_student_photo", "ให้นักเรียนอัปโหลดรูปโปรไฟล์เอง (1=เปิด, 0=ปิด)", 1], ["match_max_exp", "EXP สูงสุดต่อรอบเกมจับคู่ธาตุ", 10], ["match_plays_per_day", "จำนวนรอบจับคู่ที่ได้รางวัลต่อวัน", 3]];
     const day = todayStr();
     const plays = must(await sb.from("game_plays").select("game,student_id,exp,students(class_id)").eq("play_date", day));
     const mine = plays.filter((p) => p.students?.class_id === S.cls);
