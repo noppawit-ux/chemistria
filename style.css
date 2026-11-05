@@ -464,3 +464,8 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
 .kbb .btn{color:#4a2f9a;border-color:#b9a4ee}
 @keyframes kbfloat{50%{transform:translateY(-5px)}}
 @media(prefers-reduced-motion:reduce){.kbav{animation:none}}
+.lg-cast{align-items:flex-end}
+.lg-cast img.kbstar{width:auto;height:168px;margin:0 -6px;position:relative;z-index:3;animation:lgbob 3.2s ease-in-out infinite,kbglow 2.4s ease-in-out infinite alternate;animation-delay:0s}
+@keyframes kbglow{from{filter:drop-shadow(0 0 8px rgba(255,216,107,.5)) drop-shadow(0 8px 10px #0008)}to{filter:drop-shadow(0 0 22px rgba(255,216,107,.95)) drop-shadow(0 8px 10px #0008)}}
+@media(max-width:380px){.lg-cast img{width:70px;height:70px}.lg-cast img.kbstar{height:140px;width:auto}}
+@media(prefers-reduced-motion:reduce){.lg-cast img.kbstar{animation:none}}
