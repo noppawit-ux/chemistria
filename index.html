@@ -16,8 +16,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="lib.js"></script>
-<script src="games.js"></script>
 <script src="pixelfx.js"></script>
+<script src="fx.js"></script>
+<script src="games.js"></script>
 <script src="battle.js"></script>
 <script>
 const TABS = [
@@ -64,6 +65,7 @@ async function showLogin(msg) {
     } catch (e) { toast(e.message); btn.disabled = false; }
   };
   $("#lbtn").onclick = go;
+  setTimeout(() => { if (typeof FX === "undefined" || !$(".kbstar")) return; FX.at(".kbstar", "halo", { scale: 2, loop: true, dy: -40 }); FX.at(".lg-cast", "spirit-flame", { scale: 2, loop: true, dx: -150, foot: true }); FX.at(".lg-cast", "spirit-flame", { scale: 2, loop: true, dx: 150, foot: true }); }, 400);
   $("#gmlink").onclick = (e) => { e.preventDefault(); const sel = $("#lc"); if (![...sel.options].some((o) => o.value === "GM")) sel.add(new Option("🛠️ GM (ห้องทดสอบ)", "GM")); sel.value = "GM"; $("#ln").value = 1; $("#lp").focus(); };
   $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
@@ -80,16 +82,30 @@ const tk = () => localStorage.getItem(TOKEN_KEY);
 async function load() {
   if (!tk()) return showLogin();
   try {
-    D = await rpc("student_dashboard", { p_token: tk() });
+    const prev = D; D = await rpc("student_dashboard", { p_token: tk() });
     try { HOF = (await rpc("hall_of_fame", { p_token: tk() })) || []; } catch (e) { HOF = []; }
     try { X = (await rpc("student_extras", { p_token: tk() })) || {}; } catch (e) { X = {}; }
-    DRAFT = null;
+    DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren();
     try { B = (await rpc("board_list", { p_token: tk() })) || { posts: [], unread: 0 }; } catch (e) { B = { posts: [], unread: 0 }; }
-    render(); kbAuto();
+    render(); kbAuto(); fxDiff(prev);
   } catch (e) {
     localStorage.removeItem(TOKEN_KEY);
     showLogin(e.message);
   }
+}
+
+/* เอฟเฟกต์พิกเซลเมื่อค่าเปลี่ยน: เลเวล/แรงก์/เหรียญ/EXP/เหรียญตรา */
+function fxDiff(o) {
+  if (typeof FX === "undefined" || !o || !o.student || !D || !D.student || o.student.id !== D.student.id) return;
+  const a = o.student, b = D.student;
+  setTimeout(() => {
+    if (b.level > a.level) FX.levelUp();
+    else if (o.rank_info && D.rank_info && o.rank_info.key !== D.rank_info.key) FX.rankUp();
+    if (b.coins > a.coins) FX.coins(".profile .coin", Math.min(8, 3 + Math.floor((b.coins - a.coins) / 10)));
+    if (b.exp > a.exp) FX.xp(".lvgauge", 3);
+    const had = new Set((o.achievements || []).filter((x) => x.earned_at).map((x) => x.id));
+    if ((D.achievements || []).some((x) => x.earned_at && !had.has(x.id))) { FX.screen("power-star", 0.5, 0.4, { scale: 4 }); FX.screen("confetti", 0.5, 0.7, { scale: 4 }); }
+  }, 250);
 }
 
 /* ---------------- ตัวช่วยภาพ ---------------- */
@@ -289,6 +305,7 @@ function kbShow(open) {
   el.innerHTML = `<div class="kbbub"><button class="kbx" aria-label="ปิด" onclick="kbClose()">✕</button><div class="kbn">ครูบุ๊ค</div><div class="kbm">${esc(msg)}</div>
       <div class="kbb"><button class="btn small ghost" onclick="kbNext()">ข้อความถัดไป ›</button></div></div>
     <button class="kbav" aria-label="ครูบุ๊ค" onclick="kbToggle()"><img src="assets/chars/krubook.png" alt="" onerror="this.replaceWith(document.createTextNode('🧙'))"></button>`;
+  if (open && typeof FX !== "undefined") FX.at(".kbav", "mana-burst", { scale: 1.2 });
   clearTimeout(KBT); if (open) KBT = setTimeout(kbClose, 14000);
 }
 const kbNext = () => { KBI++; kbShow(true); };
@@ -601,16 +618,16 @@ const buy = (id) => confirm("ยืนยันการแลกสิทธิ
 const usePriv = (id) => confirm("ขอใช้สิทธิ์นี้ ครูจะเป็นผู้อนุมัติ")
   && act(() => rpc("request_privilege", { p_token: tk(), p_redemption: id }), "ส่งคำขอให้ครูแล้ว");
 const pickClass = (k, n) => confirm("เลือกคลาส “" + n + "” ?") && act(() => rpc("choose_class", { p_token: tk(), p_key: k }), "เปลี่ยนคลาสแล้ว ⚔️");
-const buyDecor = (id, n, p) => confirm(`ซื้อ “${n}” ราคา ${p} เหรียญ?`) && act(() => rpc("buy_decor", { p_token: tk(), p_item: id }), "ซื้อสำเร็จ 🎉 กด “สวมใส่” ได้เลย");
-const pickDecor = (slot, id) => { const it = id ? (D.decor_catalog || []).find((d) => d.id === id) : null; if (it) DRAFT[slot] = it; else delete DRAFT[slot]; render(); };
+const buyDecor = (id, n, p) => confirm(`ซื้อ “${n}” ราคา ${p} เหรียญ?`) && act(() => rpc("buy_decor", { p_token: tk(), p_item: id }), "ซื้อสำเร็จ 🎉 กด “สวมใส่” ได้เลย").then(() => FX.coins(".coin", 4));
+const pickDecor = (slot, id) => { const it = id ? (D.decor_catalog || []).find((d) => d.id === id) : null; if (it) DRAFT[slot] = it; else delete DRAFT[slot]; render(); if (it) FX.at(".stg", "spirit-flame", { scale: 1.6, foot: true }); };
 const resetDraft = () => { DRAFT = null; render(); };
 const saveDraft = () => act(async () => {
   const eq = D.student.decor || {};
   for (const [k] of SLOTS) { const cur = eq[k] ? eq[k].id : null, nxt = DRAFT[k] ? DRAFT[k].id : null; if (cur !== nxt) await rpc("equip_decor", { p_token: tk(), p_slot: k, p_item: nxt }); }
-}, "บันทึกการแต่งตัวแล้ว ✨");
+}, "บันทึกการแต่งตัวแล้ว ✨").then(() => setTimeout(() => FX.at(".stg", "mana-burst", { scale: 2.2 }), 300));
 const setGender = (g) => act(() => rpc("set_gender", { p_token: tk(), p_gender: g }), "เปลี่ยนเพศตัวละครแล้ว ✨");
 const equipDecor = (slot, id) => act(() => rpc("equip_decor", { p_token: tk(), p_slot: slot, p_item: id }), id ? "สวมใส่แล้ว ✨" : "ถอดออกแล้ว");
-const claimBoss = () => act(() => rpc("boss_claim", { p_token: tk() }), "รับรางวัลปราบบอสแล้ว 🎉");
+const claimBoss = () => act(() => rpc("boss_claim", { p_token: tk() }), "รับรางวัลปราบบอสแล้ว 🎉").then((r) => { FX.victory(); return r; });
 const submitOnline = (id, t) => confirm(`ส่งงาน “${t}” ?`) && act(async () => { const r = await rpc("submit_assignment", { p_token: tk(), p_assignment: id }); toast(`ส่งแล้ว ✅ ได้ +${r.exp} EXP ทันที`, 3500); return r; });
 async function shrink(file, max = 1280, q = 0.72) {
   let bmp; try { bmp = await createImageBitmap(file, { imageOrientation: "from-image" }); } catch (e) { bmp = await createImageBitmap(file); }
@@ -644,7 +661,7 @@ async function pull(n) {
       <div class="f"><div><div class="e">${itemImg(it.image, it.emoji, "gi")}</div><div class="rar">${it.rarity}</div><div class="n">${esc(it.name)}</div>${it.kind === "decor" ? `<div class="n muted">${it.dup_refund ? "ซ้ำ! คืน +" + it.dup_refund + "🪙" : "🎨 ไอเทมตกแต่งใหม่!"}</div>` : ""}</div></div></div></div>`).join("")}</div>
       <p><button class="btn gold" onclick="closeOv()">รับของ</button></p>`;
     ov.classList.add("on");
-    r.items.forEach((_, i) => setTimeout(() => $("#gc" + i)?.classList.add("flip"), 350 + i * 330));
+    r.items.forEach((it, i) => { setTimeout(() => $("#gc" + i)?.classList.add("flip"), 350 + i * 330); setTimeout(() => FX.gacha("#gc" + i, it.rarity), 600 + i * 330); });
     await load();
   } catch (e) { toast(e.message); }
 }

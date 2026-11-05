@@ -573,3 +573,5 @@ body:not([data-tab="home"]) .kbpop{display:none}
 .bt-mo.dead .bt-mimg,.bt-mo.dead .bt-memo{animation:btdead .5s forwards}@keyframes btdead{to{opacity:0;transform:scale(.5)}}
 .fxe.shot.pix{animation:btshotw .52s cubic-bezier(.45,0,.85,.55) forwards}
 @keyframes btshotw{0%{transform:translate(-50%,-50%)}85%{opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));opacity:0}}
+#fxlayer{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden}
+.pfxg{position:absolute;image-rendering:pixelated;pointer-events:none}

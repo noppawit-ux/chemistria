@@ -268,6 +268,9 @@ const BATTLE = (() => {
   }
   function resultView() {
     const b = S.bat, win = b.status === "won", dr = S.drop, m = b.monster;
+    if (S.fxFor !== b.id && b.status !== "fled") { S.fxFor = b.id; setTimeout(() => {
+      if (win) { FX.victory(); if (dr) { FX.screen("loot-beam", 0.5, 0.5, { scale: 3 }); FX.later(400, () => FX.screen("chest-open", 0.5, 0.55, { scale: 3 })); } }
+      else FX.screen("curse", 0.5, 0.45, { scale: 3 }); }, 400); }
     if (b.status === "fled") return `<div class="card center"><p>หนีจากการต่อสู้แล้ว</p><button class="btn" onclick="BATTLE.back()">กลับ</button></div>`;
     return `<div class="card center gm-res ${win ? "perfect" : ""}"><div style="font-size:54px">${win ? "🏆" : "💀"}</div>
       <h2>${win ? `ปราบ ${esc(m.name)} สำเร็จ!` : `พ่ายแพ้ให้ ${esc(m.name)}`}</h2>

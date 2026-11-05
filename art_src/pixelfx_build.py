@@ -7,7 +7,7 @@ SEL={ 'fire/fireball':(36,1),'explosions/small-explosion':(110,2),'lightning/zap
  'impacts/crit-hit':(28,1),'impacts/hit-spark':(16,1),'impacts/blunt-hit':(28,1),'impacts/shield-block':(34,1),
  'projectiles/magic-missile':(58,1),'holy/heal-aoe':(88,2),'holy/divine-shield':(72,1),'status/rage':(36,1),'shadow/curse':(103,2),
  'arcane/star-fall':(76,1),'arcane/spell-charge':(48,1),'nature/acid-splash':(85,2),'nature/poison-cloud':(70,2),
- 'spawn/shatter-death':(100,2),'pickups/collect-burst':(42,1),'status/haste':(36,1) }
+ 'spawn/shatter-death':(100,2),'ui/confetti':(103,2),'ui/level-up':(97,2),'pickups/coin-spin':(48,1),'pickups/xp-orb':(54,1),'pickups/heart-pickup':(36,1),'pickups/power-star':(48,1),'pickups/loot-beam':(72,2),'pickups/chest-open':(139,3),'holy/sunburst':(120,3),'holy/holy-pillar':(106,2),'holy/feather-burst':(91,2),'holy/resurrection':(145,3),'explosions/firework-burst':(109,2),'arcane/portal':(72,2),'nature/healing-bloom':(100,2),'arcane/mana-burst':(55,1),'fire/spirit-flame':(90,2),'holy/halo':(60,2),'pickups/collect-burst':(42,1),'status/haste':(36,1) }
 man={}
 for id,(mx,skip) in SEL.items():
     cat,name=id.split('/'); d=json.load(open(f'{OUT}/{id}/{name}.json')); im=Image.open(f'{OUT}/{id}/{name}.png').convert('RGBA')

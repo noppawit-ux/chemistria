@@ -80,6 +80,7 @@ const GAMES = (() => {
     try {
       st.res = await rpc("quiz_submit", { p_token: tk(), p_answers: st.picks });
       st.mode = "quizres"; st.status = null; await load();
+      if (st.res.correct === st.res.total) setTimeout(() => FX.victory(), 300); else if (st.res.correct >= st.res.total / 2) setTimeout(() => FX.screen("confetti", 0.5, 0.7, { scale: 3 }), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
     st.busy = false; go("game");
   }
@@ -117,8 +118,9 @@ const GAMES = (() => {
     const g = st.mg; if (!g || g.over || g.bad) return;
     g["sel" + side] = g["sel" + side] === sym ? null : sym;
     if (g.selL && g.selR) {
-      if (g.selL === g.selR) { g.done[g.selL] = 1; g.selL = g.selR = null; }
-      else { g.wrong++; g.bad = ["L" + g.selL, "R" + g.selR]; g.selL = g.selR = null; paint();
+      const q = (sd, sy) => document.querySelector(`[onclick="GAMES.tap('${sd}','${sy}')"]`);
+      if (g.selL === g.selR) { FX.at(q("L", g.selL), "collect-burst", { scale: 1.4 }); FX.at(q("R", g.selR), "collect-burst", { scale: 1.4 }); g.done[g.selL] = 1; g.selL = g.selR = null; }
+      else { FX.at(q("L", g.selL), "hit-spark", { scale: 1.6 }); FX.at(q("R", g.selR), "hit-spark", { scale: 1.6 }); g.wrong++; g.bad = ["L" + g.selL, "R" + g.selR]; g.selL = g.selR = null; paint();
         setTimeout(() => { g.bad = null; paint(); }, 450); return; }
     }
     paint();
@@ -131,6 +133,7 @@ const GAMES = (() => {
     try {
       const r = await rpc("match_submit", { p_token: tk(), p_score: score, p_pairs: g.n, p_seconds: secs });
       st.mres = { ...r, secs, wrong: g.wrong, level: g.level }; st.mode = "matchres"; st.status = null; await load();
+      setTimeout(() => (score >= 90 ? FX.victory() : FX.screen("confetti", 0.5, 0.7, { scale: 3 })), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
     go("game");
   }
