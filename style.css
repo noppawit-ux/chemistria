@@ -410,3 +410,4 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
 .bemoji img{width:112px;height:112px;object-fit:contain;filter:drop-shadow(0 6px 14px #ff6b81aa)}
 .dead .bemoji img{filter:grayscale(1) brightness(.7)}
 @media(max-width:560px){.bemoji{width:76px}.bemoji img{width:76px;height:76px}}
+.stb{display:block;font-size:11px;color:var(--gold2);margin-top:2px}

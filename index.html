@@ -232,6 +232,18 @@ function teamChip() {
 
 const AUTO_HINT = { attendance: "ครูเช็คชื่อว่ามาเรียน", login: "เข้าสู่ระบบวันนี้", quiz: "ทำควิซประจำวัน (แท็บเกม)", quiz_perfect: "ตอบควิซถูกทุกข้อ",
   match: "เล่นเกมจับคู่ธาตุ", submit: "ส่งงาน 1 ชิ้น", gacha: "สุ่มกาชา 1 ครั้ง", decorate: "เปลี่ยนชุด/ไอเทมตัวละคร" };
+const STN = [["int", "🧠", "ปัญญา", "โบนัส EXP ควิซ"], ["dil", "💪", "ขยัน", "EXP เช็คชื่อ/งาน/เควส"], ["str", "⚔️", "พลังโจมตี", "ดาเมจบอส"], ["luk", "🍀", "โชค", "โอกาสได้ SR/SSR"]];
+function statsHtml() {
+  const S = X.stats; if (!S) return "";
+  const E = S.effects || {};
+  const eff = { int: `+${E.quiz_exp || 0} EXP/ควิซ`, dil: `+${E.exp_pct || 0}% EXP`, str: `+${E.boss_pct || 0}% ดาเมจ`, luk: `+${E.rare_pct || 0}% SR/SSR` };
+  return `<div class="card"><h3>📊 สเตตัสของฉัน</h3>
+    ${STN.map(([k, ic, nm, ds]) => { const v = S[k] || { base: 0, item: 0, total: 0 };
+      return `<div class="item"><span style="font-size:22px">${ic}</span><div class="grow"><b>${nm}</b> <span class="muted">${ds}</span>
+        <div class="hpbar" style="height:10px"><i style="width:${Math.min(100, v.total * 5)}%"></i></div></div>
+        <div style="text-align:right"><b>${v.total}</b><div class="muted" style="font-size:11px">${v.base}${v.item ? ` +${v.item} ไอเทม` : ""}<br>${eff[k]}</div></div></div>`; }).join("")}
+    <p class="muted" style="font-size:12px">ค่าพื้นฐานมาจากการเรียน/เล่น (ด้านละสูงสุด 10) · สวมไอเทมตกแต่งเพื่อเพิ่มสเตตัสอีกเล็กน้อย</p></div>`;
+}
 const autoOf = (q) => (X.auto || {})[q.id];
 const questAct = (q) => q.status ? statusTag(q.status) : autoOf(q) ? `<span class="tag wait">⚡ อัตโนมัติ: ${esc(AUTO_HINT[autoOf(q)] || "")}</span>` : null;
 
@@ -245,7 +257,7 @@ const VIEWS = {
       <div style="margin-top:8px">${titleTag(me.decor)}</div>
       <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
       ${hallHtml() || '<div class="card hof center"><h3>🏆 หอเกียรติยศ</h3><p class="muted">ยังไม่มีอันดับ — สะสม EXP จากเช็คชื่อ ส่งงาน เควส และมินิเกมเพื่อขึ้นโพเดียม</p></div>'}</div>
-    ${remindHtml()}${teamChip()}${bossHtml(false)}
+    ${remindHtml()}${teamChip()}${bossHtml(false)}${statsHtml()}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
@@ -383,12 +395,13 @@ const VIEWS = {
     let items = (D.decor_catalog || []).filter((d) => d.slot === decSlot);
     if (decSlot === "outfit") items = [{ id: null, slot: "outfit", name: "ชุดเริ่มต้น", emoji: "👤", rarity: "N", owned: true, price: null }, ...items];
     const owned = (D.decor_catalog || []).filter((d) => d.owned).length, all = (D.decor_catalog || []).length;
+    const stBadge = (d) => { const t = (X.item_stats || {})[d.id]; if (!t) return ""; return `<span class="stb">${STN.filter(([k]) => t[k]).map(([k, ic]) => `${ic}+${t[k]}`).join(" ")}</span>`; };
     const tile = (d) => {
       const worn = d.id === null ? !eq.outfit : eq[d.slot] && eq[d.slot].id === d.id;
       const next = { ...eq }; if (d.id === null) delete next.outfit; else next[d.slot] = d;
       const prev = d.slot === "title" ? titleTag({ title: d }) : stage(s.char_class, ri, next, "sm");
       return `<div class="dtile rar-${d.rarity} ${worn ? "worn" : ""} ${d.owned ? "" : "locked"}">
-        <div class="dprev">${prev}</div><b>${esc(d.emoji)} ${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>
+        <div class="dprev">${prev}</div><b>${esc(d.emoji)} ${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>${stBadge(d)}
         ${d.owned ? (worn ? (d.id === null ? '<span class="tag ok">กำลังใส่</span>' : `<button class="btn small ghost" onclick="equipDecor('${d.slot}',null)">ถอดออก</button>`)
               : `<button class="btn small gold" onclick="equipDecor('${d.slot}',${d.id === null ? "null" : `'${d.id}'`})">${d.id === null ? "ใส่ชุดเริ่มต้น" : "สวมใส่"}</button>`)
           : d.price != null ? `<button class="btn small" ${s.coins < d.price ? "disabled" : ""} onclick="buyDecor('${d.id}','${esc(d.name)}',${d.price})">ซื้อ ${d.price} 🪙</button>`
@@ -397,6 +410,7 @@ const VIEWS = {
     return `<div class="card center"><h3>🎨 ตัวละครของฉัน</h3>
       <div style="display:flex;justify-content:center;margin:6px 0 10px">${stage(s.char_class, ri, eq, "lg")}</div>
       ${titleTag(eq)}<p class="muted">สะสมแล้ว ${owned}/${all} ชิ้น · เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span> · ได้ไอเทมจาก <a href="#" onclick="go('gacha');return false" style="color:var(--gold2)">กาชา</a> หรือซื้อด้านล่าง</p></div>
+      ${statsHtml()}
       <div class="tabs" style="position:static">${SL.map(([k, l]) => `<button class="tab ${k === decSlot ? "on" : ""}" onclick="decSlot='${k}';render()">${l}</button>`).join("")}</div>
       <div class="dgrid">${items.map(tile).join("") || '<p class="muted">ยังไม่มีไอเทมในหมวดนี้</p>'}</div>`;
   },
