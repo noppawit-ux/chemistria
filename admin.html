@@ -495,7 +495,7 @@ const TAB = {
   async games(v) {
     const set = Object.fromEntries(must(await sb.from("app_settings").select("*")).map((x) => [x.key, x.value]));
     const f = [["game_daily_cap_exp", "เพดาน EXP จากมินิเกมต่อวัน", 40], ["quiz_count", "จำนวนข้อควิซประจำวัน", 5], ["quiz_exp_per_correct", "EXP ต่อข้อที่ตอบถูก", 4],
-      ["quiz_perfect_bonus", "โบนัส EXP เมื่อถูกทุกข้อ", 5], ["battle_rewards_per_day", "รอบต่อสู้มอนสเตอร์ที่ได้รางวัลต่อวัน", 3], ["duel_rewards_per_day", "รอบท้าดวลเพื่อนที่ได้รางวัลต่อวัน", 5], ["allow_student_photo", "ให้นักเรียนอัปโหลดรูปโปรไฟล์เอง (1=เปิด, 0=ปิด)", 1], ["match_max_exp", "EXP สูงสุดต่อรอบเกมจับคู่ธาตุ", 10], ["match_plays_per_day", "จำนวนรอบจับคู่ที่ได้รางวัลต่อวัน", 3]];
+      ["quiz_perfect_bonus", "โบนัส EXP เมื่อถูกทุกข้อ", 5], ["battle_rewards_per_day", "รอบต่อสู้มอนสเตอร์ที่ได้รางวัลต่อวัน", 3], ["duel_rewards_per_day", "รอบท้าดวลเพื่อนที่ได้รางวัลต่อวัน", 5], ["celebrate_enabled", "ประกาศ popup แสดงความยินดีเมื่อมีคนได้ SSR/เลื่อนแรงค์ (1=เปิด, 0=ปิด)", 1], ["allow_student_photo", "ให้นักเรียนอัปโหลดรูปโปรไฟล์เอง (1=เปิด, 0=ปิด)", 1], ["match_max_exp", "EXP สูงสุดต่อรอบเกมจับคู่ธาตุ", 10], ["match_plays_per_day", "จำนวนรอบจับคู่ที่ได้รางวัลต่อวัน", 3]];
     const day = todayStr();
     const plays = must(await sb.from("game_plays").select("game,student_id,exp,students(class_id)").eq("play_date", day));
     const mine = plays.filter((p) => p.students?.class_id === S.cls);

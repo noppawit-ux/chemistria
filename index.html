@@ -88,11 +88,42 @@ async function load() {
     try { X = (await rpc("student_extras", { p_token: tk() })) || {}; } catch (e) { X = {}; }
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
     try { B = (await rpc("board_list", { p_token: tk() })) || { posts: [], unread: 0 }; } catch (e) { B = { posts: [], unread: 0 }; }
-    render(); kbAuto(); fxDiff(prev);
+    render(); kbAuto(); fxDiff(prev); celCheck();
   } catch (e) {
     localStorage.removeItem(TOKEN_KEY);
     showLogin(e.message);
   }
+}
+
+
+/* ประกาศ popup แสดงความยินดี: ได้ SSR / เลื่อนแรงค์ (ของเพื่อนร่วมห้อง) */
+const CEL_KEY = "chem_cel_seen"; let CELQ = [], CELBUSY = false, CELTIMER = null;
+async function celCheck() {
+  if (!tk()) return;
+  try {
+    let since = null; try { const v = localStorage.getItem(CEL_KEY); since = v === null ? null : Number(v); } catch (e) {}
+    const r = await rpc("celebrations_feed", { p_token: tk(), p_since: since });
+    try { localStorage.setItem(CEL_KEY, String(r.max || 0)); } catch (e) {}
+    (r.items || []).forEach((x) => CELQ.push(x));
+    celNext();
+  } catch (e) {}
+  clearTimeout(CELTIMER); CELTIMER = setTimeout(celCheck, 60000);
+}
+function celNext() {
+  if (CELBUSY || !CELQ.length) return;
+  const x = CELQ.shift(); CELBUSY = true;
+  const who = x.mine ? "คุณ" : esc(x.name);
+  const pic = x.image ? `<img src="${esc(x.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${x.kind === "ssr" ? esc(x.emoji || "🎁") : "🏆"}'))">` : (x.kind === "ssr" ? esc(x.emoji || "🎁") : "🏆");
+  const msg = x.kind === "ssr"
+    ? `<div class="cel-h">🎉 ขอแสดงความยินดี! 🎉</div><div class="cel-b"><b>${who}</b> สุ่มกาชาได้ไอเทมระดับ <span class="cel-ssr">SSR</span></div><div class="cel-t">${esc(x.title)}</div>`
+    : `<div class="cel-h">🏆 เลื่อนแรงค์แล้ว! 🏆</div><div class="cel-b"><b>${who}</b> ไต่ขึ้นสู่แรงค์</div><div class="cel-t rk-${esc(String(x.title).toLowerCase())}">${esc(x.title)}</div>`;
+  const el = document.createElement("div"); el.className = "celpop";
+  el.innerHTML = `<div class="celbox ${x.kind}"><div class="cel-pic">${pic}</div>${msg}<button class="btn gold" type="button">${x.mine ? "เย้!" : "ยินดีด้วย 👏"}</button></div>`;
+  const close = () => { el.remove(); CELBUSY = false; setTimeout(celNext, 250); };
+  el.addEventListener("click", (e) => { if (e.target === el || e.target.tagName === "BUTTON") close(); });
+  document.body.appendChild(el);
+  try { if (typeof FX !== "undefined") { FX.screen("confetti", 0.5, 0.6, { scale: 4 }); if (x.kind === "rank") FX.screen("sunburst", 0.5, 0.35, { scale: 3 }); } } catch (e) {}
+  setTimeout(() => { if (el.isConnected) close(); }, 9000);
 }
 
 /* เอฟเฟกต์พิกเซลเมื่อค่าเปลี่ยน: เลเวล/แรงก์/เหรียญ/EXP/เหรียญตรา */
