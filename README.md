@@ -110,3 +110,6 @@ web/               index.html (นักเรียน) · admin.html (คร�
 
 ## รอบที่ 10 — ภาพเหรียญ Achievement (`db/10_medals.sql`)
 เหรียญ 11 แบบใน `web/assets/medals/` (ตัดจาก `art_src/medals_sheet.png` ด้วย `tools/slice_art.py`) · แสดงในหน้ากระเป๋า > Achievement (ยังไม่ได้รับ = โทนเทา) · ครูใส่พาธภาพเหรียญของ Achievement ใหม่ได้ที่แท็บ Achievement ช่อง “ภาพเหรียญ”
+
+## รอบที่ 11 — ชุดและไอเทมเพิ่ม (`db/11_more_items.sql`)
+ชุดใหม่ 3 แบบ × 5 คลาส (เสื้อกาวน์ · อัศวินเคมี · ชุดไทยลายทอง) ใน `web/assets/chars/` และไอเทมถือใหม่ 12 ชิ้นใน `web/assets/items/` (ตัดจาก `art_src/items2_sheet.png`) · ตั้งค่าสเตตัส ราคา และเข้ากาชาไว้แล้ว

@@ -12,12 +12,13 @@ SHEETS = {
   'hats':    (3, 2, ['bow','cap','grad','tophat','crown','goggles'], 200),
   'bosses':  (3, 2, ['acid_dragon','beaker_golem','electron_wizard','element_robot','flame_demon','germ_hydra'], 360),
   'medals':  (4, 3, ['present_5','present_20','streak_5','streak_10','ontime_3','ontime_10','quest_5','quest_20','gacha_10','level_5','level_10','master'], 200),
+  'items2':  (4, 3, ['scroll','magnifier','rack','spellbook','flask','sword','shield','dnastaff','rocket','trophy','torch','scepter'], 200),
   'pets':    (3, 2, ['frog','cat','dog','fox','dragon','owl'], 240),
 }
 for name, (cols, rows, keys, target) in SHEETS.items():
     im = Image.open(os.path.join(SRC, f'{name}_sheet.png')).convert('RGB')
     W, H = im.size; cw, ch = W / cols, H / rows
-    os.makedirs(os.path.join(OUT, name), exist_ok=True)
+    os.makedirs(os.path.join(OUT, 'items' if name=='items2' else name), exist_ok=True)
     for i, k in enumerate(keys):
         r, c = divmod(i, cols)
         pad = 0
@@ -43,5 +44,5 @@ for name, (cols, rows, keys, target) in SHEETS.items():
                 sizes = ndi.sum(alpha > 0.3, lab2, range(1, n2 + 1))
                 alpha = alpha * (lab2 == (int(np.argmax(sizes)) + 1))
             t = Image.fromarray(np.dstack([a.astype(np.uint8), (alpha * 255).astype(np.uint8)]), 'RGBA')
-        t.save(os.path.join(OUT, name, f'{k}.png'), optimize=True)
+        t.save(os.path.join(OUT, 'items' if name=='items2' else name, f'{k}.png'), optimize=True)
 print('done')
