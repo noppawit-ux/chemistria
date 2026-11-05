@@ -679,3 +679,33 @@ body:not([data-tab="home"]) .kbpop{display:none}
 .sp-el{background:#170f31;border:2px solid var(--line);border-radius:12px;padding:8px 4px;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center}
 .sp-el b{font-size:1.3em;color:var(--gold2)}.sp-el small{font-size:.7em;opacity:.8}
 .sp-el:hover{border-color:var(--violet)}.sp-el:active{transform:scale(.95)}
+
+/* เวทย์ผสมธาตุ: เอฟเฟกต์ + โครงสร้างลิวอิส */
+.sp-play{position:relative;overflow:hidden}
+.sp-pot{position:relative;overflow:hidden}
+.sp-bub{position:absolute;bottom:8px;width:10px;height:10px;border-radius:50%;background:#b9a6ff88;animation:spbub 2.6s infinite ease-in}
+.sp-bub.b1{left:28%}.sp-bub.b2{left:52%;animation-delay:.9s;width:7px;height:7px}.sp-bub.b3{left:70%;animation-delay:1.7s}
+@keyframes spbub{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:.9}100%{transform:translateY(-92px) scale(1.2);opacity:0}}
+.sp-pulse{animation:sppulse .35s}@keyframes sppulse{50%{transform:scale(1.05);filter:brightness(1.4)}}
+.sp-glow{animation:spglow .9s}@keyframes spglow{0%,100%{box-shadow:0 0 22px #8d6df066 inset,0 0 18px #8d6df055}40%{box-shadow:0 0 40px #ffe27acc inset,0 0 40px #ffd54acc}}
+.sp-boom{animation:spboom .6s}@keyframes spboom{30%{filter:brightness(2) hue-rotate(-40deg);transform:scale(1.08)}}
+.sp-shake{animation:shake .45s}
+.sp-flash::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,#fff8c4aa,transparent 65%);animation:spflash .7s forwards;pointer-events:none}
+@keyframes spflash{from{opacity:1}to{opacity:0}}
+.sp-fly{position:fixed;z-index:9500;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#ffe27a,#ff9a3c);color:#2a1030;font-weight:800;display:flex;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 0 14px #ffd54a}
+.sp-pop{position:absolute;left:50%;top:38%;transform:translateX(-50%);font-weight:900;font-size:26px;white-space:nowrap;pointer-events:none;animation:sppop 1.2s forwards;text-shadow:0 0 12px #000}
+.sp-pop.good{color:#7dffb3}.sp-pop.combo{color:#ffb03c;font-size:32px}.sp-pop.bad{color:#ff6b6b}
+@keyframes sppop{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}20%{opacity:1;transform:translate(-50%,0) scale(1.2)}100%{opacity:0;transform:translate(-50%,-46px) scale(1)}}
+.sp-cb{background:#ff7a1c;color:#fff;animation:sppulse .5s}
+.sp-el.g-m{border-color:#6aa8ff}.sp-el.g-h{border-color:#ff9a6a}.sp-el.g-n{border-color:#7be0a0}
+.sp-atom.g-m{border-color:#6aa8ff}.sp-atom.g-h{border-color:#ff9a6a}.sp-atom.g-n{border-color:#7be0a0}
+.sp-scroll.lew{border-color:#ff8f6b;background:#2e1a3a}
+.sp-lew{margin:8px auto;max-width:360px;background:radial-gradient(circle at 50% 40%,#2a2058,#150d30 75%);border:3px solid #ff8f6b;border-radius:16px;padding:8px}
+.sp-lew-note{font-size:.78em;text-align:center;opacity:.85;margin-bottom:4px}
+.sp-lew-svg{width:100%;height:auto;display:block}
+.sp-lew-svg .bd{stroke:#ffe27a;stroke-width:4;stroke-linecap:round}
+.sp-lew-svg .hit{stroke:transparent;stroke-width:34;cursor:pointer}
+.sp-lew-svg .atm{cursor:pointer}.sp-lew-svg .atm circle{fill:#3a2a7a;stroke:#ffd54a;stroke-width:3}
+.sp-lew-svg .atm text{fill:#fff;font-weight:800;font-size:20px;text-anchor:middle;pointer-events:none}
+.sp-lew-svg .lp{fill:#7dffb3}
+.sp-lew-cnt{text-align:center;font-weight:700;color:#ffd54a}.sp-lew-cnt.ok{color:#7dffb3}
