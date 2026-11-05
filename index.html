@@ -202,7 +202,7 @@ function bossHtml(full) {
   const state = b.defeated ? '<span class="tag ok">ปราบแล้ว 🎉</span>' : b.ended ? '<span class="tag no">บอสหนีไปแล้ว</span>' : `<span class="tag late">เหลือ ${b.days_left} วัน</span>`;
   const claim = b.can_claim ? `<button class="btn gold" onclick="claimBoss()">🎁 รับรางวัลปราบบอส (+${b.reward_exp} EXP · +${b.reward_coins} 🪙)</button>`
     : b.claimed ? '<span class="tag ok">รับรางวัลแล้ว ✔</span>' : "";
-  return `<div class="card boss ${b.defeated ? "dead" : ""}"><div class="brow"><div class="bemoji">${esc(b.emoji)}</div><div class="grow">
+  return `<div class="card boss ${b.defeated ? "dead" : ""}"><div class="brow"><div class="bemoji">${b.image ? `<img src="${esc(b.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div><div class="grow">
     <h3 style="margin:0">บอสประจำสัปดาห์: ${esc(b.name)} ${state}</h3>
     <div class="hpbar"><i style="width:${pct}%"></i><span>HP ${b.hp} / ${b.max_hp}</span></div>
     <div class="muted">${esc(b.description || "")}</div>
@@ -230,6 +230,11 @@ function teamChip() {
   return `<div class="notice" onclick="go('rank')">${esc(my.emoji)} ${esc(my.name)} · อันดับ ${i}/${T.teams.length} · เฉลี่ย ${my.avg_week} EXP/คน — กดดูอันดับทีม</div>`;
 }
 
+const AUTO_HINT = { attendance: "ครูเช็คชื่อว่ามาเรียน", login: "เข้าสู่ระบบวันนี้", quiz: "ทำควิซประจำวัน (แท็บเกม)", quiz_perfect: "ตอบควิซถูกทุกข้อ",
+  match: "เล่นเกมจับคู่ธาตุ", submit: "ส่งงาน 1 ชิ้น", gacha: "สุ่มกาชา 1 ครั้ง", decorate: "เปลี่ยนชุด/ไอเทมตัวละคร" };
+const autoOf = (q) => (X.auto || {})[q.id];
+const questAct = (q) => q.status ? statusTag(q.status) : autoOf(q) ? `<span class="tag wait">⚡ อัตโนมัติ: ${esc(AUTO_HINT[autoOf(q)] || "")}</span>` : null;
+
 const VIEWS = {
   game() { return GAMES.view(); },
   home() {
@@ -248,7 +253,7 @@ const VIEWS = {
     </div>
     <div class="card"><h3>🗺️ เควสวันนี้</h3>
       ${D.quests.map((q) => `<div class="item"><div class="grow"><b>${esc(q.title)}</b>
-        <div class="muted">+${q.exp} EXP · +${q.coins} 🪙</div></div>${q.status ? statusTag(q.status) : '<span class="tag wait">ยังไม่ทำ</span>'}</div>`).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}
+        <div class="muted">+${q.exp} EXP · +${q.coins} 🪙</div></div>${questAct(q) || '<span class="tag wait">ยังไม่ทำ</span>'}</div>`).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}
       <button class="btn small ghost" onclick="go('quest')">ไปหน้าเควส</button></div>
     <div class="card"><h3>📜 ความเคลื่อนไหวล่าสุด</h3>
       ${D.ledger.slice(0, 8).map((l) => `<div class="item"><div class="grow">${esc(l.reason)}</div>
@@ -330,10 +335,10 @@ const VIEWS = {
   },
 
   quest() {
-    return `${bossHtml(true)}<div class="card"><h3>🗺️ เควสวันนี้ & รายสัปดาห์</h3><p class="muted">ทำเสร็จแล้วกดขอรับรางวัล ครูจะตรวจแล้วให้ EXP/เหรียญ · ทุกเควสที่สำเร็จคือการโจมตีบอส ✨ (ครูเช็คชื่อว่ามาเรียน = โจมตีอัตโนมัติ)</p>
+    return `${bossHtml(true)}<div class="card"><h3>🗺️ เควสวันนี้ & รายสัปดาห์</h3><p class="muted">เควส ⚡ อัตโนมัติ: ระบบเช็คให้เอง ทำเงื่อนไขแล้วได้รางวัลทันที · เควสอื่น: ทำเสร็จแล้วกดขอรับรางวัล ครูจะตรวจแล้วให้ EXP/เหรียญ · ทุกเควสที่สำเร็จคือการโจมตีบอส ✨</p>
       ${D.quests.map((q) => `<div class="item"><div class="grow"><b>${esc(q.title)}</b> ${q.kind === "weekly" ? '<span class="pill">รายสัปดาห์</span>' : ""}
         <div class="muted">${esc(q.description || "")}</div><div>+${q.exp} EXP · +${q.coins} 🪙</div></div>
-        ${q.status ? statusTag(q.status) : `<button class="btn small mint" onclick="claim('${q.id}')">ทำแล้ว ✔</button>`}</div>`).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}</div>`;
+        ${questAct(q) || `<button class="btn small mint" onclick="claim('${q.id}')">ทำแล้ว ✔</button>`}</div>`).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}</div>`;
   },
 
   gacha() {

@@ -405,3 +405,8 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
 .hpbar>i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#ff3b5c,#ff8a5c);transition:width .8s}
 .hpbar>span{position:relative;display:block;text-align:center;font-size:.8em;font-weight:700;line-height:22px;text-shadow:0 1px 2px #000}
 @media(max-width:560px){.bemoji{font-size:44px}}
+
+.bemoji{flex:none;width:112px;text-align:center}
+.bemoji img{width:112px;height:112px;object-fit:contain;filter:drop-shadow(0 6px 14px #ff6b81aa)}
+.dead .bemoji img{filter:grayscale(1) brightness(.7)}
+@media(max-width:560px){.bemoji{width:76px}.bemoji img{width:76px;height:76px}}
