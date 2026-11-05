@@ -36,6 +36,7 @@ const GAMES = (() => {
     if (st.mode === "matchres") return matchResult();
     if (st.mode === "battle") return BATTLE.view();
     if (st.mode === "duel") return DUEL.view();
+    if (st.mode === "spell") return SPELL.view();
     if (!s) return head();
     return head() + `<div class="gm-grid">
       <div class="card gm-card">
@@ -49,6 +50,11 @@ const GAMES = (() => {
         <p class="muted">จับคู่สัญลักษณ์กับชื่อธาตุให้เร็วและผิดน้อย · สูงสุด +${s.match_max_exp} EXP/รอบ · ได้รางวัล ${s.match_max_plays} รอบ/วัน
           (เล่นแล้ว ${Math.min(s.match_plays, s.match_max_plays)}/${s.match_max_plays}${s.match_best != null ? ` · ดีที่สุด ${s.match_best}` : ""})</p>
         <div class="row" style="justify-content:center">${Object.entries(LEVELS).map(([k, l]) => `<button class="btn small ${k === "mid" ? "gold" : "ghost"}" onclick="GAMES.startMatch('${k}')">${l.label} (${l.n} คู่)</button>`).join("")}</div>
+      </div>
+      <div class="card gm-card">
+        <div class="gm-ico">🔮</div><h3>ห้องฝึกเวทย์ผสมธาตุ</h3>
+        <p class="muted">ร่ายคาถาด้วยการผสมอะตอมในหม้อต้มให้ตรงสูตรสาร (น้ำ เกลือ กรด ฯลฯ) · 3 ระดับ · ผสมเร็ว ผิดน้อย ได้คะแนนสูง · ได้ EXP/เหรียญ</p>
+        <button class="btn gold" onclick="SPELL.open()">🔮 เข้าห้องเวทย์</button>
       </div>
       <div class="card gm-card">
         <div class="gm-ico">⚔️</div><h3>ล่ามอนสเตอร์เคมี</h3>

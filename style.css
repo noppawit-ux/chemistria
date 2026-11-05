@@ -664,3 +664,18 @@ body:not([data-tab="home"]) .kbpop{display:none}
 @keyframes celin{from{opacity:0}to{opacity:1}}
 @keyframes celpop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 .cel-t[class*="rk-"]{color:var(--rc,#fff)}
+
+/* ห้องฝึกเวทย์ผสมธาตุ */
+.sp-scroll{margin:10px 0;padding:12px;border-radius:12px;background:#241a45;border:2px dashed #8d6df0;text-align:center}
+.sp-spell{font-weight:800;font-size:1.15em;color:var(--gold2);margin-bottom:4px}
+.sp-f{font-size:1.3em;color:var(--mint);letter-spacing:1px}
+.sp-pot{margin:8px auto;max-width:360px;min-height:120px;border-radius:50% 50% 38% 38%/40% 40% 60% 60%;background:radial-gradient(circle at 50% 30%,#4c2f8f,#1a0f38 70%);border:3px solid #8d6df0;box-shadow:0 0 22px #8d6df066 inset,0 0 18px #8d6df055;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.sp-bowl{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.sp-atom{border:2px solid var(--gold);background:#2d2257;color:#fff;border-radius:50%;width:46px;height:46px;font-weight:800;cursor:pointer;position:relative;animation:celpop .25s}
+.sp-atom sup{position:absolute;right:-4px;top:-6px;font-size:.62em;background:var(--gold);color:#241a45;border-radius:8px;padding:0 4px}
+.sp-live{font-size:1.35em;font-weight:800;color:var(--mint);min-height:1.4em}
+.sp-msg{min-height:1.4em;text-align:center;margin:4px 0}
+.sp-pal{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px}
+.sp-el{background:#170f31;border:2px solid var(--line);border-radius:12px;padding:8px 4px;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.sp-el b{font-size:1.3em;color:var(--gold2)}.sp-el small{font-size:.7em;opacity:.8}
+.sp-el:hover{border-color:var(--violet)}.sp-el:active{transform:scale(.95)}
