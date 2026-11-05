@@ -34,6 +34,7 @@ const GAMES = (() => {
     if (st.mode === "quizres") return quizResult();
     if (st.mode === "match") return matchView();
     if (st.mode === "matchres") return matchResult();
+    if (st.mode === "battle") return BATTLE.view();
     if (!s) return head();
     return head() + `<div class="gm-grid">
       <div class="card gm-card">
@@ -47,6 +48,11 @@ const GAMES = (() => {
         <p class="muted">จับคู่สัญลักษณ์กับชื่อธาตุให้เร็วและผิดน้อย · สูงสุด +${s.match_max_exp} EXP/รอบ · ได้รางวัล ${s.match_max_plays} รอบ/วัน
           (เล่นแล้ว ${Math.min(s.match_plays, s.match_max_plays)}/${s.match_max_plays}${s.match_best != null ? ` · ดีที่สุด ${s.match_best}` : ""})</p>
         <div class="row" style="justify-content:center">${Object.entries(LEVELS).map(([k, l]) => `<button class="btn small ${k === "mid" ? "gold" : "ghost"}" onclick="GAMES.startMatch('${k}')">${l.label} (${l.n} คู่)</button>`).join("")}</div>
+      </div>
+      <div class="card gm-card">
+        <div class="gm-ico">⚔️</div><h3>ล่ามอนสเตอร์เคมี</h3>
+        <p class="muted">เลือกสกิลตามคลาส ตอบคำถามเพื่อโจมตี บัพ และฮีล · มอนสเตอร์โต้กลับ กดลูกศรลดดาเมจ · ชนะได้ EXP เหรียญ และดรอปไอเทม</p>
+        <button class="btn gold" onclick="BATTLE.open()">⚔️ เข้าต่อสู้</button>
       </div></div>`;
   }
 
@@ -141,5 +147,5 @@ const GAMES = (() => {
 
   const home = () => { st.mode = "home"; st.status = null; go("game"); };
   const quit = () => { if (!confirm("ออกจากเกม? ความคืบหน้าจะไม่ถูกบันทึก")) return; clearInterval(st.tm); home(); };
-  return { view, startQuiz, pick, startMatch, tap, home, quit };
+  return { paint, setMode: (m) => { st.mode = m; }, view, startQuiz, pick, startMatch, tap, home, quit };
 })();

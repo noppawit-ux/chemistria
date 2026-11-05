@@ -5,7 +5,9 @@ from PIL import Image, ImageFilter
 import numpy as np, os, glob
 from scipy import ndimage as ndi
 ROOT = os.path.join(os.path.dirname(__file__), '..')
-SRC = os.path.join(ROOT, 'art_src', 'chars'); OUT = os.path.join(ROOT, 'web', 'assets', 'chars')
+import sys
+SUB = sys.argv[1] if len(sys.argv) > 1 else 'chars'            # chars (ค่าเริ่มต้น) หรือ monsters
+SRC = os.path.join(ROOT, 'art_src', SUB); OUT = os.path.join(ROOT, 'web', 'assets', SUB)
 os.makedirs(OUT, exist_ok=True)
 W, H = 300, 450                                  # ขนาดผลลัพธ์ (2:3)
 for f in sorted(glob.glob(os.path.join(SRC, '*.png'))):
