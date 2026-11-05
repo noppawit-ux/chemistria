@@ -387,3 +387,21 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
   background:linear-gradient(180deg,#2e2158,#1f1540);border:1px solid #4a3a86;box-shadow:0 2px 0 #0006}
 .tabs .tab.on{background:linear-gradient(180deg,#b389ff,#7b4dff);border-color:#d4bbff;box-shadow:0 0 18px #9b6bff99,inset 0 1px 0 #fff6}
 @media(max-width:560px){.tabs:not([style*="static"]){grid-template-columns:repeat(3,1fr);gap:6px}.tabs .tab{font-size:.85rem;padding:9px 4px}}
+
+/* ================= รอบ 7: เตือนงาน · ทีม · บอส ================= */
+.notice{margin:0 0 12px;padding:10px 14px;border-radius:14px;cursor:pointer;background:linear-gradient(90deg,#2e2158,#3a2a78);border:1px solid #5b47a8;font-weight:600}
+.notice.gold{background:linear-gradient(90deg,#5a4410,#7a5a14);border-color:var(--gold);color:var(--gold2);animation:pulseb 2.2s ease-in-out infinite}
+@keyframes pulseb{50%{box-shadow:0 0 18px #f6c45377}}
+.card.remind{border-color:#7a5aff}.card.remind.ok{border-color:#1f7a5c;background:linear-gradient(180deg,#143a33,#10282a)}
+.item.mine{background:#3a2a6b55;border-radius:10px;padding-left:8px}
+.pill.me{background:#5b3fc4;color:#fff;border-color:var(--gold)}
+.card.boss{border:2px solid #ff6b81;background:radial-gradient(600px 160px at 15% 0,#5a1f3a 0,transparent 70%),linear-gradient(180deg,#2e1a40,#1c1236)}
+.card.boss.dead{border-color:var(--mint);filter:saturate(.8)}
+.brow{display:flex;gap:14px;align-items:center}
+.bemoji{font-size:64px;line-height:1;filter:drop-shadow(0 0 16px #ff6b81);animation:bossb 2.8s ease-in-out infinite}
+.dead .bemoji{animation:none;filter:grayscale(1);opacity:.5;transform:rotate(-18deg)}
+@keyframes bossb{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.06)}}
+.hpbar{position:relative;height:22px;margin:8px 0;background:#170f31;border:1px solid #6b2a3f;border-radius:999px;overflow:hidden}
+.hpbar>i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#ff3b5c,#ff8a5c);transition:width .8s}
+.hpbar>span{position:relative;display:block;text-align:center;font-size:.8em;font-weight:700;line-height:22px;text-shadow:0 1px 2px #000}
+@media(max-width:560px){.bemoji{font-size:44px}}

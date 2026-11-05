@@ -12,6 +12,7 @@
 <body>
 <div id="app" class="wrap"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="config.js"></script>
 <script src="lib.js"></script>
 <script>
@@ -20,7 +21,8 @@ const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: n
 const TABS = [
   ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
   ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
-  ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["settings", "⚙️ ตั้งค่า"],
+  ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["teams", "🧪 ทีม"], ["boss", "👹 บอส"],
+  ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
 ];
 const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
 const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };
@@ -190,25 +192,39 @@ const TAB = {
   },
 
   async assign(v) {
-    const h = holder(v, "📝 งานที่มอบหมาย", "เลือกงานด้านล่างเพื่อบันทึกการส่ง · EXP/เหรียญจะให้อัตโนมัติเมื่อบันทึกสถานะ “ส่งแล้ว” (ส่งช้าได้ครึ่งหนึ่ง)");
+    const h = holder(v, "📝 งานที่มอบหมาย", "วิธีส่ง: “นักเรียนกดส่ง/ส่งรูป” = นักเรียนส่งเองจากหน้าเว็บและได้ EXP ทันที (ครูส่งคืนได้ถ้ารูปไม่ผ่าน) · เลือกงานด้านล่างเพื่อบันทึกการส่ง · EXP/เหรียญจะให้อัตโนมัติเมื่อบันทึกสถานะ “ส่งแล้ว” (ส่งช้าได้ครึ่งหนึ่ง)");
     await crud(h, { table: "ch_assignments", filter: { class_id: S.cls }, order: "due_date", defaults: { max_score: 10, exp_reward: 20, coin_reward: 5 },
       cols: [{ k: "title", label: "ชื่องาน", w: 180 }, { k: "due_date", label: "กำหนดส่ง", t: "date" }, { k: "max_score", label: "เต็ม", t: "number", w: 60 },
-        { k: "exp_reward", label: "EXP", t: "number", w: 60 }, { k: "coin_reward", label: "เหรียญ", t: "number", w: 60 }, { k: "description", label: "รายละเอียด", w: 160 }] });
+        { k: "exp_reward", label: "EXP", t: "number", w: 60 }, { k: "coin_reward", label: "เหรียญ", t: "number", w: 60 },
+        { k: "submit_mode", label: "วิธีส่ง", t: "select", opts: () => [["teacher", "ครูบันทึกเอง"], ["online", "นักเรียนกดส่งออนไลน์"], ["photo", "นักเรียนส่งรูป"]] }, { k: "description", label: "รายละเอียด", w: 160 }] });
     const as = must(await sb.from("ch_assignments").select("id,title").eq("class_id", S.cls).order("due_date"));
     if (!as.length) return;
     S.asg = as.find((a) => a.id === S.asg) ? S.asg : as[0].id;
     const [st, sub] = await Promise.all([
       sb.from("students").select("id,no,name").eq("class_id", S.cls).order("no").then(must),
-      sb.from("ch_submissions").select("student_id,status,score").eq("assignment_id", S.asg).then(must),
+      sb.from("ch_submissions").select("id,student_id,status,score,image_path,via,note").eq("assignment_id", S.asg).then(must),
     ]);
     const cur = Object.fromEntries(sub.map((s) => [s.student_id, s]));
     const g = holder(v, "✅ บันทึกการส่งงาน");
     g.innerHTML = `<div class="row"><select id="asel" style="width:auto">${as.map((a) => `<option value="${a.id}" ${a.id === S.asg ? "selected" : ""}>${esc(a.title)}</option>`).join("")}</select>
       <button class="btn ghost small" id="allS">ทุกคนส่งแล้ว</button><button class="btn gold" id="saveS">บันทึก</button></div>
-      <div class="scroll"><table><thead><tr><th>#</th><th>ชื่อ</th><th>สถานะ</th><th>คะแนน</th></tr></thead><tbody>
+      <div class="scroll"><table><thead><tr><th>#</th><th>ชื่อ</th><th>สถานะ</th><th>คะแนน</th><th>ส่งเอง/รูป</th></tr></thead><tbody>
       ${st.map((s) => `<tr><td>${s.no}</td><td>${esc(s.name)}</td><td class="seg">
         ${[["submitted", "ส่ง"], ["late", "ช้า"], ["missing", "ไม่ส่ง"]].map(([k, l]) => `<label><input type="radio" name="s_${s.id}" value="${k}" ${cur[s.id]?.status === k ? "checked" : ""}>${l}</label>`).join("")}</td>
-        <td><input type="number" step="any" id="sc_${s.id}" value="${cur[s.id]?.score ?? ""}" style="width:80px"></td></tr>`).join("")}</tbody></table></div>`;
+        <td><input type="number" step="any" id="sc_${s.id}" value="${cur[s.id]?.score ?? ""}" style="width:80px"></td>
+        <td>${cur[s.id]?.via === "student" ? '<span class="tag ok">ส่งเอง</span> ' : ""}${cur[s.id]?.image_path ? `<button class="btn small ghost" data-img="${esc(cur[s.id].image_path)}">🖼️ ดูรูป</button> ` : ""}${cur[s.id]?.via === "student" && ["submitted", "late"].includes(cur[s.id]?.status) ? `<button class="btn small red" data-ret="${cur[s.id].id}">↩️ ส่งคืน</button>` : ""}${cur[s.id]?.note ? `<div class="muted">${esc(cur[s.id].note)}</div>` : ""}</td></tr>`).join("")}</tbody></table></div>`;
+    g.onclick = async (e) => {
+      const d = e.target.dataset;
+      if (d.img) {
+        const { data, error } = await sb.storage.from("submissions").createSignedUrl(d.img, 3600);
+        if (error) return toast("เปิดรูปไม่ได้: " + error.message);
+        const o = document.createElement("div"); o.className = "overlay on"; o.style.cursor = "zoom-out";
+        o.innerHTML = `<img src="${data.signedUrl}" style="max-width:96vw;max-height:92vh;border-radius:12px">`; o.onclick = () => o.remove(); document.body.appendChild(o);
+      } else if (d.ret) {
+        const note = prompt("เหตุผลที่ส่งคืน (นักเรียนจะเห็น และส่งใหม่ได้ · ระบบหัก EXP/เหรียญที่ให้ไปคืน)", "รูปไม่ชัด / งานไม่ครบ"); if (note === null) return;
+        await run(() => rpc("admin_return_submission", { p_sub: d.ret, p_note: note }), "ส่งคืนแล้ว ↩️"); renderTab();
+      }
+    };
     $("#asel").onchange = (e) => { S.asg = e.target.value; renderTab(); };
     $("#allS").onclick = () => $$('input[value="submitted"]', g).forEach((r) => (r.checked = true));
     $("#saveS").onclick = async () => {
@@ -276,6 +292,7 @@ const TAB = {
     await crud(h, { table: "quests", order: "title", defaults: { kind: "daily", exp: 10, coins: 3, needs_approval: true, active: true },
       cols: [{ k: "title", label: "ชื่อเควส", w: 180 }, { k: "description", label: "รายละเอียด", w: 200 }, { k: "kind", label: "ชนิด", t: "select", opts: () => [["daily", "ประจำวัน"], ["weekly", "รายสัปดาห์"]] },
         { k: "exp", label: "EXP", t: "number", w: 60 }, { k: "coins", label: "เหรียญ", t: "number", w: 60 }, { k: "needs_approval", label: "ครูตรวจ", t: "bool" },
+        { k: "auto_trigger", label: "อัตโนมัติ", t: "select", opts: () => [["", "—"], ["attendance", "เมื่อเช็คชื่อว่ามา"]] },
         { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
@@ -330,6 +347,114 @@ const TAB = {
         { k: "image", label: "ภาพ (ไอเทมถือ)", w: 150 }, { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
+  async teams(v) {
+    const h0 = holder(v, "🧪 ทีมแข่ง EXP", "สุ่มแบ่งทีมทั้งห้อง (ทีมเดิมของห้องนี้จะถูกแทนที่) หรือแก้ชื่อ/ย้ายสมาชิกด้านล่าง · นักเรียนเห็นอันดับทีมเรียงตาม EXP เฉลี่ยต่อคนของสัปดาห์นี้");
+    h0.innerHTML = `<div class="row"><div style="width:140px"><label>จำนวนทีม</label><input id="nT" type="number" min="2" max="12" value="6"></div>
+      <button class="btn gold" id="rndT">🎲 สุ่มแบ่งทีมทั้งห้อง</button></div>`;
+    $("#rndT").onclick = async () => {
+      if (!confirm("สุ่มแบ่งทีมใหม่ทั้งห้อง " + clsName() + " ?")) return;
+      const n = await run(() => rpc("admin_random_teams", { p_class: S.cls, p_n: Number($("#nT").value) }), null);
+      toast(`แบ่งทีมให้ ${n} คนแล้ว ✅`); renderTab();
+    };
+    const h1 = holder(v, "รายชื่อทีม");
+    await crud(h1, { table: "teams", filter: { class_id: S.cls }, order: "sort", defaults: { emoji: "🧪", sort: 0 },
+      cols: [{ k: "emoji", label: "ไอคอน", w: 50 }, { k: "name", label: "ชื่อทีม", w: 160 }, { k: "sort", label: "ลำดับ", t: "number", w: 60 }] });
+    const teams = must(await sb.from("teams").select("id,name,emoji").eq("class_id", S.cls).order("sort"));
+    const st = must(await sb.from("students").select("id,no,name,team_id").eq("class_id", S.cls).order("no"));
+    const h2 = holder(v, "สมาชิกในทีม");
+    h2.innerHTML = `<div class="scroll"><table><tbody>${st.map((s) => `<tr><td>${s.no}</td><td>${esc(s.name)}</td><td><select data-stid="${s.id}">
+      <option value="">— ไม่มีทีม —</option>${teams.map((t) => `<option value="${t.id}" ${t.id === s.team_id ? "selected" : ""}>${esc(t.emoji)} ${esc(t.name)}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table></div>`;
+    h2.onchange = async (e) => { const id = e.target.dataset.stid; if (!id) return;
+      await run(async () => must(await sb.from("students").update({ team_id: e.target.value || null }).eq("id", id)), "บันทึกแล้ว ✅"); };
+  },
+
+  async boss(v) {
+    const h = holder(v, "👹 บอสประจำสัปดาห์",
+      "เลือดบอส = “เลือดต่อคน” × จำนวนนักเรียนในห้อง · ความเสียหาย = EXP ของเควสที่สำเร็จ (อนุมัติแล้ว) ของทั้งห้องในช่วงที่บอสเปิด (เควสอัตโนมัติ “มาเรียนวันนี้” นับด้วย) · ปราบได้ → ทุกคนที่ช่วยโจมตีอย่างน้อย 1 ครั้งกดรับรางวัลได้ · เว้นห้องว่าง = บอสของทุกห้อง · วันเริ่มควรเป็นวันจันทร์ · ถ้ามีบอสเฉพาะห้องและบอสทุกห้องพร้อมกัน จะใช้บอสเฉพาะห้อง");
+    await crud(h, { table: "bosses", order: "start_date", defaults: { emoji: "👹", hp_per_student: 60, days: 7, reward_exp: 50, reward_coins: 30, active: true, start_date: ymd(new Date(Date.now() - ((new Date().getDay() + 6) % 7) * 86400000)) },
+      cols: [{ k: "emoji", label: "ไอคอน", w: 50 }, { k: "name", label: "ชื่อบอส", w: 160 }, { k: "description", label: "คำอธิบาย", w: 200 },
+        { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "hp_per_student", label: "เลือด/คน", t: "number", w: 70 },
+        { k: "start_date", label: "เริ่ม", t: "date" }, { k: "days", label: "กี่วัน", t: "number", w: 60 },
+        { k: "reward_exp", label: "รางวัล EXP", t: "number", w: 70 }, { k: "reward_coins", label: "รางวัลเหรียญ", t: "number", w: 70 }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async digest(v) {
+    v.innerHTML = `<div class="card"><div class="row"><h3 class="grow" style="margin:0">📊 สรุปห้อง ${esc(clsName())}</h3>
+      <select id="dDays" style="width:auto"><option value="7">7 วันล่าสุด</option><option value="14">14 วันล่าสุด</option><option value="30">30 วันล่าสุด</option></select>
+      <button class="btn small ghost" id="dCopy">📋 คัดลอกเป็นข้อความ</button></div><div id="dBody"><p class="muted">กำลังโหลด…</p></div></div>`;
+    const days = Number(S.digDays || 7); $("#dDays").value = String(days);
+    const r = await rpc("admin_weekly_digest", { p_class: S.cls, p_days: days });
+    const A = r.attendance, tot = A.present + A.late + A.absent + A.leave;
+    const rate = tot ? Math.round(((A.present + A.late) / tot) * 100) : 0;
+    const sec = (title, rows, empty) => `<h4>${title}</h4>${rows.length ? rows.join("") : `<p class="muted">${empty}</p>`}`;
+    const pill = (t, cls = "") => `<span class="pill ${cls}" style="margin:2px">${t}</span>`;
+    const lines = [];
+    lines.push(`สรุปห้อง ${clsName()} (${fmtDate(r.from)} – ${fmtDate(r.to)})`, `มาเรียน ${rate}% (มา ${A.present} สาย ${A.late} ขาด ${A.absent} ลา ${A.leave}) · EXP รวมที่นักเรียนได้ ${r.exp_total}`);
+    const abs = r.absent.map((x) => `${x.no}. ${x.name} — ขาด ${x.absent_week} ครั้งในช่วงนี้ (30 วัน: ขาด ${x.absent_30} สาย ${x.late_30})`);
+    const mis = r.missing.map((x) => `${x.no}. ${x.name} — ค้างส่ง ${x.missing} ชิ้น: ${x.titles.join(", ")}`);
+    const ina = r.inactive.map((x) => `${x.no}. ${x.name} — ${x.last_login ? "เข้าล่าสุด " + fmtDate(x.last_login) : "ยังไม่เคยเข้า"}`);
+    lines.push("", "ขาดเรียน:", ...(abs.length ? abs : ["— ไม่มี"]), "", "ค้างส่งงาน:", ...(mis.length ? mis : ["— ไม่มี"]), "", "ไม่ได้เข้าเว็บ:", ...(ina.length ? ina : ["— ไม่มี"]));
+    $("#dBody").innerHTML = `<div class="grid">
+        <div class="card stat"><span class="muted">มาเรียน</span><b>${rate}%</b>จาก ${tot} รายการ</div>
+        <div class="card stat"><span class="muted">ขาด / สาย</span><b>${A.absent} / ${A.late}</b>ครั้ง</div>
+        <div class="card stat"><span class="muted">EXP ที่นักเรียนได้</span><b>${r.exp_total}</b>รวมทั้งห้อง</div></div>
+      ${sec("🚫 ขาดเรียน (ช่วงนี้ หรือสะสม ≥ 3 ครั้งใน 30 วัน)", r.absent.map((x) => `<div class="item"><div class="grow"><b>${x.no}. ${esc(x.name)}</b></div>${pill("ขาดช่วงนี้ " + x.absent_week, x.absent_week >= 2 ? "rar-SR" : "")}${pill("30 วัน: ขาด " + x.absent_30 + " สาย " + x.late_30)}</div>`), "ไม่มีนักเรียนขาด 🎉")}
+      ${sec("📝 ค้างส่งงาน (เลยกำหนดและยังไม่ส่ง)", r.missing.map((x) => `<div class="item"><div class="grow"><b>${x.no}. ${esc(x.name)}</b><div class="muted">${x.titles.map(esc).join(" · ")}</div></div>${pill("ค้าง " + x.missing + " ชิ้น", x.missing >= 2 ? "rar-SR" : "")}</div>`), "ไม่มีงานค้าง 🎉")}
+      ${sec("💤 ไม่ได้เข้าเว็บในช่วงนี้", r.inactive.map((x) => `<div class="item"><div class="grow"><b>${x.no}. ${esc(x.name)}</b></div><span class="muted">${x.last_login ? "เข้าล่าสุด " + fmtDate(x.last_login) : "ยังไม่เคยเข้า"}</span></div>`), "ทุกคนเข้าเว็บแล้ว 🎉")}
+      ${sec("🏅 EXP สูงสุดช่วงนี้", r.top.map((x, i) => `<div class="item"><b style="width:28px">${i + 1}</b><div class="grow">${x.no}. ${esc(x.name)}</div><b>+${x.exp_week}</b></div>`), "ยังไม่มีข้อมูล")}`;
+    $("#dDays").onchange = (e) => { S.digDays = e.target.value; renderTab(); };
+    $("#dCopy").onclick = async () => { await navigator.clipboard.writeText(lines.join("\n")); toast("คัดลอกสรุปแล้ว ✅ นำไปวางใน LINE ได้"); };
+  },
+
+  async export(v) {
+    v.innerHTML = `<div class="card"><h3>📤 ส่งออกเป็น Excel (.xlsx)</h3>
+      <p class="muted">ไฟล์ของห้อง <b>${esc(clsName())}</b> มี 5 ชีต: สมุดคะแนนรวม · รายการคะแนน · เช็คชื่อ · งาน · EXP/เหรียญ — ใช้ตัดเกรดหรือส่งฝ่ายวิชาการได้ทันที</p>
+      <div class="row"><button class="btn gold" id="xCls">⬇️ ดาวน์โหลดห้อง ${esc(clsName())}</button>
+      <button class="btn ghost" id="xAll">⬇️ คะแนนรวมทุกห้อง (1 ชีตต่อห้อง)</button></div></div>`;
+    const need = () => { if (!window.XLSX) { toast("โหลดตัวสร้าง Excel ไม่สำเร็จ (ตรวจอินเทอร์เน็ต)"); return false; } return true; };
+    const save = (wb, name) => XLSX.writeFile(wb, name + "_" + todayStr() + ".xlsx");
+    const sheet = (rows, widths) => { const ws = XLSX.utils.aoa_to_sheet(rows); ws["!cols"] = (widths || rows[0].map((_, i) => (i === 1 ? 26 : 12))).map((w) => ({ wch: w })); return ws; };
+    const gbRows = (gb) => [["เลขที่", "ชื่อ", "ก่อนกลางภาค", "กลางภาค", "หลังกลางภาค", "ปลายภาค", "จิตพิสัย", "คะแนนพิเศษ", "รวม (ไม่รวมพิเศษ)", "รวมพิเศษ"],
+      ...gb.map((r) => [r.no, r.name, r.pre_mid, r.midterm, r.post_mid, r.final, r.behavior, r.bonus, r.total, r.total_with_bonus])];
+    $("#xCls").onclick = async () => {
+      if (!need()) return;
+      const [st, gb, items, sc, att, asg, sub] = await Promise.all([
+        sb.from("students").select("id,no,name,exp,coins").eq("class_id", S.cls).order("no").then(must),
+        sb.from("v_gradebook").select("*").eq("class_id", S.cls).order("no").then(must),
+        sb.from("score_items").select("*").eq("class_id", S.cls).order("created_at").then(must),
+        sb.from("scores").select("item_id,student_id,score").then(must),
+        sb.from("ch_attendance").select("student_id,att_date,status").eq("class_id", S.cls).order("att_date").then(must),
+        sb.from("ch_assignments").select("id,title,due_date,max_score").eq("class_id", S.cls).order("due_date").then(must),
+        sb.from("ch_submissions").select("assignment_id,student_id,status,score").then(must),
+      ]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, sheet(gbRows(gb)), "สมุดคะแนนรวม");
+      const scm = {}; sc.forEach((x) => (scm[x.item_id + x.student_id] = x.score));
+      XLSX.utils.book_append_sheet(wb, sheet([["เลขที่", "ชื่อ", ...items.map((i) => `${CAT_LABEL[i.category]}: ${i.title} (เต็ม ${i.max_score})`)],
+        ...st.map((s) => [s.no, s.name, ...items.map((i) => scm[i.id + s.id] ?? "")])], [8, 26, ...items.map(() => 18)]), "รายการคะแนน");
+      const dates = [...new Set(att.map((a) => a.att_date))].sort(), am = {}; att.forEach((a) => (am[a.student_id + a.att_date] = a.status));
+      const L = { present: "ม", late: "ส", absent: "ข", leave: "ล" };
+      XLSX.utils.book_append_sheet(wb, sheet([["เลขที่", "ชื่อ", ...dates.map(fmtDate), "มา", "สาย", "ขาด", "ลา"],
+        ...st.map((s) => { const row = dates.map((d) => am[s.id + d]); const n = (k) => row.filter((x) => x === k).length;
+          return [s.no, s.name, ...row.map((x) => L[x] || ""), n("present"), n("late"), n("absent"), n("leave")]; })], [8, 26, ...dates.map(() => 9), 6, 6, 6, 6]), "เช็คชื่อ");
+      const smm = {}; sub.forEach((x) => (smm[x.assignment_id + x.student_id] = x));
+      const SL = { submitted: "ส่ง", late: "ส่งช้า", missing: "ไม่ส่ง" };
+      XLSX.utils.book_append_sheet(wb, sheet([["เลขที่", "ชื่อ", ...asg.map((a) => `${a.title}${a.due_date ? " (ส่ง " + fmtDate(a.due_date) + ")" : ""}`)],
+        ...st.map((s) => [s.no, s.name, ...asg.map((a) => { const x = smm[a.id + s.id]; return x ? SL[x.status] + (x.score != null ? ` (${x.score}/${a.max_score})` : "") : ""; })])], [8, 26, ...asg.map(() => 20)]), "งาน");
+      XLSX.utils.book_append_sheet(wb, sheet([["เลขที่", "ชื่อ", "เลเวล", "EXP", "เหรียญ"], ...st.map((s) => [s.no, s.name, Math.floor(Math.sqrt(s.exp / 40)) + 1, s.exp, s.coins])], [8, 26, 8, 10, 10]), "EXP-เหรียญ");
+      save(wb, "Chemistria_" + clsName().replace(/[\\/:*?\[\]]/g, "-")); toast("ดาวน์โหลดแล้ว ✅");
+    };
+    $("#xAll").onclick = async () => {
+      if (!need()) return;
+      const wb = XLSX.utils.book_new();
+      for (const c of S.classes) {
+        const gb = must(await sb.from("v_gradebook").select("*").eq("class_id", c.id).order("no"));
+        XLSX.utils.book_append_sheet(wb, sheet(gbRows(gb)), c.name.replace(/[\\/:*?\[\]]/g, "-").slice(0, 30));
+      }
+      save(wb, "Chemistria_คะแนนทุกห้อง"); toast("ดาวน์โหลดแล้ว ✅");
+    };
+  },
+
   async games(v) {
     const set = Object.fromEntries(must(await sb.from("app_settings").select("*")).map((x) => [x.key, x.value]));
     const f = [["game_daily_cap_exp", "เพดาน EXP จากมินิเกมต่อวัน", 40], ["quiz_count", "จำนวนข้อควิซประจำวัน", 5], ["quiz_exp_per_correct", "EXP ต่อข้อที่ตอบถูก", 4],
@@ -344,9 +469,33 @@ const TAB = {
       <div class="row">${f.map(([k, l, d]) => `<div style="width:230px"><label>${l}</label><input type="number" data-set="${k}" value="${esc(set[k] ?? d)}"></div>`).join("")}</div></div>`;
     v.onchange = async (e) => { const k = e.target.dataset.set; if (!k) return;
       await run(async () => must(await sb.from("app_settings").upsert({ key: k, value: String(e.target.value) })), "บันทึกแล้ว ✅"); };
+    const cl = must(await sb.from("classes").select("id,quiz_topic").eq("id", S.cls))[0];
+    const allQ = must(await sb.from("quiz_questions").select("topic"));
+    const topics = [...new Set(allQ.map((q) => q.topic))];
+    const tp = holder(v, "📚 ควิซตามบทเรียน", `ตั้ง “บทที่กำลังเรียน” ของห้อง ${esc(clsName())} → ควิซประจำวันจะดึงข้อของบทนี้ก่อน (ถ้าข้อไม่พอจะเติมจากข้อทั่วไป) · ว่าง = สุ่มจากทุกหัวข้อ`);
+    tp.innerHTML = `<div class="row"><div style="width:260px"><label>บทที่กำลังเรียน (หัวข้อ)</label><input id="qtopic" list="tplist" value="${esc(cl?.quiz_topic || "")}" placeholder="เช่น โมล"><datalist id="tplist">${topics.map((t) => `<option value="${esc(t)}">`).join("")}</datalist></div>
+      <button class="btn gold" id="saveTopic">บันทึก</button></div>
+      <h4>เพิ่มคำถามหลายข้อพร้อมกัน (วางจาก Excel/ข้อความได้)</h4>
+      <p class="muted">บรรทัดละข้อ คั่นด้วย | หรือแท็บ: <code>คำถาม | ก | ข | ค | ง | ข้อที่ถูก (ก/ข/ค/ง หรือ 1-4) | คำอธิบายเฉลย(ไม่บังคับ)</code></p>
+      <div class="row"><div style="width:200px"><label>หัวข้อ/บท</label><input id="bTopic" list="tplist" placeholder="เช่น โมล"></div>
+        <div style="width:200px"><label>ใช้กับห้อง</label><select id="bClass">${classOpts("ทุกห้อง")().map(([v2, l]) => `<option value="${esc(v2)}" ${v2 === S.cls ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div></div>
+      <textarea id="bulkQ" rows="6" placeholder="1 โมลของ H2O หนักกี่กรัม | 16 | 18 | 20 | 32 | ข | มวลโมเลกุลของน้ำ = 18"></textarea>
+      <button class="btn mint" id="addBulk" style="margin-top:8px">เพิ่มคำถาม</button>`;
+    $("#saveTopic").onclick = () => run(async () => must(await sb.from("classes").update({ quiz_topic: $("#qtopic").value.trim() || null }).eq("id", S.cls)), "บันทึกบทที่กำลังเรียนแล้ว ✅");
+    $("#addBulk").onclick = async () => {
+      const topic = $("#bTopic").value.trim() || "ทั่วไป", cls = $("#bClass").value || null, rows = [];
+      for (const line of $("#bulkQ").value.split("\n")) {
+        const c = line.split(/\t|\|/).map((x) => x.trim()); if (c.length < 6) continue;
+        const ans = "กขคง".indexOf(c[5][0]) >= 0 ? "กขคง".indexOf(c[5][0]) : Number(c[5]) - 1;
+        if (!(ans >= 0 && ans <= 3)) continue;
+        rows.push({ topic, class_id: cls, question: c[0].replace(/^\d+[.)]\s*/, ""), a: c[1], b: c[2], c: c[3], d: c[4], answer: ans, explain: c[6] || null, active: true });
+      }
+      if (!rows.length) return toast("ไม่พบบรรทัดที่อ่านได้ (ต้องมีอย่างน้อย 6 ช่อง)");
+      await run(async () => must(await sb.from("quiz_questions").insert(rows)), `เพิ่มคำถาม ${rows.length} ข้อแล้ว ✅`); renderTab();
+    };
     const h = holder(v, "🧠 คลังคำถามควิซ", "นักเรียนแต่ละคนได้ชุดคำถามสุ่มต่างกันในแต่ละวัน · เฉลยตรวจที่เซิร์ฟเวอร์ ไม่ถูกส่งไปที่เครื่องนักเรียนก่อนส่งคำตอบ · ปิดข้อที่ไม่ต้องการได้ด้วยช่อง “เปิด”");
     await crud(h, { table: "quiz_questions", order: "topic", defaults: { topic: "ทั่วไป", answer: 0, active: true },
-      cols: [{ k: "topic", label: "หัวข้อ", w: 90 }, { k: "question", label: "คำถาม", w: 260 }, { k: "a", label: "ก.", w: 110 }, { k: "b", label: "ข.", w: 110 }, { k: "c", label: "ค.", w: 110 }, { k: "d", label: "ง.", w: 110 },
+      cols: [{ k: "topic", label: "หัวข้อ/บท", w: 90 }, { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "question", label: "คำถาม", w: 260 }, { k: "a", label: "ก.", w: 110 }, { k: "b", label: "ข.", w: 110 }, { k: "c", label: "ค.", w: 110 }, { k: "d", label: "ง.", w: 110 },
         { k: "answer", label: "ข้อที่ถูก", t: "select", opts: () => [["0", "ก"], ["1", "ข"], ["2", "ค"], ["3", "ง"]] }, { k: "explain", label: "คำอธิบายเฉลย", w: 220 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
