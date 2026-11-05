@@ -22,7 +22,7 @@ const TABS = [
   ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
   ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
   ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["teams", "🧪 ทีม"], ["boss", "👹 บอส"],
-  ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
+  ["board", "📢 บอร์ด"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
 ];
 const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
 const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };
@@ -62,11 +62,13 @@ function shell() {
       <select id="clsSel" style="width:auto">${S.classes.map((c) => `<option value="${c.id}" ${c.id === S.cls ? "selected" : ""}>${esc(c.name)} · ${esc(c.subject_code || "")}</option>`).join("")}</select>
       <a class="btn ghost small" href="index.html" target="_blank">หน้านักเรียน</a>
       <button class="btn ghost small" id="out">ออกจากระบบ</button></div>
-    <div class="tabs">${TABS.map(([k, l]) => `<button class="tab ${k === S.tab ? "on" : ""}" data-t="${k}">${l}</button>`).join("")}</div>
+    <div class="navwrap" id="nav"><div class="navbar"><button class="navbtn" id="navbtn">☰ <b id="navlbl">${esc((TABS.find((t) => t[0] === S.tab) || ["", ""])[1])}</b> <span class="car">▾</span></button></div>
+      <div class="navgrid">${TABS.map(([k, l]) => `<button class="tab ${k === S.tab ? "on" : ""}" data-t="${k}">${l}</button>`).join("")}</div></div>
     <div id="view"></div>`;
   $("#clsSel").onchange = (e) => { S.cls = e.target.value; S.asg = S.item = null; renderTab(); };
   $("#out").onclick = async () => { await sb.auth.signOut(); showLogin(); };
-  $$(".tab").forEach((b) => (b.onclick = () => { S.tab = b.dataset.t; $$(".tab").forEach((x) => x.classList.toggle("on", x === b)); renderTab(); }));
+  $("#navbtn").onclick = () => $("#nav").classList.toggle("open");
+  $$(".navgrid .tab").forEach((b) => (b.onclick = () => { S.tab = b.dataset.t; $$(".navgrid .tab").forEach((x) => x.classList.toggle("on", x === b)); $("#navlbl").textContent = b.textContent; $("#nav").classList.remove("open"); window.scrollTo({ top: 0 }); renderTab(); }));
   renderTab();
 }
 
@@ -346,6 +348,37 @@ const TAB = {
         { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) }, { k: "price", label: "ราคา(เหรียญ)", t: "number", w: 80 },
         { k: "image", label: "ภาพ (ไอเทมถือ)", w: 150 }, { k: "st_int", label: "🧠ปัญญา", t: "number", w: 55 }, { k: "st_dil", label: "💪ขยัน", t: "number", w: 55 }, { k: "st_str", label: "⚔️พลัง", t: "number", w: 55 }, { k: "st_luk", label: "🍀โชค", t: "number", w: 55 }, { k: "st_coin", label: "🪙เหรียญ%", t: "number", w: 60 }, { k: "ability", label: "ความสามารถ (ข้อความ)", w: 180 },
         { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async board(v) {
+    const h = holder(v, "📢 บอร์ดประกาศ", "โพสต์ประกาศถึงห้องที่เลือกอยู่ หรือทุกห้อง · ปักหมุดไว้บนสุดได้ · ซ่อน/ลบโพสต์นักเรียนที่ไม่เหมาะสมได้ · นักเรียนโพสต์ได้วันละ 3 ครั้ง");
+    const load = async () => must(await sb.from("board_posts").select("*, students(name,no)").or(`class_id.eq.${S.cls},class_id.is.null`).order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(100));
+    const draw = async () => {
+      const L = await load();
+      h.innerHTML = `<input id="bt" maxlength="80" placeholder="หัวข้อประกาศ"><textarea id="bb" rows="3" maxlength="1000" placeholder="ข้อความประกาศ…" style="margin-top:6px"></textarea>
+        <div class="row" style="margin-top:8px"><select id="bs" style="width:auto"><option value="cls">ห้อง ${esc(clsName())}</option><option value="all">ทุกห้อง</option></select>
+        <label class="row" style="gap:6px"><input type="checkbox" id="bp" style="width:auto"> 📌 ปักหมุด</label><button class="btn gold" id="bpost">📮 โพสต์ประกาศ</button></div><hr style="border-color:var(--line)">
+        ${L.map((p) => `<div class="item ${p.hidden ? "muted" : ""}" style="align-items:flex-start"><div class="grow"><b>${p.pinned ? "📌 " : ""}${p.title ? esc(p.title) : "(ไม่มีหัวข้อ)"}</b>
+          <span class="tag ${p.author_kind === "teacher" ? "late" : "wait"}">${p.author_kind === "teacher" ? "ครู" : esc(p.students?.name || "นักเรียน")}</span>${p.class_id ? "" : ' <span class="tag ok">ทุกห้อง</span>'}${p.hidden ? ' <span class="tag no">ซ่อนอยู่</span>' : ""}
+          <div>${esc(p.body)}</div><div class="muted" style="font-size:12px">${new Date(p.created_at).toLocaleString("th-TH")}</div></div>
+          <button class="btn small ghost" data-a="pin" data-id="${p.id}" data-v="${p.pinned}">${p.pinned ? "เลิกปักหมุด" : "📌"}</button>
+          <button class="btn small ghost" data-a="hide" data-id="${p.id}" data-v="${p.hidden}">${p.hidden ? "แสดง" : "ซ่อน"}</button>
+          <button class="btn small ghost" data-a="del" data-id="${p.id}">🗑️</button></div>`).join("") || '<p class="muted">ยังไม่มีโพสต์</p>'}`;
+      $("#bpost").onclick = () => run(async () => {
+        const body = $("#bb").value.trim(); if (!body) throw new Error("พิมพ์ข้อความก่อน");
+        must(await sb.from("board_posts").insert({ class_id: $("#bs").value === "all" ? null : S.cls, author_kind: "teacher", title: $("#bt").value.trim() || null, body, pinned: $("#bp").checked }));
+        await draw();
+      }, "โพสต์แล้ว ✅");
+    };
+    h.onclick = (e) => { const b = e.target.closest("button[data-a]"); if (!b) return; const id = b.dataset.id, a = b.dataset.a;
+      run(async () => {
+        if (a === "del") { if (!confirm("ลบโพสต์นี้ถาวร?")) return; must(await sb.from("board_posts").delete().eq("id", id)); }
+        else if (a === "pin") must(await sb.from("board_posts").update({ pinned: b.dataset.v !== "true" }).eq("id", id));
+        else must(await sb.from("board_posts").update({ hidden: b.dataset.v !== "true" }).eq("id", id));
+        await draw();
+      });
+    };
+    await draw();
   },
 
   async teams(v) {
