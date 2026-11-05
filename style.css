@@ -757,3 +757,11 @@ table{max-width:100%}
   .scroll>table{min-width:640px}
   .scroll>table td:last-child{white-space:nowrap}
 }
+
+/* หน้าตกแต่ง: การ์ดไอเทมแสดงเฉพาะรูปไอเทม */
+.dgrid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+.dprev{min-height:84px;padding-top:6px}
+.dprev .dimg{width:76px;height:76px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 3px 6px #000a)}
+.dprev .demo{font-size:54px;line-height:1;filter:drop-shadow(0 3px 6px #000a)}
+.dtile .btn.small{width:100%;max-width:150px}
+@media(max-width:560px){.dgrid{grid-template-columns:repeat(2,1fr)}}
