@@ -1,14 +1,20 @@
 /* มินิเกมต่อสู้มอนสเตอร์เคมี: เลือกสกิลตามคลาส → ตอบคำถามเพื่อใช้สกิล → มอนสเตอร์โต้กลับ กดลูกศรลดดาเมจ
    (ดาเมจ/เฉลย/รางวัล คำนวณที่เซิร์ฟเวอร์ทั้งหมด) */
 const BATTLE = (() => {
-  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null };
+  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null, shown: {}, hpDelay: 0 };
   const ARW = { L: "⬅️", U: "⬆️", R: "➡️", D: "⬇️" };
   const KEYS = { ArrowLeft: "L", ArrowUp: "U", ArrowRight: "R", ArrowDown: "D" };
   const KIND = { attack: ["⚔️", "โจมตี"], buff: ["📈", "บัพ"], heal: ["💚", "ฮีล"] };
   const BUFF = { atk_up: "🔥 พลังโจมตี +50%", crit_up: "🍀 คริติคอลแน่นอน", shield: "🛡️ โล่ลดดาเมจ 50%", weak: "🔬 มอนสเตอร์อ่อนแอ +40%" };
   const paint = () => GAMES.paint();
   const mimg = (m, cls = "") => m.image ? `<img class="bt-mimg ${cls}" src="${esc(m.image)}" alt="${esc(m.name)}" onerror="this.outerHTML='<div class=&quot;bt-memo ${cls}&quot;>${esc(m.emoji)}</div>'">` : `<div class="bt-memo ${cls}">${esc(m.emoji)}</div>`;
-  const hp = (v, mx, cls) => `<div class="bt-hp ${cls}"><i style="width:${Math.max(0, Math.round((100 * v) / mx))}%"></i><span>${v} / ${mx}</span></div>`;
+  const hp = (v, mx, cls, from, delay) => { const to = Math.max(0, Math.round((100 * v) / mx)), fr = from == null ? to : Math.max(0, Math.round((100 * from) / mx));
+    return `<div class="bt-hp ${cls}"><i style="width:${to}%;--from:${fr}%;animation-delay:${fr === to ? 0 : delay || 0}ms" class="${fr === to ? "" : "shift"}"></i><span>${v} / ${mx}</span></div>`; };
+  function sprite(me) {
+    const dc = me.decor || {}, cls = me.char_class || "novice", o = dc.outfit, base = "assets/chars/" + cls + (altGender(cls, dc.gender) ? "_alt" : "");
+    const pet = dc.pet ? (dc.pet.image ? `<img class="bt-pet" src="${esc(dc.pet.image)}" alt="">` : `<span class="bt-pet">${esc(dc.pet.emoji)}</span>`) : "";
+    return `<img class="bt-spr" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">${pet}`;
+  }
 
   async function open() {
     S.screen = "list"; S.fb = null; S.msg = ""; S.drop = null; GAMES.setMode("battle"); paint();
@@ -40,8 +46,9 @@ const BATTLE = (() => {
     try {
       const r = await rpc("battle_answer", { p_token: tk(), p_battle: S.bat.id, p_pick: i });
       const q = S.bat.q; S.bat = r.state; S.fb = { ...r.event, q }; S.drop = r.drop || null;
-      S.hit = r.event.dmg > 0 ? "m" : "";
+      S.hit = ""; S.hpDelay = 520;
       if (S.bat.status !== "active") finishLoad();
+      S.busy = false; paint(); setTimeout(() => playSkill(r.event), 30); return;
     } catch (e) { toast(e.message); }
     S.busy = false; paint();
   }
@@ -71,17 +78,18 @@ const BATTLE = (() => {
       const r = await rpc("battle_defend", { p_token: tk(), p_battle: S.bat.id, p_hits: d.hits });
       S.bat = r.state; const e = r.event;
       S.msg = `🏹 ${S.bat.monster.atk_name}! กดถูก ${e.hits}/${e.n} → รับดาเมจ ${e.taken}${e.shield ? " (โล่ช่วยลดอีกครึ่ง 🛡️)" : ""}`;
-      S.hit = e.taken > 0 ? "p" : "";
+      S.hit = "";
       if (S.bat.status !== "active") { S.screen = "result"; finishLoad(); }
+      S.def = null; S.hpDelay = 520; paint(); const mo = S.bat.monster; setTimeout(() => playMonster(e, mo.atk_name, mo.emoji), 30); return;
     } catch (x) { toast(x.message); }
-    S.def = null; paint(); setTimeout(() => { S.hit = ""; }, 700);
+    S.def = null; paint();
   }
   window.addEventListener("keydown", (e) => {
     if (S.screen === "fight" && S.def && S.def.state === "go" && KEYS[e.key]) { e.preventDefault(); judge(KEYS[e.key]); }
   });
   const tapArrow = (k) => judge(k);
 
-  async function finishLoad() { try { await load(); } catch (e) {} }
+  function finishLoad() { setTimeout(async () => { try { await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
   async function flee() {
     if (!confirm("หนีจากการต่อสู้? จะนับเป็น 1 รอบของวันนี้และไม่ได้รางวัล")) return;
     clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null;
@@ -90,6 +98,59 @@ const BATTLE = (() => {
   }
   const back = () => { clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null; S.bat = null; S.fb = null; open(); };
   const exit = () => { clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null; GAMES.home(); };
+
+
+  /* ---------- เอฟเฟกต์เคลื่อนไหวในสนาม ---------- */
+  const $f = () => document.getElementById("btfx");
+  const ctr = (el, fx) => { const a = el.getBoundingClientRect(), b = fx.getBoundingClientRect(); return [a.left + a.width / 2 - b.left, a.top + a.height * 0.45 - b.top]; };
+  function put(html, ms, x, y) { const f = $f(); if (!f) return null; const d = document.createElement("div"); d.className = "fxe"; d.innerHTML = html; if (x != null) { d.style.left = x + "px"; d.style.top = y + "px"; } f.appendChild(d); setTimeout(() => d.remove(), ms); return d; }
+  const pop = (cls, el) => { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 600); };
+  function shot(from, to, emoji, big, color, done) {
+    const f = $f(); if (!f) return done && done();
+    const q = (sel) => f.parentNode.querySelector(sel); const A = q(from), Z = q(to); if (!A || !Z) return done && done();
+    const [ax, ay] = ctr(A, f), [zx, zy] = ctr(Z, f);
+    const d = put(`<span>${emoji}</span>`, 900, ax, ay); if (!d) return done && done();
+    d.classList.add("shot"); if (big) d.classList.add("big"); d.style.setProperty("--dx", zx - ax + "px"); d.style.setProperty("--dy", zy - ay + "px"); d.style.setProperty("--c", color || "#ffb347");
+    setTimeout(() => { burst(zx, zy, color, big); done && done(zx, zy); }, 520);
+  }
+  function burst(x, y, color, big) {
+    const d = put('<i class="ring"></i>' + Array.from({ length: big ? 12 : 8 }, (_, i) => `<b style="--a:${(360 / (big ? 12 : 8)) * i}deg"></b>`).join(""), 800, x, y);
+    if (d) d.style.setProperty("--c", color || "#ffb347"); if (d && big) d.classList.add("bigb");
+  }
+  const num = (txt, x, y, cls) => put(`<span class="fxn ${cls || ""}">${txt}</span>`, 1200, x, y);
+  function flash(cls) { const fl = document.querySelector(".bt-field"); if (fl) { fl.classList.remove(cls); void fl.offsetWidth; fl.classList.add(cls); setTimeout(() => fl.classList.remove(cls), 600); } }
+  const COL = { alc_fire: "#ff7a3d", alc_boost: "#c18cff", alc_heal: "#5ee6a8", sci_shock: "#6ad7ff", sci_scan: "#7aa8ff", sci_heal: "#5ee6a8", gua_strike: "#ffd86b", gua_shield: "#6aa8ff", gua_heal: "#5ee6a8", see_dice: "#ffd86b", see_luck: "#8aff8a", see_heal: "#b0ffd8", gen_hit: "#ffb347", gen_focus: "#ffd86b", gen_heal: "#5ee6a8" };
+  function playSkill(ev) {
+    const f = $f(); if (!f) return; const sk = ev.skill, col = COL[sk.key] || "#ffb347", root = f.parentNode, PL = root.querySelector(".bt-pl"), MO = root.querySelector(".bt-mo");
+    const [px, py] = ctr(PL, f), [mx, my] = ctr(MO, f);
+    S.hpDelay = 520;
+    if (!ev.correct) { num("พลาด!", px, py - 60, "miss"); put('<span class="fizz">💨</span>', 900, px, py - 20); return; }
+    if (sk.kind === "attack") {
+      pop("lunge2", PL);
+      shot(".bt-pl", ".bt-mo", sk.emoji, ev.crit, col, (zx, zy) => {
+        pop("shake", MO.querySelector(".bt-mimg,.bt-memo")); flash(ev.crit ? "flashbig" : "flash");
+        num((ev.crit ? "💥 " : "") + "-" + ev.dmg, zx, zy - 40, ev.crit ? "crit" : "dmg");
+        if (ev.fast) num("⚡ ตอบไว!", zx, zy - 76, "fast");
+      });
+    } else if (sk.kind === "heal") {
+      S.hpDelay = 300;
+      put(Array.from({ length: 10 }, (_, i) => `<b class="up" style="--x:${(i - 5) * 11}px;--d:${i * 70}ms">${i % 2 ? "✚" : "✨"}</b>`).join(""), 1500, px, py + 20);
+      put('<i class="ring heal"></i>', 900, px, py + 30); num("+" + ev.heal + " HP", px, py - 50, "heal");
+    } else {
+      S.hpDelay = 0;
+      const d = put('<i class="ring aura"></i><i class="ring aura r2"></i><i class="ring aura r3"></i><span class="auico">' + sk.emoji + "</span>", 1400, px, py + 10); if (d) d.style.setProperty("--c", col);
+      pop("glow", PL); num("📈 " + sk.name, px, py - 70, "buff");
+    }
+  }
+  function playMonster(e, name, emoji) {
+    const f = $f(); if (!f) return; const root = f.parentNode, PL = root.querySelector(".bt-pl"), MO = root.querySelector(".bt-mo");
+    S.hpDelay = 520;
+    shot(".bt-mo", ".bt-pl", emoji || "💢", false, "#ff5d6c", (zx, zy) => {
+      if (e.taken <= 0) num("🌀 หลบได้!", zx, zy - 50, "heal");
+      else { pop("shake", PL.querySelector(".bt-spr")); flash("flashred"); num("-" + e.taken, zx, zy - 40, "dmg"); }
+      if (e.hits > 0 && e.taken > 0) num("🛡️ ลดดาเมจ " + Math.round((80 * e.hits) / e.n) + "%", zx, zy - 74, "fast");
+    });
+  }
 
   /* ---------- หน้าจอ ---------- */
   function listView() {
@@ -108,11 +169,15 @@ const BATTLE = (() => {
   function fightView() {
     const b = S.bat, m = b.monster, me = D.student;
     const buffs = Object.entries(b.buffs || {}).filter(([, v]) => v > 0).map(([k, v]) => `<span class="bt-buff">${BUFF[k] || k} ×${v}</span>`).join("");
-    const arena = `<div class="card bt-arena">
-      <div class="bt-side bt-mon ${S.hit === "m" ? "hit" : ""}">${mimg(m, S.hit === "m" ? "shake" : "float")}<div class="bt-nm">${esc(m.name)} <small>Lv.${m.level}</small></div>${hp(b.m_hp, b.m_max, "mon")}</div>
-      <div class="bt-vs">VS</div>
-      <div class="bt-side bt-me ${S.hit === "p" ? "hit" : ""}"><div class="${S.hit === "p" ? "shake" : ""}">${stage(me.char_class, D.rank_info, me.decor, "sm")}</div><div class="bt-nm">${esc(me.name)} <small>เทิร์น ${b.turn}</small></div>${hp(b.p_hp, b.p_max, "me")}
-        <div class="bt-buffs">${buffs}</div></div></div>`;
+    const ph = b.phase, cs = ph === "question" && b.q ? (b.skills.find((x) => x.key === b.q.skill) || {}) : null;
+    const fm = S.shown.m, fp = S.shown.p; S.shown = { m: b.m_hp, p: b.p_hp };
+    const arena = `<div class="card bt-field ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}">
+      <div class="bt-sky"><i>🧪</i><i>⚗️</i><i>🔬</i><i>🫧</i><i>🫧</i><i>🫧</i><i>🫧</i></div><div class="bt-floor"></div>
+      <div class="bt-plate bt-pm"><b>${esc(m.name)}</b> <small>Lv.${m.level}</small>${hp(b.m_hp, b.m_max, "mon", fm, S.hpDelay)}</div>
+      <div class="bt-mo ${ph === "defend" ? "lunge" : ""}"><div class="bt-shadow"></div>${mimg(m, "float")}</div>
+      <div class="bt-pl ${cs ? "charging" : ""}"><div class="bt-shadow"></div>${sprite(me)}${cs ? `<div class="bt-chg">${cs.emoji}</div>` : ""}</div>
+      <div class="bt-plate bt-pp"><b>${esc(me.name)}</b> <small>เทิร์น ${b.turn}</small>${hp(b.p_hp, b.p_max, "me", fp, S.hpDelay)}<div class="bt-buffs">${buffs}</div></div>
+      <div id="btfx" class="bt-fxl"></div></div>`;
     if (S.fb) return arena + fbView();
     if (b.status !== "active") return arena + resultView();
     if (b.phase === "question") return arena + questionView();
