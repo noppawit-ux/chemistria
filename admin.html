@@ -493,7 +493,7 @@ const TAB = {
   async games(v) {
     const set = Object.fromEntries(must(await sb.from("app_settings").select("*")).map((x) => [x.key, x.value]));
     const f = [["game_daily_cap_exp", "เพดาน EXP จากมินิเกมต่อวัน", 40], ["quiz_count", "จำนวนข้อควิซประจำวัน", 5], ["quiz_exp_per_correct", "EXP ต่อข้อที่ตอบถูก", 4],
-      ["quiz_perfect_bonus", "โบนัส EXP เมื่อถูกทุกข้อ", 5], ["battle_rewards_per_day", "รอบต่อสู้มอนสเตอร์ที่ได้รางวัลต่อวัน", 3], ["match_max_exp", "EXP สูงสุดต่อรอบเกมจับคู่ธาตุ", 10], ["match_plays_per_day", "จำนวนรอบจับคู่ที่ได้รางวัลต่อวัน", 3]];
+      ["quiz_perfect_bonus", "โบนัส EXP เมื่อถูกทุกข้อ", 5], ["battle_rewards_per_day", "รอบต่อสู้มอนสเตอร์ที่ได้รางวัลต่อวัน", 3], ["duel_rewards_per_day", "รอบท้าดวลเพื่อนที่ได้รางวัลต่อวัน", 5], ["match_max_exp", "EXP สูงสุดต่อรอบเกมจับคู่ธาตุ", 10], ["match_plays_per_day", "จำนวนรอบจับคู่ที่ได้รางวัลต่อวัน", 3]];
     const day = todayStr();
     const plays = must(await sb.from("game_plays").select("game,student_id,exp,students(class_id)").eq("play_date", day));
     const mine = plays.filter((p) => p.students?.class_id === S.cls);
@@ -533,6 +533,10 @@ const TAB = {
       cols: [{ k: "topic", label: "หัวข้อ/บท", w: 90 }, { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "question", label: "คำถาม", w: 260 }, { k: "a", label: "ก.", w: 110 }, { k: "b", label: "ข.", w: 110 }, { k: "c", label: "ค.", w: 110 }, { k: "d", label: "ง.", w: 110 },
         { k: "answer", label: "ข้อที่ถูก", t: "select", opts: () => [["0", "ก"], ["1", "ข"], ["2", "ค"], ["3", "ง"]] }, { k: "explain", label: "คำอธิบายเฉลย", w: 220 }, { k: "active", label: "เปิด", t: "bool" }] });
     await TAB.monstersAdmin(v);
+    const ha = holder(v, "🏟️ สนามต่อสู้", "ธีม: lab / ice / volcano / swamp / storm / crystal · ปลดล็อกตามเลเวล · โบนัสรางวัล % ใช้กับโหมดล่ามอนสเตอร์ · ผูกมอนสเตอร์กับสนามด้วย “รหัสสนาม” ในตารางด้านบน");
+    await crud(ha, { table: "arenas", order: "sort", defaults: { emoji: "🏟️", theme: "lab", min_level: 1, reward_pct: 100, active: true, sort: 9 },
+      cols: [{ k: "key", label: "รหัส", w: 80 }, { k: "name", label: "ชื่อสนาม", w: 150 }, { k: "emoji", label: "อีโมจิ", w: 50 }, { k: "theme", label: "ธีม", w: 80 }, { k: "descr", label: "คำอธิบาย", w: 220 },
+        { k: "min_level", label: "เลเวลปลดล็อก", t: "number", w: 80 }, { k: "reward_pct", label: "รางวัล %", t: "number", w: 70 }, { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
   async monstersAdmin(v) {
@@ -540,7 +544,7 @@ const TAB = {
     await crud(h, { table: "monsters", order: "sort", defaults: { emoji: "👾", level: 1, hp: 60, atk: 8, exp: 10, coins: 5, atk_name: "พุ่งชน", active: true, sort: 9 },
       cols: [{ k: "key", label: "รหัส", w: 80 }, { k: "name", label: "ชื่อ", w: 130 }, { k: "emoji", label: "อีโมจิ", w: 50 }, { k: "image", label: "ภาพ", w: 170 }, { k: "level", label: "เลเวล(1-5)", t: "number", w: 60 },
         { k: "hp", label: "HP", t: "number", w: 60 }, { k: "atk", label: "โจมตี", t: "number", w: 60 }, { k: "exp", label: "EXP", t: "number", w: 60 }, { k: "coins", label: "เหรียญ", t: "number", w: 60 },
-        { k: "atk_name", label: "ชื่อท่าโจมตี", w: 120 }, { k: "descr", label: "คำอธิบาย", w: 200 }, { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
+        { k: "atk_name", label: "ชื่อท่าโจมตี", w: 120 }, { k: "descr", label: "คำอธิบาย", w: 200 }, { k: "arena", label: "สนาม (รหัส)", w: 80 }, { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
   async settings(v) {

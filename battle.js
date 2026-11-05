@@ -16,6 +16,12 @@ const BATTLE = (() => {
     return `<img class="bt-spr" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">${pet}`;
   }
 
+  const SKY = { lab: ["🧪", "⚗️", "🔬", "🫧", "🫧", "🫧", "🫧"], ice: ["❄️", "🧊", "❄️", "❄", "❄", "❄", "❄"], volcano: ["🌋", "🔥", "🌋", "🔥", "🔥", "🔥", "🔥"],
+    swamp: ["☣️", "🧫", "☣️", "🟢", "🟢", "🫧", "🟢"], storm: ["⛈️", "⚡", "☁️", "⚡", "💧", "💧", "⚡"], crystal: ["💎", "🔮", "💎", "✨", "✨", "✨", "✨"] };
+  const skyHtml = (t) => `<div class="bt-sky">${(SKY[t] || SKY.lab).map((e) => `<i>${e}</i>`).join("")}</div>`;
+  const arNow = () => { const d = S.data; if (!d || !d.arenas || !d.arenas.length) return null; return d.arenas.find((a) => a.key === S.arena && !a.locked) || d.arenas.find((a) => !a.locked) || d.arenas[0]; };
+  const pickArena = (k) => { const a = (S.data.arenas || []).find((x) => x.key === k); if (!a) return; if (a.locked) return toast(`ปลดล็อกที่เลเวล ${a.min_level} 🔒`); S.arena = k; paint(); };
+
   async function open() {
     S.screen = "list"; S.fb = null; S.msg = ""; S.drop = null; GAMES.setMode("battle"); paint();
     try {
@@ -198,6 +204,13 @@ const BATTLE = (() => {
   }
 
   /* ---------- หน้าจอ ---------- */
+  function arenaPicker() {
+    const d = S.data, cur = arNow(); if (!d.arenas || !d.arenas.length) return "";
+    return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">🏟️ เลือกสนามต่อสู้</h3><span class="pill">เลเวลของคุณ Lv.${d.level}</span></div>
+      <div class="ar-grid">${d.arenas.map((a) => `<div class="ar-card t-${esc(a.theme)} ${cur && cur.key === a.key ? "on" : ""} ${a.locked ? "lock" : ""}" onclick="BATTLE.arena('${a.key}')">
+        <div class="ae">${a.locked ? "🔒" : esc(a.emoji)}</div><b>${esc(a.name)}</b><small>${a.locked ? "ปลดล็อกที่ Lv." + a.min_level : "รางวัล ×" + (a.reward_pct / 100).toFixed(2).replace(/0$/, "")}</small></div>`).join("")}</div>
+      ${cur ? `<p class="muted" style="margin:0">${esc(cur.descr || "")}</p>` : ""}</div>`;
+  }
   function listView() {
     const d = S.data; if (!d) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
     const left = Math.max(0, d.limit - d.used);
@@ -205,7 +218,8 @@ const BATTLE = (() => {
       <p class="muted" style="margin:6px 0">ตอบคำถามเพื่อใช้สกิล · มอนสเตอร์โจมตีกลับให้กดลูกศรลดดาเมจ · ชนะได้ EXP + เหรียญ + สุ่มดรอปไอเทม</p>
       <p>${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${d.limit}</span>` : '<span class="pill">รอบที่ได้รางวัลวันนี้หมดแล้ว — เล่นฝึกได้ไม่จำกัด (ไม่ได้รางวัล)</span>'} <span class="pill">❤️ HP ${d.p_max}</span></p>
       <div class="bt-skills">${d.skills.map((s) => `<span class="bt-sk ${s.kind}" title="${esc(s.descr || "")}">${s.emoji} <b>${esc(s.name)}</b> <small>${KIND[s.kind][1]}</small></span>`).join("")}</div></div>
-      <div class="bt-mgrid">${d.monsters.map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small></h3>
+      ${arenaPicker()}
+      <div class="bt-mgrid">${d.monsters.filter((m) => !d.arenas || !d.arenas.length || (m.arena || "lab") === (arNow() || {}).key).map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small></h3>
         <p class="muted" style="margin:2px 0">${esc(m.descr || "")}</p><p style="margin:4px 0"><span class="pill">❤️ ${m.hp}</span> <span class="pill">🗡️ ${m.atk}</span></p>
         <p class="muted" style="margin:2px 0 8px">รางวัล +${m.exp} EXP · +${m.coins} 🪙 · ดรอปไอเทม</p>
         <button class="btn gold" onclick="BATTLE.start('${m.id}')">⚔️ ท้าสู้</button></div>`).join("") || '<div class="card"><p class="muted">ยังไม่มีมอนสเตอร์ในระบบ</p></div>'}</div>`;
@@ -216,8 +230,9 @@ const BATTLE = (() => {
     const buffs = Object.entries(b.buffs || {}).filter(([, v]) => v > 0).map(([k, v]) => `<span class="bt-buff">${BUFF[k] || k} ×${v}</span>`).join("");
     const ph = b.phase, cs = ph === "question" && b.q ? (b.skills.find((x) => x.key === b.q.skill) || {}) : null;
     const fm = S.shown.m, fp = S.shown.p; S.shown = { m: b.m_hp, p: b.p_hp };
-    const arena = `<div class="card bt-field ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}">
-      <div class="bt-sky"><i>🧪</i><i>⚗️</i><i>🔬</i><i>🫧</i><i>🫧</i><i>🫧</i><i>🫧</i></div><div class="bt-floor"></div>
+    const th = m.theme || "lab";
+    const arena = `<div class="card bt-field ar-${esc(th)} ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}">
+      ${skyHtml(th)}<div class="bt-floor"></div>${m.arena_name ? `<div class="bt-arname">${esc(m.arena_name)}</div>` : ""}
       <div class="bt-plate bt-pm"><b>${esc(m.name)}</b> <small>Lv.${m.level}</small>${hp(b.m_hp, b.m_max, "mon", fm, S.hpDelay)}</div>
       <div class="bt-mo ${ph === "defend" ? "lunge" : ""}"><div class="bt-shadow"></div>${mimg(m, "float")}</div>
       <div class="bt-pl ${cs ? "charging" : ""}"><div class="bt-shadow"></div>${sprite(me)}${cs ? `<div class="bt-chg">${cs.emoji}</div>` : ""}</div>
@@ -283,5 +298,5 @@ const BATTLE = (() => {
   }
 
   const view = () => (S.screen === "list" || !S.bat ? listView() : fightView());
-  return { open, view, start, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, back, exit };
+  return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, back, exit };
 })();

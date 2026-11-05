@@ -35,6 +35,7 @@ const GAMES = (() => {
     if (st.mode === "match") return matchView();
     if (st.mode === "matchres") return matchResult();
     if (st.mode === "battle") return BATTLE.view();
+    if (st.mode === "duel") return DUEL.view();
     if (!s) return head();
     return head() + `<div class="gm-grid">
       <div class="card gm-card">
@@ -53,6 +54,11 @@ const GAMES = (() => {
         <div class="gm-ico">⚔️</div><h3>ล่ามอนสเตอร์เคมี</h3>
         <p class="muted">เลือกสกิลตามคลาส ตอบคำถามเพื่อโจมตี บัพ และฮีล · มอนสเตอร์โต้กลับ กดลูกศรลดดาเมจ · ชนะได้ EXP เหรียญ และดรอปไอเทม</p>
         <button class="btn gold" onclick="BATTLE.open()">⚔️ เข้าต่อสู้</button>
+      </div>
+      <div class="card gm-card">
+        <div class="gm-ico">🤝</div><h3>ท้าดวลเพื่อน (เรียลไทม์)</h3>
+        <p class="muted">ท้าเพื่อนในห้องที่ออนไลน์ ตอบคำถามพร้อมกันทุกรอบ ตอบถูก/ไวกว่า = ทำดาเมจใส่อีกฝ่าย · มีท่าไม้ตายประจำคลาส · ชนะได้ EXP + เหรียญ</p>
+        <button class="btn gold" onclick="DUEL.open()">🤝 เข้าห้องท้าดวล</button>
       </div></div>`;
   }
 
@@ -150,5 +156,5 @@ const GAMES = (() => {
 
   const home = () => { st.mode = "home"; st.status = null; go("game"); };
   const quit = () => { if (!confirm("ออกจากเกม? ความคืบหน้าจะไม่ถูกบันทึก")) return; clearInterval(st.tm); home(); };
-  return { paint, setMode: (m) => { st.mode = m; }, view, startQuiz, pick, startMatch, tap, home, quit };
+  return { paint, mode: () => st.mode, setMode: (m) => { st.mode = m; }, view, startQuiz, pick, startMatch, tap, home, quit };
 })();

@@ -20,6 +20,7 @@
 <script src="fx.js"></script>
 <script src="games.js"></script>
 <script src="battle.js"></script>
+<script src="duel.js"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -65,7 +66,7 @@ async function showLogin(msg) {
     } catch (e) { toast(e.message); btn.disabled = false; }
   };
   $("#lbtn").onclick = go;
-  setTimeout(() => { if (typeof FX === "undefined" || !$(".kbstar")) return; FX.at(".kbstar", "halo", { scale: 2, loop: true, dy: -40 }); FX.at(".lg-cast", "spirit-flame", { scale: 2, loop: true, dx: -150, foot: true }); FX.at(".lg-cast", "spirit-flame", { scale: 2, loop: true, dx: 150, foot: true }); }, 400);
+  setTimeout(() => { if (typeof FX === "undefined" || D || !$(".kbstar")) return; FX.at(".kbstar", "halo", { scale: 2, loop: true, dy: -40 }); FX.at(".lg-cast", "spirit-flame", { scale: 2, loop: true, dx: -150, foot: true }); FX.at(".lg-cast", "spirit-flame", { scale: 2, loop: true, dx: 150, foot: true }); }, 400);
   $("#gmlink").onclick = (e) => { e.preventDefault(); const sel = $("#lc"); if (![...sel.options].some((o) => o.value === "GM")) sel.add(new Option("🛠️ GM (ห้องทดสอบ)", "GM")); sel.value = "GM"; $("#ln").value = 1; $("#lp").focus(); };
   $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
@@ -85,7 +86,7 @@ async function load() {
     const prev = D; D = await rpc("student_dashboard", { p_token: tk() });
     try { HOF = (await rpc("hall_of_fame", { p_token: tk() })) || []; } catch (e) { HOF = []; }
     try { X = (await rpc("student_extras", { p_token: tk() })) || {}; } catch (e) { X = {}; }
-    DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren();
+    DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
     try { B = (await rpc("board_list", { p_token: tk() })) || { posts: [], unread: 0 }; } catch (e) { B = { posts: [], unread: 0 }; }
     render(); kbAuto(); fxDiff(prev);
   } catch (e) {
