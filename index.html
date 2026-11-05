@@ -21,7 +21,7 @@ const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
   ["class", "⚔️ คลาส"], ["decor", "🎨 ตกแต่ง"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"], ["board", "📢 บอร์ด"],
 ];
-let D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], decSlot = "frame", tab = "home", calMonth = new Date(), calSel = todayStr();
+let D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";
 const app = $("#app");
 
@@ -77,6 +77,7 @@ async function load() {
     D = await rpc("student_dashboard", { p_token: tk() });
     try { HOF = (await rpc("hall_of_fame", { p_token: tk() })) || []; } catch (e) { HOF = []; }
     try { X = (await rpc("student_extras", { p_token: tk() })) || {}; } catch (e) { X = {}; }
+    DRAFT = null;
     try { B = (await rpc("board_list", { p_token: tk() })) || { posts: [], unread: 0 }; } catch (e) { B = { posts: [], unread: 0 }; }
     render();
   } catch (e) {
@@ -305,6 +306,31 @@ function teamChip() {
 const AUTO_HINT = { attendance: "ครูเช็คชื่อว่ามาเรียน", login: "เข้าสู่ระบบวันนี้", quiz: "ทำควิซประจำวัน (แท็บเกม)", quiz_perfect: "ตอบควิซถูกทุกข้อ",
   match: "เล่นเกมจับคู่ธาตุ", submit: "ส่งงาน 1 ชิ้น", gacha: "สุ่มกาชา 1 ครั้ง", decorate: "เปลี่ยนชุด/ไอเทมตัวละคร" };
 const STN = [["int", "🧠", "ปัญญา", "โบนัส EXP ควิซ"], ["dil", "💪", "ขยัน", "EXP เช็คชื่อ/งาน/เควส"], ["str", "⚔️", "พลังโจมตี", "ดาเมจบอส"], ["luk", "🍀", "โชค", "โอกาสได้ SR/SSR"]];
+/* กราฟเรดาร์ค่าสเตตัส (5 แกน) — draft = ชุดที่กำลังเลือกอยู่ (ยังไม่บันทึก) */
+const SLOTS = [["outfit", "👕", "ชุด"], ["fx", "✨", "เอฟเฟค"], ["item", "🧪", "ไอเทมถือ"], ["hat", "🎩", "หมวก"], ["pet", "🐾", "สัตว์เลี้ยง"], ["frame", "🖼️", "กรอบ"], ["bg", "🌄", "พื้นหลัง"], ["title", "🏷️", "ฉายา"]];
+function statTotals(dc) {
+  const S = X.stats || {}, IS = X.item_stats || {}, o = {};
+  const add = (k) => Object.entries(dc || {}).reduce((a, [sl, it]) => a + (it && it.id && IS[it.id] ? +IS[it.id][k] || 0 : 0), 0);
+  ["int", "dil", "str", "luk"].forEach((k) => { const b = (S[k] || {}).base || 0; o[k] = { base: b, item: add(k), total: b + add(k) }; });
+  o.coin = add("coin");
+  return o;
+}
+function radarHtml(dc, size = 250) {
+  if (!X.stats) return "";
+  const T = statTotals(dc), AX = [["int", "🧠", "ปัญญา", T.int.total], ["dil", "💪", "ขยัน", T.dil.total], ["str", "⚔️", "พลัง", T.str.total], ["luk", "🍀", "โชค", T.luk.total], ["coin", "🪙", "เหรียญ%", T.coin]];
+  const MAXV = 12, cx = size / 2, cy = size / 2 + 4, R = size * 0.32, n = AX.length;
+  const pt = (i, r) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+  const ring = (f) => AX.map((_, i) => pt(i, R * f).map((v) => v.toFixed(1)).join(",")).join(" ");
+  const poly = AX.map(([, , , v], i) => pt(i, R * Math.min(1, v / MAXV)).map((x) => x.toFixed(1)).join(",")).join(" ");
+  const grid = [0.25, 0.5, 0.75, 1].map((f) => `<polygon points="${ring(f)}" fill="none" stroke="#6a52c4" stroke-opacity="${f === 1 ? 0.9 : 0.45}" stroke-width="1"/>`).join("");
+  const axes = AX.map((_, i) => { const [x, y] = pt(i, R); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#6a52c4" stroke-opacity=".45"/>`; }).join("");
+  const dots = AX.map(([, , , v], i) => { const [x, y] = pt(i, R * Math.min(1, v / MAXV)); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#ffd86b" stroke="#1b1238"/>`; }).join("");
+  const labels = AX.map(([k, ic, nm, v], i) => { const [x, y] = pt(i, R + 26); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" font-size="11" fill="#e9e2ff"><tspan x="${x.toFixed(1)}">${ic} ${nm}</tspan><tspan x="${x.toFixed(1)}" dy="13" font-weight="700" fill="#ffd86b">${v}${k !== "coin" && T[k].item ? `<tspan fill="#7ee0b0" font-size="10"> (+${T[k].item})</tspan>` : ""}</tspan></text>`; }).join("");
+  const E = { quiz: Math.floor(T.int.total / 2), exp: T.dil.total, boss: 3 * T.str.total, rare: 3 * T.luk.total };
+  return `<div class="radar"><svg viewBox="0 0 ${size} ${size + 14}" width="100%" style="max-width:${size + 40}px" role="img" aria-label="กราฟสเตตัส">${grid}${axes}
+      <polygon points="${poly}" fill="#9b6bff" fill-opacity=".38" stroke="#c9a8ff" stroke-width="2" stroke-linejoin="round"/>${dots}${labels}</svg>
+    <div class="radfx"><span>🧠 +${E.quiz} EXP/ควิซ</span><span>💪 +${E.exp}% EXP</span><span>⚔️ +${E.boss}% ดาเมจบอส</span><span>🍀 +${E.rare}% SR/SSR</span>${T.coin ? `<span>🪙 +${T.coin}% เหรียญ</span>` : ""}</div></div>`;
+}
 function statsHtml() {
   const S = X.stats; if (!S) return "";
   const E = S.effects || {};
@@ -327,12 +353,11 @@ const VIEWS = {
   home() {
     const a = D.attendance_summary;
     const me = D.student;
-    return `<div class="homehero"><div class="card mychar center"><h3 style="margin-bottom:6px">🧍 ตัวละครของฉัน</h3>
-      ${stage(me.char_class, D.rank_info, me.decor, "lg")}
-      <div style="margin-top:8px">${titleTag(me.decor)}</div>
-      <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
-      ${hallHtml() || '<div class="card hof center"><h3>🏆 หอเกียรติยศ</h3><p class="muted">ยังไม่มีอันดับ — สะสม EXP จากเช็คชื่อ ส่งงาน เควส และมินิเกมเพื่อขึ้นโพเดียม</p></div>'}</div>
-    ${remindHtml()}${teamChip()}${bossHtml(false)}${statsHtml()}
+    return `<div class="card mychar"><h3 style="margin-bottom:6px">🧍 ตัวละครของฉัน</h3>
+      <div class="charrow"><div class="stagecol">${stage(me.char_class, D.rank_info, me.decor, "lg")}<div style="margin-top:8px">${titleTag(me.decor)}</div>
+        <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
+        <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
+    ${remindHtml()}${teamChip()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
@@ -465,32 +490,42 @@ const VIEWS = {
   },
 
   decor() {
-    const SL = [["outfit", "👕 ชุด"], ["fx", "✨ เอฟเฟค"], ["item", "🧪 ไอเทม"], ["frame", "🖼️ กรอบ"], ["bg", "🌄 พื้นหลัง"], ["hat", "🎩 หมวก"], ["pet", "🐾 สัตว์เลี้ยง"], ["title", "🏷️ ฉายา"]];
-    const s = D.student, eq = s.decor || {}, ri = D.rank_info;
-    let items = (D.decor_catalog || []).filter((d) => d.slot === decSlot);
+    const s = D.student, eq = s.decor || {}, ri = D.rank_info, cat = D.decor_catalog || [];
+    if (!DRAFT) { DRAFT = {}; SLOTS.forEach(([k]) => { if (eq[k]) DRAFT[k] = eq[k]; }); }
+    const idOf = (o, k) => (o && o[k] ? o[k].id : null);
+    const changed = SLOTS.filter(([k]) => idOf(DRAFT, k) !== idOf(eq, k)).map(([k]) => k);
+    const prevDc = { ...DRAFT, gender: eq.gender };
+    let items = cat.filter((d) => d.slot === decSlot);
     if (decSlot === "outfit") items = [{ id: null, slot: "outfit", name: "ชุดเริ่มต้น", emoji: "👤", rarity: "N", owned: true, price: null }, ...items];
-    const owned = (D.decor_catalog || []).filter((d) => d.owned).length, all = (D.decor_catalog || []).length;
+    const owned = cat.filter((d) => d.owned).length;
     const stBadge = (d) => { const t = (X.item_stats || {})[d.id]; if (!t) return ""; const parts = STN.filter(([k]) => t[k]).map(([k, ic]) => `${ic}+${t[k]}`); if (+t.coin) parts.push(`🪙+${t.coin}%`); return `<span class="stb">${parts.join(" ")}</span>${t.ability ? `<span class="abl">${esc(t.ability)}</span>` : ""}`; };
     const tile = (d) => {
-      const worn = d.id === null ? !eq.outfit : eq[d.slot] && eq[d.slot].id === d.id;
-      const next = { ...eq }; if (d.id === null) delete next.outfit; else next[d.slot] = d;
+      const sel = d.id === null ? !DRAFT.outfit : DRAFT[d.slot] && DRAFT[d.slot].id === d.id;
+      const next = { ...DRAFT, gender: eq.gender }; if (d.id === null) delete next.outfit; else next[d.slot] = d;
       const prev = d.slot === "title" ? titleTag({ title: d }) : stage(s.char_class, ri, next, "sm");
-      return `<div class="dtile rar-${d.rarity} ${worn ? "worn" : ""} ${d.owned ? "" : "locked"}">
-        <div class="dprev">${prev}</div><b>${esc(d.emoji)} ${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>${stBadge(d)}
-        ${d.owned ? (worn ? (d.id === null ? '<span class="tag ok">กำลังใส่</span>' : `<button class="btn small ghost" onclick="equipDecor('${d.slot}',null)">ถอดออก</button>`)
-              : `<button class="btn small gold" onclick="equipDecor('${d.slot}',${d.id === null ? "null" : `'${d.id}'`})">${d.id === null ? "ใส่ชุดเริ่มต้น" : "สวมใส่"}</button>`)
+      const act = d.owned ? (sel ? (d.id === null ? '<span class="tag ok">เลือกอยู่</span>' : `<button class="btn small ghost" onclick="pickDecor('${d.slot}',null)">ถอดออก</button>`)
+            : `<button class="btn small gold" onclick="pickDecor('${d.slot}',${d.id === null ? "null" : `'${d.id}'`})">เลือก</button>`)
           : d.price != null ? `<button class="btn small" ${s.coins < d.price ? "disabled" : ""} onclick="buyDecor('${d.id}','${esc(d.name)}',${d.price})">ซื้อ ${d.price} 🪙</button>`
-          : '<span class="muted">🔒 ได้จากกาชา</span>'}</div>`;
+          : '<span class="muted">🔒 ได้จากกาชา</span>';
+      return `<div class="dtile rar-${d.rarity} ${sel ? "worn" : ""} ${d.owned ? "" : "locked"}">
+        <div class="dprev">${prev}</div><b>${esc(d.emoji)} ${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>${stBadge(d)}${act}</div>`;
     };
-    return `<div class="card center"><h3>🎨 ตัวละครของฉัน</h3>
-      <div style="display:flex;justify-content:center;margin:6px 0 10px">${stage(s.char_class, ri, eq, "lg")}</div>
-      <div class="row" style="justify-content:center;gap:8px;margin:6px 0"><span class="muted">เพศตัวละคร</span>
+    const slotBtn = ([k, ic, lb]) => { const it = DRAFT[k]; const ch = changed.includes(k);
+      return `<button class="slotbtn ${k === decSlot ? "on" : ""} ${ch ? "chg" : ""}" onclick="decSlot='${k}';render()">
+        <span class="si">${it ? (it.image ? `<img src="${esc(it.image)}" alt="">` : esc(it.emoji)) : ic}</span><span class="sl">${lb}</span><small>${it ? esc(it.name) : k === "outfit" ? "ชุดเริ่มต้น" : "— ว่าง —"}</small></button>`; };
+    return `<div class="card"><h3>🎨 ตัวละครของฉัน</h3>
+      <div class="charrow"><div class="stagecol">${stage(s.char_class, ri, prevDc, "lg")}${titleTag(DRAFT)}
+        <div class="row" style="justify-content:center;gap:6px;margin-top:8px"><span class="muted">เพศ</span>
         ${[["m", "👦 ชาย"], ["f", "👧 หญิง"]].map(([g, l]) => `<button class="btn small ${gOf(s.char_class, eq) === g ? "gold" : "ghost"}" onclick="setGender('${g}')">${l}</button>`).join("")}</div>
-      ${altGender(s.char_class, eq.gender) && eq.outfit ? '<p class="muted" style="font-size:12px">* ชุดนี้ยังไม่มีภาพของเพศที่เลือก จึงแสดงตัวพื้นฐานแทนไปก่อน</p>' : ""}
-      ${titleTag(eq)}<p class="muted">สะสมแล้ว ${owned}/${all} ชิ้น · เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span> · ได้ไอเทมจาก <a href="#" onclick="go('gacha');return false" style="color:var(--gold2)">กาชา</a> หรือซื้อด้านล่าง</p></div>
-      ${statsHtml()}
-      <div class="tabs" style="position:static">${SL.map(([k, l]) => `<button class="tab ${k === decSlot ? "on" : ""}" onclick="decSlot='${k}';render()">${l}</button>`).join("")}</div>
-      <div class="dgrid">${items.map(tile).join("") || '<p class="muted">ยังไม่มีไอเทมในหมวดนี้</p>'}</div>`;
+        ${altGender(s.char_class, eq.gender) && DRAFT.outfit ? '<p class="muted" style="font-size:12px">* ชุดนี้ยังไม่มีภาพของเพศที่เลือก จึงแสดงตัวพื้นฐานแทนไปก่อน</p>' : ""}</div>
+        <div class="radarcol"><div class="muted center" style="margin-bottom:2px">📊 สเตตัสประกอบ${changed.length ? " (ตัวอย่างตามที่เลือก)" : ""}</div>${radarHtml(DRAFT)}</div></div>
+      <div class="slotbar">${SLOTS.map(slotBtn).join("")}</div>
+      <div class="savebar ${changed.length ? "on" : ""}"><span>${changed.length ? `✏️ เปลี่ยน ${changed.length} ช่อง ยังไม่ได้บันทึก` : "เลือกไอเทมด้านล่างเพื่อลองใส่ แล้วกดบันทึก"}</span>
+        <span><button class="btn ghost small" ${changed.length ? "" : "disabled"} onclick="resetDraft()">↩︎ ยกเลิก</button>
+        <button class="btn gold" ${changed.length ? "" : "disabled"} onclick="saveDraft()">💾 บันทึก</button></span></div>
+      <p class="muted center" style="margin:6px 0 0">สะสมแล้ว ${owned}/${cat.length} ชิ้น · เหรียญ <span class="coin">🪙 ${s.coins}</span> · ได้ไอเทมจาก <a href="#" onclick="go('gacha');return false" style="color:var(--gold2)">กาชา</a> หรือซื้อด้านล่าง</p></div>
+      <div class="card"><h3>${(SLOTS.find((x) => x[0] === decSlot) || [])[1]} ${(SLOTS.find((x) => x[0] === decSlot) || [])[2]}</h3><div class="dgrid">${items.map(tile).join("") || '<p class="muted">ยังไม่มีไอเทมในหมวดนี้</p>'}</div></div>
+      ${statsHtml()}`;
   },
 
   shop() {
@@ -502,7 +537,8 @@ const VIEWS = {
 
   rank() {
     const me = D.rank_info;
-    return `<div class="card"><h3>🏆 อันดับห้อง ${esc(D.class.name)} (Top 10)</h3>
+    return `${hallHtml() || '<div class="card hof center"><h3>🏆 หอเกียรติยศ</h3><p class="muted">ยังไม่มีอันดับ — สะสม EXP จากเช็คชื่อ ส่งงาน เควส และมินิเกมเพื่อขึ้นโพเดียม</p></div>'}
+    <div class="card"><h3>🏆 อันดับห้อง ${esc(D.class.name)} (Top 10)</h3>
       ${D.leaderboard.map((l, i) => `<div class="item" ${l.me ? 'style="background:#3a2a6b;border-radius:10px;padding-left:8px"' : ""}>
         <b style="width:28px">${["🥇", "🥈", "🥉"][i] || i + 1}</b>${frame(l.avatar, l.char_class, l.rank_info, 0, true, l.decor)}
         <div class="grow">${esc(l.name)} ${titleTag(l.decor)}<div class="muted rk-${l.rank_info.key}" style="color:var(--rc)">${esc(rankName(l.rank_info))}${clsOf(l.char_class) ? " · " + esc(clsOf(l.char_class).name) : ""}</div></div>
@@ -524,6 +560,12 @@ const usePriv = (id) => confirm("ขอใช้สิทธิ์นี้ ค�
   && act(() => rpc("request_privilege", { p_token: tk(), p_redemption: id }), "ส่งคำขอให้ครูแล้ว");
 const pickClass = (k, n) => confirm("เลือกคลาส “" + n + "” ?") && act(() => rpc("choose_class", { p_token: tk(), p_key: k }), "เปลี่ยนคลาสแล้ว ⚔️");
 const buyDecor = (id, n, p) => confirm(`ซื้อ “${n}” ราคา ${p} เหรียญ?`) && act(() => rpc("buy_decor", { p_token: tk(), p_item: id }), "ซื้อสำเร็จ 🎉 กด “สวมใส่” ได้เลย");
+const pickDecor = (slot, id) => { const it = id ? (D.decor_catalog || []).find((d) => d.id === id) : null; if (it) DRAFT[slot] = it; else delete DRAFT[slot]; render(); };
+const resetDraft = () => { DRAFT = null; render(); };
+const saveDraft = () => act(async () => {
+  const eq = D.student.decor || {};
+  for (const [k] of SLOTS) { const cur = eq[k] ? eq[k].id : null, nxt = DRAFT[k] ? DRAFT[k].id : null; if (cur !== nxt) await rpc("equip_decor", { p_token: tk(), p_slot: k, p_item: nxt }); }
+}, "บันทึกการแต่งตัวแล้ว ✨");
 const setGender = (g) => act(() => rpc("set_gender", { p_token: tk(), p_gender: g }), "เปลี่ยนเพศตัวละครแล้ว ✨");
 const equipDecor = (slot, id) => act(() => rpc("equip_decor", { p_token: tk(), p_slot: slot, p_item: id }), id ? "สวมใส่แล้ว ✨" : "ถอดออกแล้ว");
 const claimBoss = () => act(() => rpc("boss_claim", { p_token: tk() }), "รับรางวัลปราบบอสแล้ว 🎉");
