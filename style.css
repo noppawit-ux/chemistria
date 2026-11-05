@@ -568,3 +568,8 @@ body:not([data-tab="home"]) .kbpop{display:none}
 .bt-hp i.shift{animation:hpshift .7s ease-out both}@keyframes hpshift{from{width:var(--from)}}
 @media(max-width:560px){.bt-field{height:290px}.bt-plate{width:160px;font-size:.78em;padding:4px 8px}.bt-mo{width:130px;height:130px;right:6%;top:18%}.bt-mo .bt-memo{font-size:76px}.bt-pl{width:110px;height:160px;left:6%;bottom:12%}.bt-pp{bottom:6px}}
 @media(prefers-reduced-motion:reduce){.bt-field.alert,.bt-sky i,.bt-chg,.charging .bt-spr,.bt-mo.lunge .bt-mimg{animation:none}}
+.fxe.shot.pix::before{display:none}.fxe.shot.pix{filter:drop-shadow(0 0 8px var(--c))}
+.fxe.shot.pix .pfx{filter:none}
+.bt-mo.dead .bt-mimg,.bt-mo.dead .bt-memo{animation:btdead .5s forwards}@keyframes btdead{to{opacity:0;transform:scale(.5)}}
+.fxe.shot.pix{animation:btshotw .52s cubic-bezier(.45,0,.85,.55) forwards}
+@keyframes btshotw{0%{transform:translate(-50%,-50%)}85%{opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy)));opacity:0}}
