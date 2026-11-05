@@ -111,8 +111,11 @@ function fxHtml(fx) {
   for (let k = 0; k < n; k++) h += `<i style="--x:${(k * 37 + 11) % 86 + 6}%;--sz:${3 + (k % 4) * 2}px;--t:${2.6 + (k % 5) * 0.6}s;--dl:-${(k * 0.55).toFixed(2)}s;--k:${k}"></i>`;
   return `<div class="fx fx-${esc(fx.key)}">${h}</div>`;
 }
+const GDEF = { novice: "m", alchemist: "m", scientist: "f", guardian: "m", seeker: "m" };   // เพศของภาพต้นฉบับแต่ละคลาส
+const altGender = (cls, g) => !!g && g !== (GDEF[cls || "novice"] || "m");               // true = ใช้ภาพอีกเพศ (*_alt.png)
+const gOf = (cls, dc) => (dc && dc.gender) || GDEF[cls || "novice"] || "m";
 function stage(cls, ri, dc, sz) {
-  dc = dc || {}; const f = dc.frame, b = dc.bg, o = dc.outfit, base = "assets/chars/" + (cls || "novice");
+  dc = dc || {}; const f = dc.frame, b = dc.bg, o = dc.outfit, base = "assets/chars/" + (cls || "novice") + (altGender(cls, dc.gender) ? "_alt" : "");
   return `<div class="avf stg rk-${ri.key} ${sz || "md"} ${f ? "dc-f-" + esc(f.key) : ""}" style="${dcVar(f)}">
     <div class="av stage ${b ? "dc-b-" + esc(b.key) : "stg-default"}" style="${dcVar(b)}">
       ${fxHtml(dc.fx)}<div class="st-floor"></div>
@@ -481,6 +484,9 @@ const VIEWS = {
     };
     return `<div class="card center"><h3>🎨 ตัวละครของฉัน</h3>
       <div style="display:flex;justify-content:center;margin:6px 0 10px">${stage(s.char_class, ri, eq, "lg")}</div>
+      <div class="row" style="justify-content:center;gap:8px;margin:6px 0"><span class="muted">เพศตัวละคร</span>
+        ${[["m", "👦 ชาย"], ["f", "👧 หญิง"]].map(([g, l]) => `<button class="btn small ${gOf(s.char_class, eq) === g ? "gold" : "ghost"}" onclick="setGender('${g}')">${l}</button>`).join("")}</div>
+      ${altGender(s.char_class, eq.gender) && eq.outfit ? '<p class="muted" style="font-size:12px">* ชุดนี้ยังไม่มีภาพของเพศที่เลือก จึงแสดงตัวพื้นฐานแทนไปก่อน</p>' : ""}
       ${titleTag(eq)}<p class="muted">สะสมแล้ว ${owned}/${all} ชิ้น · เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span> · ได้ไอเทมจาก <a href="#" onclick="go('gacha');return false" style="color:var(--gold2)">กาชา</a> หรือซื้อด้านล่าง</p></div>
       ${statsHtml()}
       <div class="tabs" style="position:static">${SL.map(([k, l]) => `<button class="tab ${k === decSlot ? "on" : ""}" onclick="decSlot='${k}';render()">${l}</button>`).join("")}</div>
@@ -518,6 +524,7 @@ const usePriv = (id) => confirm("ขอใช้สิทธิ์นี้ ค�
   && act(() => rpc("request_privilege", { p_token: tk(), p_redemption: id }), "ส่งคำขอให้ครูแล้ว");
 const pickClass = (k, n) => confirm("เลือกคลาส “" + n + "” ?") && act(() => rpc("choose_class", { p_token: tk(), p_key: k }), "เปลี่ยนคลาสแล้ว ⚔️");
 const buyDecor = (id, n, p) => confirm(`ซื้อ “${n}” ราคา ${p} เหรียญ?`) && act(() => rpc("buy_decor", { p_token: tk(), p_item: id }), "ซื้อสำเร็จ 🎉 กด “สวมใส่” ได้เลย");
+const setGender = (g) => act(() => rpc("set_gender", { p_token: tk(), p_gender: g }), "เปลี่ยนเพศตัวละครแล้ว ✨");
 const equipDecor = (slot, id) => act(() => rpc("equip_decor", { p_token: tk(), p_slot: slot, p_item: id }), id ? "สวมใส่แล้ว ✨" : "ถอดออกแล้ว");
 const claimBoss = () => act(() => rpc("boss_claim", { p_token: tk() }), "รับรางวัลปราบบอสแล้ว 🎉");
 const submitOnline = (id, t) => confirm(`ส่งงาน “${t}” ?`) && act(async () => { const r = await rpc("submit_assignment", { p_token: tk(), p_assignment: id }); toast(`ส่งแล้ว ✅ ได้ +${r.exp} EXP ทันที`, 3500); return r; });
