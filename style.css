@@ -618,3 +618,22 @@ body:not([data-tab="home"]) .kbpop{display:none}
 .dl-inv{background:#ffd75a14;border:1px solid #ffd75a55;border-radius:12px;padding:8px 10px;margin:6px 0}
 @media(max-width:560px){.bt-op{width:110px;height:160px;right:6%;bottom:12%}.bt-pl.dl-pl{bottom:12%}.dl-po,.dl-pp{width:150px}.dl-vs{font-size:1.2em}}
 @media(prefers-reduced-motion:reduce){.bt-field.ar-storm{animation:none}}
+
+/* ---- ภาพสนามจริง (รอบ 23): พื้นหลังเป็นภาพ + ไล่เฉดมืดให้ตัวละครเด่น ---- */
+.bt-field[class*="ar-"]{background-size:cover!important;background-position:center bottom!important}
+.bt-field.ar-lab{background:linear-gradient(rgba(6,3,20,.3),rgba(6,3,20,.3)),url(assets/arenas/lab.jpg)}
+.bt-field.ar-ice{background:linear-gradient(rgba(2,10,24,.3),rgba(2,10,24,.3)),url(assets/arenas/ice.jpg)}
+.bt-field.ar-volcano{background:linear-gradient(rgba(20,4,0,.3),rgba(20,4,0,.3)),url(assets/arenas/volcano.jpg)}
+.bt-field.ar-swamp{background:linear-gradient(rgba(2,14,4,.3),rgba(2,14,4,.3)),url(assets/arenas/swamp.jpg)}
+.bt-field.ar-storm{background:linear-gradient(rgba(4,4,20,.25),rgba(4,4,20,.25)),url(assets/arenas/storm.jpg)}
+.bt-field.ar-crystal{background:linear-gradient(rgba(14,4,30,.28),rgba(14,4,30,.28)),url(assets/arenas/crystal.jpg)}
+.bt-field[class*="ar-"] .bt-floor{background:repeating-linear-gradient(90deg,#ffffff0d 0 1px,transparent 1px 44px),repeating-linear-gradient(0deg,#ffffff0a 0 1px,transparent 1px 34px),linear-gradient(180deg,#00000000,#0000004d);box-shadow:none;border-top-color:#ffffff22}
+.bt-field[class*="ar-"] .bt-sky i{opacity:.35}
+.ar-card{background-size:cover!important;background-position:center!important;text-shadow:0 1px 4px #000}
+.ar-card.t-lab{background:linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),url(assets/arenas/lab.jpg)}
+.ar-card.t-ice{background:linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),url(assets/arenas/ice.jpg)}
+.ar-card.t-volcano{background:linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),url(assets/arenas/volcano.jpg)}
+.ar-card.t-swamp{background:linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),url(assets/arenas/swamp.jpg)}
+.ar-card.t-storm{background:linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),url(assets/arenas/storm.jpg)}
+.ar-card.t-crystal{background:linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)),url(assets/arenas/crystal.jpg)}
+.ar-card.on{box-shadow:0 0 14px #ffd75acc,inset 0 0 0 1px #ffd75a}
