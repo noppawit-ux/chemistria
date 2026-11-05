@@ -66,12 +66,14 @@ const BATTLE = (() => {
     S.def = { i: 0, hits: 0, marks: [], seq: p.seq.split(""), n: p.n, open: true, state: "ready" };
     S.def.t = setTimeout(nextArrow, 900); paint();
   }
-  const WIN = 1700;
+  /* เวลากดต่อ 1 ลูกศร: มอนสเตอร์เก่งขึ้น (เลเวล 1→5) เวลาลดลง 2200→1000 ms */
+  const winOf = (lv) => Math.max(1000, 2200 - 300 * ((lv || 1) - 1));
+  const curWin = () => winOf(S.bat && S.bat.monster && S.bat.monster.level);
   function nextArrow() {
     const d = S.def; if (!d) return;
     if (d.i >= d.n) return endDef();
     d.state = "go"; d.t0 = Date.now();
-    d.t = setTimeout(() => judge(null), WIN); paint();
+    d.win = curWin(); d.t = setTimeout(() => judge(null), d.win); paint();
   }
   function judge(k) {
     const d = S.def; if (!d || d.state !== "go") return; clearTimeout(d.t);
@@ -273,11 +275,11 @@ const BATTLE = (() => {
     const d = S.def, p = S.bat.pend; if (!d) return '<div class="card"><p class="muted">…</p></div>';
     const cur = d.seq[d.i];
     const marks = d.seq.map((_, i) => `<span class="bt-mk ${d.marks[i] === 1 ? "ok" : d.marks[i] === 0 ? "no" : i === d.i ? "now" : ""}">${d.marks[i] === 1 ? "✔" : d.marks[i] === 0 ? "✖" : "•"}</span>`).join("");
-    const big = d.state === "go" ? `<div class="bt-arrow go">${ARW[cur]}<div class="bt-ring" style="animation-duration:${WIN}ms"></div></div>`
+    const big = d.state === "go" ? `<div class="bt-arrow go">${ARW[cur]}<div class="bt-ring" style="animation-duration:${d.win || curWin()}ms"></div></div>`
       : d.state === "ok" ? '<div class="bt-arrow ok">✔</div>' : d.state === "miss" ? '<div class="bt-arrow no">✖</div>'
       : d.state === "send" ? '<div class="bt-arrow">…</div>' : '<div class="bt-arrow">⚠️</div>';
     return `<div class="card center bt-def"><h3 style="margin:0">⚠️ ${esc(p.name)}! ดาเมจ ~${p.dmg}</h3>
-      <p class="muted" style="margin:4px 0 8px">กดลูกศรให้ตรงตามที่ปรากฏ (คีย์บอร์ด ← ↑ → ↓ หรือแตะปุ่มด้านล่าง) ยิ่งถูกมาก ดาเมจยิ่งลด (สูงสุด 80%)</p>
+      <p class="muted" style="margin:4px 0 8px">กดลูกศรให้ตรงตามที่ปรากฏ (คีย์บอร์ด ← ↑ → ↓ หรือแตะปุ่มด้านล่าง) ยิ่งถูกมาก ดาเมจยิ่งลด (สูงสุด 80%) · มอนสเตอร์ยิ่งเก่ง เวลากดยิ่งสั้น (${((d.win || curWin()) / 1000).toFixed(1)} วิ/ลูกศร)</p>
       <div class="bt-marks">${marks}</div>${big}
       <div class="bt-pad"><button onclick="BATTLE.arrow('U')">⬆️</button><div><button onclick="BATTLE.arrow('L')">⬅️</button><button onclick="BATTLE.arrow('D')">⬇️</button><button onclick="BATTLE.arrow('R')">➡️</button></div></div></div>`;
   }
