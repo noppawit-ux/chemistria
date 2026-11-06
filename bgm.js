@@ -66,7 +66,7 @@ const BGM = (() => {
     const tab = document.body.dataset.tab || "";
     const gm = typeof GAMES !== "undefined" && GAMES.mode ? GAMES.mode() : "home";
     let n = "calm";
-    if (tab === "game") n = gm === "battle" ? "battle" : (gm === "duel" || gm === "kb") ? "duel" : gm === "home" ? "calm" : "magic";
+    if (tab === "game") n = gm === "battle" ? "battle" : (gm === "duel" || gm === "kb" || gm === "run") ? "duel" : gm === "home" ? "calm" : "magic";
     return n;
   }
   function loop() { const n = pick(); if (n !== want || (st.on && started && !timer && !document.hidden)) { want = n; if (started && st.on) play(n); } }

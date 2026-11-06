@@ -38,6 +38,7 @@ const GAMES = (() => {
     if (st.mode === "duel") return DUEL.view();
     if (st.mode === "spell") return SPELL.view();
     if (st.mode === "kb") return KB.view();
+    if (st.mode === "run") return RUN.view();
     if (!s) return head();
     return head() + `<div class="gm-grid">
       <div class="card gm-card">
@@ -61,6 +62,11 @@ const GAMES = (() => {
         <div class="gm-ico">🏆</div><h3>ประลองครูบุ๊ค <span class="pill" style="background:#7a1020">EXTREMELY HARD</span></h3>
         <p class="muted">8 รอบ มินิเกมโหดหลายแบบ ควิซยากขึ้น เวลาลดเร็วทุกรอบ · หัวใจ 3 ดวง · ชนะครูบุ๊คได้รางวัลก้อนโต</p>
         <button class="btn gold" onclick="KB.open()">🏆 ท้าครูบุ๊ค</button>
+      </div>
+      <div class="card gm-card">
+        <div class="gm-ico">🏃</div><h3>เคมีรัน</h3>
+        <p class="muted">วิ่งเก็บเหรียญ กระโดดหลบอุปสรรคแล็บ สไลด์ใต้เมฆพิษ เก็บยาเติมพลังและดาวบูสต์ · ยิ่งไกลยิ่งได้ EXP</p>
+        <button class="btn gold" onclick="RUN.open()">🏃 ไปวิ่งกัน</button>
       </div>
       <div class="card gm-card">
         <div class="gm-ico">⚔️</div><h3>ล่ามอนสเตอร์เคมี</h3>

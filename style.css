@@ -935,3 +935,17 @@ img.em{width:1.2em;height:1.2em;object-fit:contain;vertical-align:-.22em;display
 .avf.dc-f-amethyst{background:conic-gradient(from 20deg,#e9d5ff,#9b6bff,#5a2bb8,#c9a4ff,#e9d5ff);box-shadow:0 0 16px #9b6bffaa,inset 0 0 6px #0008}
 .av.dc-b-volcano{background:radial-gradient(ellipse at 50% 120%,#ffb300 0,#ff4d00 22%,transparent 52%),linear-gradient(180deg,#1a0a14,#4a1410 60%,#7a1f0a)}
 .av.dc-b-crystal{background:linear-gradient(135deg,transparent 40%,#7fe9ff33 41% 44%,transparent 45%),linear-gradient(225deg,transparent 55%,#c9a4ff33 56% 60%,transparent 61%),radial-gradient(circle at 50% 110%,#7a4bd8,#241254 60%,#120a30)}
+
+/* ---- เคมีรัน ---- */
+.run-card{padding:10px}
+.run-wrap{border-radius:14px;overflow:hidden;border:2px solid #4a3a86;background:#120b24;touch-action:none;line-height:0}
+.run-wrap canvas{width:100%;height:auto;display:block;touch-action:none;-webkit-user-select:none;user-select:none}
+.run-btns{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-top:10px}
+.run-b{height:76px;border-radius:18px;border:2px solid #ffffff33;font:inherit;font-size:2rem;font-weight:800;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.run-b small{font-size:.75rem;font-weight:600;opacity:.9}
+.run-b.jump{background:linear-gradient(180deg,#ffd75a,#e0a31b);color:#3a2600;box-shadow:0 4px 0 #a8780f}
+.run-b.slide{background:linear-gradient(180deg,#6aa8ff,#3a6be0);box-shadow:0 4px 0 #2a4aa8}
+.run-b:active{transform:translateY(3px);box-shadow:none}
+.run-how{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.run-how>div{background:#ffffff0f;border-radius:12px;padding:8px;display:flex;flex-direction:column}
+.run-how small{color:var(--muted);font-size:.78rem}
