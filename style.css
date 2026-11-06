@@ -821,3 +821,10 @@ table{max-width:100%}
 /* โหมดส่องนักเรียน */
 #peekbar{position:fixed;top:0;left:0;right:0;z-index:9999;background:#b8860b;color:#111;padding:6px 10px;font-size:.85rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.5)}#peekbar button{margin-left:8px;padding:2px 10px;border-radius:8px;border:0;cursor:pointer}
 body.peeking{padding-top:34px}
+
+/* ประกาศอัปเดต */
+#patchov{position:fixed;inset:0;z-index:10000;background:rgba(5,3,16,.75);display:flex;align-items:center;justify-content:center;padding:16px}
+.patchbox{position:relative;max-width:460px;width:100%;max-height:86vh;overflow:auto;background:linear-gradient(160deg,#241a4a,#150f30);border:2px solid #f5c542;border-radius:18px;padding:18px 16px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.patchx{position:absolute;top:8px;right:10px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:inherit;font-size:1rem;cursor:pointer}
+.patchh{font-size:1.3rem;font-weight:800;text-align:center;color:#f5c542}.patchl{margin:12px 0}
+.patchi{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}.patchi>span{font-size:1.5rem}.patchi .muted{font-size:.85rem}

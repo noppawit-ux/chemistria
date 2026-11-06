@@ -79,6 +79,32 @@ async function showLogin(msg) {
   $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
 
+/* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
+const PATCH = {
+  id: "2026-11-07", title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
+  items: [
+    ["🏆", "โหมดใหม่: ประลองครูบุ๊ค (Extremely Hard)", "8 รอบ 8 มินิเกม ทั้งควิซสุดโหด คำนวณ ดุลสมการ จับคู่ธาตุ จริง/เท็จสายฟ้า ไวแสง จำลำดับ และหาตัวแปลกแยก เวลาลดลงทุกรอบ มีหัวใจ 3 ดวง สู้ใน 4 สนามที่เปลี่ยนตามรอบ ชนะได้ EXP และเหรียญ — ไปที่แท็บ 🎮 เกม"],
+    ["📈", "ปรับระบบแรงค์ใหม่", "เกณฑ์แรงค์ยากขึ้น (เช่น Bronze 250, Gold 1,100, Challenger 9,500 EXP) ทำให้การไต่แรงค์มีความหมายมากขึ้น แรงค์ของบางคนอาจลดลงจากเดิม ส่วนเลเวลไม่เปลี่ยน"],
+    ["⚖️", "ปรับรายได้ EXP จากเกม", "เพดาน EXP จากมินิเกมต่อวันลดเหลือ 25 · ล่ามอนสเตอร์ได้รางวัล 2 รอบ/วัน · ท้าดวล 3 รอบ/วัน"],
+    ["✨", "ปรับปรุงอื่นๆ", "ป๊อปอัปแจ้งรางวัล/เลื่อนขั้นที่มุมจอ · เสียงเอฟเฟกต์และเพลงประกอบ (ปรับได้ที่ปุ่ม 🎵) · ห้องฝึกเวทย์ผสมธาตุ"],
+  ],
+};
+const PATCH_KEY = "chem_patch_seen";
+function patchShow(force) {
+  if (PEEK || !D) return;
+  let seen = null; try { seen = localStorage.getItem(PATCH_KEY); } catch (e) {}
+  if (!force && seen === PATCH.id) return;
+  if (document.getElementById("patchov")) return;
+  const ov = document.createElement("div"); ov.id = "patchov"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+  ov.innerHTML = `<div class="patchbox"><button class="patchx" aria-label="ปิด" onclick="patchClose()">✕</button>
+    <div class="patchh">📢 ${esc(PATCH.title)}</div><div class="muted" style="text-align:center">ประกาศอัปเดต · ${esc(PATCH.date)}</div>
+    <div class="patchl">${PATCH.items.map((i) => `<div class="patchi"><span>${i[0]}</span><div><b>${esc(i[1])}</b><div class="muted">${esc(i[2])}</div></div></div>`).join("")}</div>
+    <div class="row" style="justify-content:center"><button class="btn gold" onclick="patchClose()">รับทราบ ปิดหน้านี้</button></div></div>`;
+  ov.addEventListener("click", (e) => { if (e.target === ov) patchClose(); });
+  document.body.appendChild(ov);
+}
+function patchClose() { try { localStorage.setItem(PATCH_KEY, PATCH.id); } catch (e) {} document.getElementById("patchov")?.remove(); }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") patchClose(); });
 function peekBar() {
   let b = document.getElementById("peekbar"); if (!b) { b = document.createElement("div"); b.id = "peekbar"; document.body.appendChild(b); document.body.classList.add("peeking"); }
   b.innerHTML = `👁 โหมดส่องนักเรียน: <b>${esc(D.student.name)}</b> (อ่านอย่างเดียว · ไม่มีผลต่อคะแนน/อันดับ) <button onclick="window.close();setTimeout(()=>{location.href='admin.html'},200)">ปิด</button>`;
@@ -100,7 +126,7 @@ async function load() {
     try { X = (await rpc("student_extras", { p_token: tk() })) || {}; } catch (e) { X = {}; }
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
     try { B = (await rpc("board_list", { p_token: tk() })) || { posts: [], unread: 0 }; } catch (e) { B = { posts: [], unread: 0 }; }
-    render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); }
+    render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
   } catch (e) {
     if (!PEEK) localStorage.removeItem(TOKEN_KEY);
     showLogin(e.message);
@@ -482,7 +508,7 @@ const VIEWS = {
     <div class="card"><h3>📜 ความเคลื่อนไหวล่าสุด</h3>
       ${D.ledger.slice(0, 8).map((l) => `<div class="item"><div class="grow">${esc(l.reason)}</div>
         <span class="muted">${l.exp ? `+${l.exp} EXP ` : ""}${l.coins ? `${l.coins > 0 ? "+" : ""}${l.coins} 🪙` : ""}</span></div>`).join("") || '<p class="muted">ยังไม่มีรายการ</p>'}</div>
-    <div class="row"><button class="btn ghost" onclick="changePin()">🔑 เปลี่ยน PIN</button><button class="btn ghost" onclick="logout()">ออกจากระบบ</button></div>`;
+    <div class="row"><button class="btn ghost" onclick="patchShow(true)">📢 ประกาศอัปเดต</button><button class="btn ghost" onclick="changePin()">🔑 เปลี่ยน PIN</button><button class="btn ghost" onclick="logout()">ออกจากระบบ</button></div>`;
   },
 
   att() {
