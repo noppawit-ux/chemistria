@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.41">
+<link rel="stylesheet" href="style.css?v=1.42">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,17 +14,17 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.41"></script>
-<script src="lib.js?v=1.41"></script>
-<script src="sfx.js?v=1.41"></script>
-<script src="pixelfx.js?v=1.41"></script>
-<script src="fx.js?v=1.41"></script>
-<script src="games.js?v=1.41"></script>
-<script src="battle.js?v=1.41"></script>
-<script src="duel.js?v=1.41"></script>
-<script src="spell.js?v=1.41"></script>
-<script src="kb.js?v=1.41"></script>
-<script src="bgm.js?v=1.41"></script>
+<script src="config.js?v=1.42"></script>
+<script src="lib.js?v=1.42"></script>
+<script src="sfx.js?v=1.42"></script>
+<script src="pixelfx.js?v=1.42"></script>
+<script src="fx.js?v=1.42"></script>
+<script src="games.js?v=1.42"></script>
+<script src="battle.js?v=1.42"></script>
+<script src="duel.js?v=1.42"></script>
+<script src="spell.js?v=1.42"></script>
+<script src="kb.js?v=1.42"></script>
+<script src="bgm.js?v=1.42"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -79,6 +79,23 @@ async function showLogin(msg) {
   $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
 
+
+/* ---------------- แทนอิโมจิด้วยไอคอนภาพ (ทั้งหน้า อัตโนมัติ) ---------------- */
+const EMO = { "🧠": "quiz", "⚗️": "match", "⚗": "match", "🔮": "spell", "🏆": "trophy", "⚔️": "battle", "⚔": "battle", "🤝": "duel", "💪": "muscle", "🍀": "clover", "🔥": "fire", "⏰": "alarm", "📷": "camera", "🎨": "palette", "🎁": "giftbox", "🎟️": "ticket", "🎟": "ticket", "👹": "boss", "🪙": "coin", "❤️": "heart", "✅": "check", "🔒": "lock", "🔔": "bell" };
+const EMO_RE = new RegExp(Object.keys(EMO).sort((a, b) => b.length - a.length).join("|"), "g");
+let EMO_Q = false;
+function emoSwap(root) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => !n.nodeValue || !/[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u.test(n.nodeValue) || n.parentNode.closest("svg,script,style,textarea,option,select,title") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const list = []; while (w.nextNode()) list.push(w.currentNode);
+  for (const n of list) {
+    const t = n.nodeValue; EMO_RE.lastIndex = 0; if (!EMO_RE.test(t)) continue;
+    const f = document.createDocumentFragment(); let last = 0; EMO_RE.lastIndex = 0; let m;
+    while ((m = EMO_RE.exec(t))) { if (m.index > last) f.append(t.slice(last, m.index)); const i = document.createElement("img"); i.className = "em"; i.alt = ""; i.draggable = false; i.src = `assets/icons/${EMO[m[0]]}.png`; f.append(i); last = m.index + m[0].length; }
+    if (last < t.length) f.append(t.slice(last)); n.replaceWith(f);
+  }
+}
+new MutationObserver(() => { if (EMO_Q) return; EMO_Q = true; requestAnimationFrame(() => { EMO_Q = false; try { emoSwap(document.body); } catch (e) {} }); }).observe(document.body || document.documentElement, { childList: true, subtree: true, characterData: true });
+
 /* ---------------- ไอคอนภาพแทนอิโมจิ ---------------- */
 const ic = (k, c = "") => `<img class="ico ${c}" src="assets/icons/${k}.png" alt="" draggable="false" onerror="this.replaceWith(document.createTextNode(''))">`;
 const tabHtml = ([k, l]) => `${ic(k)}<span>${esc(l.replace(/^\S+\s/, ""))}</span>`;
@@ -127,7 +144,7 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.41";
+const APP_VERSION = "1.42";
 const PATCH = {
   id: "2026-11-07", ver: APP_VERSION, title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
   items: [
@@ -544,7 +561,7 @@ function radarHtml(dc, size = 250) {
   const grid = [0.25, 0.5, 0.75, 1].map((f) => `<polygon points="${ring(f)}" fill="none" stroke="#6a52c4" stroke-opacity="${f === 1 ? 0.9 : 0.45}" stroke-width="1"/>`).join("");
   const axes = AX.map((_, i) => { const [x, y] = pt(i, R); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#6a52c4" stroke-opacity=".45"/>`; }).join("");
   const dots = AX.map(([, , , v], i) => { const [x, y] = pt(i, R * Math.min(1, v / MAXV)); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#ffd86b" stroke="#1b1238"/>`; }).join("");
-  const labels = AX.map(([k, ic, nm, v], i) => { const [x, y] = pt(i, R + 26); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" font-size="11" fill="#e9e2ff"><tspan x="${x.toFixed(1)}">${ic} ${nm}</tspan><tspan x="${x.toFixed(1)}" dy="13" font-weight="700" fill="#ffd86b">${v}${k !== "coin" && T[k].item ? `<tspan fill="#7ee0b0" font-size="10"> (+${T[k].item})</tspan>` : ""}</tspan></text>`; }).join("");
+  const labels = AX.map(([k, ic, nm, v], i) => { const [x, y] = pt(i, R + 26); return `<image href="assets/icons/${({ int: "quiz", dil: "muscle", str: "battle", luk: "clover", coin: "coin" })[k]}.png" x="${(x - 9).toFixed(1)}" y="${(y - 27).toFixed(1)}" width="18" height="18"/><text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" font-size="11" fill="#e9e2ff"><tspan x="${x.toFixed(1)}">${nm}</tspan><tspan x="${x.toFixed(1)}" dy="13" font-weight="700" fill="#ffd86b">${v}${k !== "coin" && T[k].item ? `<tspan fill="#7ee0b0" font-size="10"> (+${T[k].item})</tspan>` : ""}</tspan></text>`; }).join("");
   const E = { quiz: Math.floor(T.int.total / 2), exp: T.dil.total, boss: 3 * T.str.total, rare: 3 * T.luk.total };
   return `<div class="radar"><svg viewBox="0 0 ${size} ${size + 14}" width="100%" style="max-width:${size + 40}px" role="img" aria-label="กราฟสเตตัส">${grid}${axes}
       <polygon points="${poly}" fill="#9b6bff" fill-opacity=".38" stroke="#c9a8ff" stroke-width="2" stroke-linejoin="round"/>${dots}${labels}</svg>
