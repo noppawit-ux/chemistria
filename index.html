@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.42">
+<link rel="stylesheet" href="style.css?v=1.43">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,17 +14,17 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.42"></script>
-<script src="lib.js?v=1.42"></script>
-<script src="sfx.js?v=1.42"></script>
-<script src="pixelfx.js?v=1.42"></script>
-<script src="fx.js?v=1.42"></script>
-<script src="games.js?v=1.42"></script>
-<script src="battle.js?v=1.42"></script>
-<script src="duel.js?v=1.42"></script>
-<script src="spell.js?v=1.42"></script>
-<script src="kb.js?v=1.42"></script>
-<script src="bgm.js?v=1.42"></script>
+<script src="config.js?v=1.43"></script>
+<script src="lib.js?v=1.43"></script>
+<script src="sfx.js?v=1.43"></script>
+<script src="pixelfx.js?v=1.43"></script>
+<script src="fx.js?v=1.43"></script>
+<script src="games.js?v=1.43"></script>
+<script src="battle.js?v=1.43"></script>
+<script src="duel.js?v=1.43"></script>
+<script src="spell.js?v=1.43"></script>
+<script src="kb.js?v=1.43"></script>
+<script src="bgm.js?v=1.43"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -144,7 +144,7 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.42";
+const APP_VERSION = "1.43";
 const PATCH = {
   id: "2026-11-07", ver: APP_VERSION, title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
   items: [
@@ -779,10 +779,10 @@ const VIEWS = {
     const me = D.rank_info;
     return `${hallHtml() || '<div class="card hof center"><h3>🏆 หอเกียรติยศ</h3><p class="muted">ยังไม่มีอันดับ — สะสม EXP จากเช็คชื่อ ส่งงาน เควส และมินิเกมเพื่อขึ้นโพเดียม</p></div>'}
     <div class="card"><h3>🏆 อันดับห้อง ${esc(D.class.name)} (Top 10)</h3>
-      ${D.leaderboard.map((l, i) => `<div class="item" ${l.me ? 'style="background:#3a2a6b;border-radius:10px;padding-left:8px"' : ""}>
-        <b style="width:28px">${["🥇", "🥈", "🥉"][i] || i + 1}</b>${frame(l.avatar, l.char_class, l.rank_info, 0, true, l.decor)}
-        <div class="grow">${esc(l.name)} ${titleTag(l.decor)}<div class="muted rk-${l.rank_info.key}" style="color:var(--rc)">${esc(rankName(l.rank_info))}${clsOf(l.char_class) ? " · " + esc(clsOf(l.char_class).name) : ""}</div></div>
-        <span class="pill">Lv.${l.level}</span><b>${l.exp}</b></div>`).join("")}</div>
+      <div class="lb">${D.leaderboard.map((l, i) => `<div class="lbrow ${l.me ? "me" : ""}">
+        <span class="lbn n${i + 1}">${i + 1}</span>${frame(l.avatar, l.char_class, l.rank_info, 0, true, l.decor)}
+        <div class="lbm"><b class="lbname">${esc(l.name)}</b>${titleTag(l.decor)}<small class="rk-${l.rank_info.key}" style="color:var(--rc)">${esc(rankName(l.rank_info))}${clsOf(l.char_class) ? " · " + esc(clsOf(l.char_class).name) : ""}</small></div>
+        <div class="lbr"><span class="pill">Lv.${l.level}</span><b>${l.exp}</b><small class="muted">EXP</small></div></div>`).join("")}</div></div>
       ${teamsHtml()}
       <div class="card"><h3>🎖️ บันไดแรงค์</h3><p class="muted">ได้ EXP จากเช็คชื่อ ส่งงาน เควส และ Achievement เพื่อไต่แรงค์ (แต่ละแรงค์มีดิวิชัน IV → I)</p>
       <div class="ranktable">${(D.ranks || []).map((r) => `<div class="rk-${r.key} ${r.key === me.key ? "me" : ""}"><img src="${esc(r.image)}" alt=""><br><b style="color:var(--rc)">${esc(r.name)}</b><br><span class="muted">${r.min_exp}+ EXP</span></div>`).join("")}</div></div>`;

@@ -908,3 +908,25 @@ body.peeking{padding-top:34px}
 @media(max-width:560px){.newst{max-width:72%}.newst b{font-size:.95rem}}
 img.em{width:1.2em;height:1.2em;object-fit:contain;vertical-align:-.22em;display:inline-block;margin:0 .05em;pointer-events:none}
 .gm-ico img.em{width:1.15em;height:1.15em;filter:drop-shadow(0 0 10px #9b6bff)}
+
+/* ---- จัดหน้าอันดับใหม่ (v1.43) ---- */
+.hof .podium{grid-template-columns:1fr 1.1fr 1fr;gap:6px;padding-top:6px}
+.hof .pod .avf.stg{--s:min(25vw,100px)}
+.hof .pod.p1 .avf.stg{--s:min(29vw,120px)}
+.hof .pod .pn{font-size:.95em;margin-top:6px}
+.hof .pod .base{margin-top:8px}
+.hof .pod .crown{margin-bottom:2px}
+.hof .pod .dc-title,.hof .pod .titletag{max-width:100%;font-size:.8em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb{display:flex;flex-direction:column}
+.lbrow{display:grid;grid-template-columns:30px auto minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid #ffffff14}
+.lbrow:last-child{border-bottom:0}
+.lbrow.me{background:#3a2a6b;border-radius:12px;border-bottom-color:transparent}
+.lbn{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.9rem;background:#ffffff14;color:var(--muted);font-family:"Prompt",sans-serif}
+.lbn.n1{background:linear-gradient(#ffe48a,#d9a521);color:#3a2600}.lbn.n2{background:linear-gradient(#f1f5ff,#9aa8c2);color:#1d2740}.lbn.n3{background:linear-gradient(#e6a06a,#9c5d2b);color:#2a1300}
+.lbrow .avf{width:52px;height:52px}
+.lbm{display:flex;flex-direction:column;gap:2px;min-width:0;align-items:flex-start}
+.lbname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.lbm small{font-size:.8rem}
+.lbr{display:flex;flex-direction:column;align-items:flex-end;gap:0;line-height:1.2}
+.lbr b{font-size:1.15rem;color:var(--gold2);font-family:"Prompt",sans-serif}
+.lbr small{font-size:.65rem}
