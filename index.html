@@ -80,8 +80,9 @@ async function showLogin(msg) {
 }
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
+const APP_VERSION = "1.36";
 const PATCH = {
-  id: "2026-11-07", title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
+  id: "2026-11-07", ver: APP_VERSION, title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
   items: [
     ["🏆", "โหมดใหม่: ประลองครูบุ๊ค (Extremely Hard)", "8 รอบ 8 มินิเกม ทั้งควิซสุดโหด คำนวณ ดุลสมการ จับคู่ธาตุ จริง/เท็จสายฟ้า ไวแสง จำลำดับ และหาตัวแปลกแยก เวลาลดลงทุกรอบ มีหัวใจ 3 ดวง สู้ใน 4 สนามที่เปลี่ยนตามรอบ ชนะได้ EXP และเหรียญ — ไปที่แท็บ 🎮 เกม"],
     ["📈", "ปรับระบบแรงค์ใหม่", "เกณฑ์แรงค์ยากขึ้น (เช่น Bronze 250, Gold 1,100, Challenger 9,500 EXP) ทำให้การไต่แรงค์มีความหมายมากขึ้น แรงค์ของบางคนอาจลดลงจากเดิม ส่วนเลเวลไม่เปลี่ยน"],
@@ -97,7 +98,7 @@ function patchShow(force) {
   if (document.getElementById("patchov")) return;
   const ov = document.createElement("div"); ov.id = "patchov"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
   ov.innerHTML = `<div class="patchbox"><button class="patchx" aria-label="ปิด" onclick="patchClose()">✕</button>
-    <div class="patchh">📢 ${esc(PATCH.title)}</div><div class="muted" style="text-align:center">ประกาศอัปเดต · ${esc(PATCH.date)}</div>
+    <div class="patchimgw"><img class="patchimg" src="assets/patch-banner.jpg" alt="" onerror="this.parentNode.remove()"></div><div class="patchh">📢 ${esc(PATCH.title)} <span class="patchver">v${esc(PATCH.ver)}</span></div><div class="muted" style="text-align:center">ประกาศอัปเดต · ${esc(PATCH.date)}</div>
     <div class="patchl">${PATCH.items.map((i) => `<div class="patchi"><span>${i[0]}</span><div><b>${esc(i[1])}</b><div class="muted">${esc(i[2])}</div></div></div>`).join("")}</div>
     <div class="row" style="justify-content:center"><button class="btn gold" onclick="patchClose()">รับทราบ ปิดหน้านี้</button></div></div>`;
   ov.addEventListener("click", (e) => { if (e.target === ov) patchClose(); });
@@ -508,7 +509,7 @@ const VIEWS = {
     <div class="card"><h3>📜 ความเคลื่อนไหวล่าสุด</h3>
       ${D.ledger.slice(0, 8).map((l) => `<div class="item"><div class="grow">${esc(l.reason)}</div>
         <span class="muted">${l.exp ? `+${l.exp} EXP ` : ""}${l.coins ? `${l.coins > 0 ? "+" : ""}${l.coins} 🪙` : ""}</span></div>`).join("") || '<p class="muted">ยังไม่มีรายการ</p>'}</div>
-    <div class="row"><button class="btn ghost" onclick="patchShow(true)">📢 ประกาศอัปเดต</button><button class="btn ghost" onclick="changePin()">🔑 เปลี่ยน PIN</button><button class="btn ghost" onclick="logout()">ออกจากระบบ</button></div>`;
+    <div class="row"><button class="btn ghost" onclick="patchShow(true)">📢 ประกาศอัปเดต v${APP_VERSION}</button><button class="btn ghost" onclick="changePin()">🔑 เปลี่ยน PIN</button><button class="btn ghost" onclick="logout()">ออกจากระบบ</button></div>`;
   },
 
   att() {
