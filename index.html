@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.45">
+<link rel="stylesheet" href="style.css?v=1.46">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,17 +14,17 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.45"></script>
-<script src="lib.js?v=1.45"></script>
-<script src="sfx.js?v=1.45"></script>
-<script src="pixelfx.js?v=1.45"></script>
-<script src="fx.js?v=1.45"></script>
-<script src="games.js?v=1.45"></script>
-<script src="battle.js?v=1.45"></script>
-<script src="duel.js?v=1.45"></script>
-<script src="spell.js?v=1.45"></script>
-<script src="kb.js?v=1.45"></script>
-<script src="bgm.js?v=1.45"></script>
+<script src="config.js?v=1.46"></script>
+<script src="lib.js?v=1.46"></script>
+<script src="sfx.js?v=1.46"></script>
+<script src="pixelfx.js?v=1.46"></script>
+<script src="fx.js?v=1.46"></script>
+<script src="games.js?v=1.46"></script>
+<script src="battle.js?v=1.46"></script>
+<script src="duel.js?v=1.46"></script>
+<script src="spell.js?v=1.46"></script>
+<script src="kb.js?v=1.46"></script>
+<script src="bgm.js?v=1.46"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -103,7 +103,7 @@ const tabHtml = ([k, l]) => `${ic(k)}<span>${esc(l.replace(/^\S+\s/, ""))}</span
 /* ---------------- สไลด์ข่าว/อีเว้นท์ หน้าแรก ---------------- */
 let NEWS_I = 0, NEWS_T = null;
 function newsSlides() {
-  const sl = [{ kind: "update", title: `อัปเดตใหม่ v${APP_VERSION}`, summary: PATCH.items.map((i) => i[1]).slice(0, 2).join(" · "), image: "assets/patch-banner.jpg", act: "patchShow(true)" }];
+  const sl = [{ kind: "update", title: `อัปเดตใหม่ v${APP_VERSION}`, summary: PATCH.items.map((i) => i[1]).slice(0, 2).join(" · "), image: PATCH.img || "assets/patch-banner.jpg", act: "patchShow(true)" }];
   NEWS.forEach((n, i) => sl.push({ ...n, act: `newsOpen(${i})` }));
   return sl;
 }
@@ -144,14 +144,14 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.45";
+const APP_VERSION = "1.46";
 const PATCH = {
-  id: "2026-11-07", ver: APP_VERSION, title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
+  id: "2026-11-07b", ver: APP_VERSION, title: "ไอเทมใหม่มาแล้ว! 🎉", date: "7 พ.ย. 2569", img: "assets/news/items.jpg",
   items: [
-    ["🏆", "โหมดใหม่: ประลองครูบุ๊ค (Extremely Hard)", "8 รอบ 8 มินิเกม ทั้งควิซสุดโหด คำนวณ ดุลสมการ จับคู่ธาตุ จริง/เท็จสายฟ้า ไวแสง จำลำดับ และหาตัวแปลกแยก เวลาลดลงทุกรอบ มีหัวใจ 3 ดวง สู้ใน 4 สนามที่เปลี่ยนตามรอบ ชนะได้ EXP และเหรียญ — ไปที่แท็บ 🎮 เกม"],
-    ["📈", "ปรับระบบแรงค์ใหม่", "เกณฑ์แรงค์ยากขึ้น (เช่น Bronze 250, Gold 1,100, Challenger 9,500 EXP) ทำให้การไต่แรงค์มีความหมายมากขึ้น แรงค์ของบางคนอาจลดลงจากเดิม ส่วนเลเวลไม่เปลี่ยน"],
-    ["⚖️", "ปรับรายได้ EXP จากเกม", "เพดาน EXP จากมินิเกมต่อวันลดเหลือ 25 · ล่ามอนสเตอร์ได้รางวัล 2 รอบ/วัน · ท้าดวล 3 รอบ/วัน"],
-    ["✨", "ปรับปรุงอื่นๆ", "ป๊อปอัปแจ้งรางวัล/เลื่อนขั้นที่มุมจอ · เสียงเอฟเฟกต์และเพลงประกอบ (ปรับได้ที่ปุ่ม 🎵) · ห้องฝึกเวทย์ผสมธาตุ"],
+    ["🎩", "ไอเทมตกแต่งใหม่ 14 ชิ้น", "หมวกพ่อมดธาตุ มงกุฎลอเรล หุ่นยนต์จิ๋ว สไลม์สารเคมี ฟีนิกซ์น้อย เพชรคาร์บอน พื้นภูเขาไฟ/ถ้ำผลึก กรอบอเมทิสต์ และฉายาใหม่ — ซื้อในแท็บ ตกแต่ง หรือลุ้นจากกาชา"],
+    ["🥋", "ชุดตัวละครใหม่ 2 แบบ", "ชุดฮาซ์แมท (R ซื้อได้ 300 เหรียญ) และชุดซามูไรนักเคมี (SSR จากกาชา) ครบทุกคลาส"],
+    ["📣", "สไลด์ข่าว & อีเว้นท์ที่หน้าหลัก", "ข่าวและกิจกรรมใหม่ๆ จะขึ้นเป็นสไลด์ กดดูรายละเอียดได้ · ไอคอนภาพใหม่ทั้งระบบ · จัดหน้าอันดับใหม่"],
+    ["🏆", "ก่อนหน้านี้", "โหมดประลองครูบุ๊ค · ปรับแรงค์ใหม่ · ช่องอุปกรณ์ข้างตัวละคร (ดูย้อนหลังได้ที่ข่าวในสไลด์)"],
   ],
 };
 document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("anim-off", document.hidden));
@@ -163,7 +163,7 @@ function patchShow(force) {
   if (document.getElementById("patchov")) return;
   const ov = document.createElement("div"); ov.id = "patchov"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
   ov.innerHTML = `<div class="patchbox"><button class="patchx" aria-label="ปิด" onclick="patchClose()">✕</button>
-    <div class="patchimgw"><img class="patchimg" src="assets/patch-banner.jpg" alt="" onerror="this.parentNode.remove()"></div><div class="patchh">📢 ${esc(PATCH.title)} <span class="patchver">v${esc(PATCH.ver)}</span></div><div class="muted" style="text-align:center">ประกาศอัปเดต · ${esc(PATCH.date)}</div>
+    <div class="patchimgw"><img class="patchimg" src="${esc(PATCH.img || "assets/patch-banner.jpg")}" alt="" onerror="this.parentNode.remove()"></div><div class="patchh">📢 ${esc(PATCH.title)} <span class="patchver">v${esc(PATCH.ver)}</span></div><div class="muted" style="text-align:center">ประกาศอัปเดต · ${esc(PATCH.date)}</div>
     <div class="patchl">${PATCH.items.map((i) => `<div class="patchi"><span>${i[0]}</span><div><b>${esc(i[1])}</b><div class="muted">${esc(i[2])}</div></div></div>`).join("")}</div>
     <div class="row" style="justify-content:center"><button class="btn gold" onclick="patchClose()">รับทราบ ปิดหน้านี้</button></div></div>`;
   ov.addEventListener("click", (e) => { if (e.target === ov) patchClose(); });
