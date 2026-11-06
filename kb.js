@@ -103,41 +103,58 @@ const KB = (() => {
   ];
 
   /* ---------------- สถานะ ---------------- */
-  const S = { screen: "home", st: null, r: 0, types: [], hearts: 3, hp: 100, cleared: 0, rd: null, t0: 0, over: false, lock: false, msg: "", say: "", res: null, tmr: null, end: 0, total: 1, timeouts: 0 };
+  const JR_PAIRS = [["ไฮโดรเจน", "H"], ["ฮีเลียม", "He"], ["คาร์บอน", "C"], ["ไนโตรเจน", "N"], ["ออกซิเจน", "O"], ["โซเดียม", "Na"], ["แมกนีเซียม", "Mg"], ["อะลูมิเนียม", "Al"], ["กำมะถัน", "S"], ["คลอรีน", "Cl"], ["โพแทสเซียม", "K"], ["แคลเซียม", "Ca"], ["เหล็ก", "Fe"], ["ทองแดง", "Cu"], ["สังกะสี", "Zn"], ["เงิน", "Ag"], ["ทองคำ", "Au"]];
+  const JR_SYM = JR_PAIRS.map((x) => x[1]);
+  const S = { lv: "hs", bank: null, screen: "home", st: null, r: 0, types: [], hearts: 3, hp: 100, cleared: 0, rd: null, t0: 0, over: false, lock: false, msg: "", say: "", res: null, tmr: null, end: 0, total: 1, timeouts: 0 };
   const paint = () => GAMES.paint();
   const fmt = (n) => String(n).replace(/\d/g, (d) => SUB[d]);
 
-  async function open() { S.screen = "home"; S.st = null; GAMES.setMode("kb"); paint(); try { S.st = await rpc("kb_status", { p_token: tk() }); } catch (e) {} paint(); }
+  async function open() {
+    S.screen = "home"; S.st = null; GAMES.setMode("kb"); paint();
+    try { S.st = await rpc("kb_status", { p_token: tk() }); } catch (e) {}
+    try { const b = await rpc("kb_bank", { p_token: tk() }); S.lv = b.level === "jr" ? "jr" : "hs"; S.bank = b.items || []; } catch (e) { S.lv = "hs"; S.bank = []; }
+    paint();
+  }
+  const M = () => (S.lv === "jr" ? 1.4 : 1);                       // ระดับ ม.ต้น ได้เวลามากขึ้น 40%
+  const bk = (k) => (S.bank || []).filter((x) => x.kind === k);
+  const mcq = (k) => bk(k).filter((x) => (x.wrong || []).length >= 3).map((x) => [x.question, x.answer, x.wrong[0], x.wrong[1], x.wrong[2], x.explain || ""]);
+  const draw = (name, src) => { if (!S[name] || !S[name].length) S[name] = shuffle(src); return S[name].pop(); };
   function start() {
     S.types = shuffle(["quiz", "calc", "balance", "pairs", "blitz", "react", "memory", "odd"]); S.r = 0; S.hearts = 3; S.hp = 100; S.cleared = 0; S.over = false; S.lock = false; S.t0 = Date.now(); S.msg = ""; S.say = say("start");
-    S.quizPool = shuffle(QZ); S.calcPool = shuffle(CL); S.balPool = shuffle(BL); S.tfPool = shuffle(TF); S.oddPool = shuffle(ODD);
+    const jr = S.lv === "jr";
+    S.srcQ = jr ? mcq("quiz") : QZ.concat(mcq("quiz")); S.srcC = jr ? mcq("calc") : CL.concat(mcq("calc"));
+    S.srcT = (jr ? [] : TF).concat(bk("tf").map((x) => [x.question, x.answer === "จริง" ? 1 : 0]));
+    S.srcO = (jr ? [] : ODD).concat(bk("odd").filter((x) => (x.wrong || []).length >= 3).map((x) => [x.wrong.slice(0, 3), x.answer, x.explain || ""]));
+    S.srcB = jr ? BL.slice(0, 6) : BL;
+    if (!S.srcQ.length) S.srcQ = QZ; if (!S.srcC.length) S.srcC = CL; if (S.srcT.length < 5) S.srcT = TF; if (!S.srcO.length) S.srcO = ODD;
+    S.quizPool = []; S.calcPool = []; S.balPool = []; S.tfPool = []; S.oddPool = [];
     S.screen = "play"; nextRound();
   }
-  const secs = () => Math.max(2, Math.round(BASE[S.types[S.r]] * FACTOR[S.r]));
+  const secs = () => Math.max(2, Math.round(BASE[S.types[S.r]] * FACTOR[S.r] * M()));
   function nextRound() {
     clearInterval(S.tmr); const t = S.types[S.r], f = FACTOR[S.r];
     const rd = { type: t, done: false };
     if (t === "quiz" || t === "calc") {
-      const q = (t === "quiz" ? S.quizPool : S.calcPool).pop() || (t === "quiz" ? QZ[0] : CL[0]);
+      const q = t === "quiz" ? draw("quizPool", S.srcQ) : draw("calcPool", S.srcC);
       rd.q = q[0]; rd.ans = q[1]; rd.exp = q[5]; rd.opts = shuffle(q.slice(1, 5)); rd.pick = null;
     } else if (t === "balance") {
-      const b = S.balPool.pop() || BL[0]; rd.b = b; rd.co = b[0].concat(b[1]).map(() => 1);
+      const b = draw("balPool", S.srcB); rd.b = b; rd.co = b[0].concat(b[1]).map(() => 1);
     } else if (t === "pairs") {
-      const set = pick(EL, 4); rd.names = set.map((x) => x[0]); rd.syms = shuffle(set.map((x) => x[1])); rd.set = set; rd.sel = null; rd.ok = new Set();
+      const set = pick(S.lv === "jr" ? JR_PAIRS : EL, 4); rd.names = set.map((x) => x[0]); rd.syms = shuffle(set.map((x) => x[1])); rd.set = set; rd.sel = null; rd.ok = new Set();
     } else if (t === "blitz") {
-      rd.items = []; for (let i = 0; i < 5; i++) rd.items.push(S.tfPool.pop() || TF[i]); rd.i = 0; rd.right = 0;
+      rd.items = []; for (let i = 0; i < 5; i++) rd.items.push(draw("tfPool", S.srcT)); rd.i = 0; rd.right = 0;
     }
     else if (t === "odd") {
-      const o = S.oddPool.pop() || ODD[0]; rd.q = "ข้อใดแปลกแยกจากพวก? (คิดเร็วๆ)"; rd.ans = o[1]; rd.exp = o[2]; rd.opts = shuffle(o[0].concat([o[1]])); rd.pick = null;
+      const o = draw("oddPool", S.srcO); rd.q = "ข้อใดแปลกแยกจากพวก? (คิดเร็วๆ)"; rd.ans = o[1]; rd.exp = o[2]; rd.opts = shuffle(o[0].concat([o[1]])); rd.pick = null;
     } else if (t === "react") { rd.hit = 0; rd.need = 6; rd.cell = Math.floor(Math.random() * 9); }
-    else if (t === "memory") { const n = S.r >= 4 ? 5 : 4; rd.seq = pick(SYMS, n).concat([]); rd.pool = shuffle(rd.seq.concat(pick(SYMS.filter((x) => !rd.seq.includes(x)), 6 - n + 2))); rd.in = []; rd.phase = "show"; }
+    else if (t === "memory") { const n = S.r >= 4 ? 5 : 4; const SY = S.lv === "jr" ? JR_SYM : SYMS; rd.seq = pick(SY, n); rd.pool = shuffle(rd.seq.concat(pick(SY.filter((x) => !rd.seq.includes(x)), 6 - n + 2))); rd.in = []; rd.phase = "show"; }
     S.rd = rd; S.lock = false; S.msg = "";
     if (t === "memory") {
-      const ms = Math.max(1300, Math.round(2800 * f)); S.total = ms / 1000; S.end = Date.now() + ms; S.show = true; S.tmr = setInterval(tick, 80); paint();
-      setTimeout(() => { if (S.rd !== rd || S.over || S.lock) return; clearInterval(S.tmr); rd.phase = "rec"; S.show = false; const sec = Math.max(4, Math.round(BASE.memory * f)); S.total = sec; S.end = Date.now() + sec * 1000; S.tmr = setInterval(tick, 80); paint(); }, ms);
+      const ms = Math.max(1300, Math.round(2800 * f * M())); S.total = ms / 1000; S.end = Date.now() + ms; S.show = true; S.tmr = setInterval(tick, 80); paint();
+      setTimeout(() => { if (S.rd !== rd || S.over || S.lock) return; clearInterval(S.tmr); rd.phase = "rec"; S.show = false; const sec = Math.max(4, Math.round(BASE.memory * f * M())); S.total = sec; S.end = Date.now() + sec * 1000; S.tmr = setInterval(tick, 80); paint(); }, ms);
       return;
     }
-    const sec = t === "blitz" ? Math.max(2, Math.round(BASE.blitz * f * 10) / 10) : secs(); S.total = sec; S.end = Date.now() + sec * 1000;
+    const sec = t === "blitz" ? Math.max(2, Math.round(BASE.blitz * f * M() * 10) / 10) : secs(); S.total = sec; S.end = Date.now() + sec * 1000;
     S.tmr = setInterval(tick, 80); paint();
   }
   function tick() {
@@ -222,7 +239,7 @@ const KB = (() => {
     if (S.screen === "play") return playView();
     if (S.screen === "res") return resView();
     const t = S.st;
-    return `<div class="card center"><div class="kb-hero big">${KIMG}</div><h3>⚔️ ประลองครูบุ๊ค <span class="pill" style="background:#7a1020">EXTREMELY HARD</span></h3>
+    return `<div class="card center"><div class="kb-hero big">${KIMG}</div><h3>⚔️ ประลองครูบุ๊ค ${S.lv === "jr" ? '<span class="pill" style="background:#1f7a4d">ระดับ ม.ต้น (เนื้อหา ม.1)</span>' : '<span class="pill" style="background:#7a1020">EXTREMELY HARD</span>'}</h3>
       <p class="muted">8 รอบ 8 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ · จริง/เท็จสายฟ้า · ไวแสง (วัดความเร็ว) · จำลำดับ · หาตัวแปลกแยก (วัดไหวพริบ) · <b>เวลาลดลงทุกรอบ</b> · มีหัวใจ 3 ดวง พลาดหรือหมดเวลาเสีย 1 ดวง${t ? `<br>ผ่านครบ 8 รอบได้ +${t.per_round * 8 + t.win_exp} EXP +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP) · รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays}${t.wins ? ` · ชนะแล้ว ${t.wins} ครั้ง 🏆` : ""})` : ""}</p>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าครูบุ๊ค!</button><button class="btn ghost" onclick="GAMES.home()">กลับ</button></div></div>`;
   }
@@ -232,7 +249,7 @@ const KB = (() => {
       <div class="kb-hearts">${[0, 1, 2].map((i) => (i < S.hearts ? "❤️" : "🖤")).join("")}</div></div>`;
   }
   function playView() {
-    const rd = S.rd, ty = TYPE[rd.type];
+    const rd = S.rd, ty = rd.type === "quiz" && S.lv === "jr" ? ["🧠", "ควิซ ม.ต้น"] : TYPE[rd.type];
     let body = "";
     if (rd.type === "quiz" || rd.type === "calc" || rd.type === "odd") {
       body = `<div class="kb-q">${esc(rd.q)}</div><div class="kb-opts">${rd.opts.map((o, i) => `<button class="kb-opt ${S.lock ? (o === rd.ans ? "ok" : rd.pick === i ? "no" : "") : ""}" ${S.lock ? "disabled" : ""} onclick="KB.pick(${i})">${esc(o)}</button>`).join("")}</div>`;
