@@ -37,6 +37,7 @@ const GAMES = (() => {
     if (st.mode === "battle") return BATTLE.view();
     if (st.mode === "duel") return DUEL.view();
     if (st.mode === "spell") return SPELL.view();
+    if (st.mode === "kb") return KB.view();
     if (!s) return head();
     return head() + `<div class="gm-grid">
       <div class="card gm-card">
@@ -55,6 +56,11 @@ const GAMES = (() => {
         <div class="gm-ico">🔮</div><h3>ห้องฝึกเวทย์ผสมธาตุ</h3>
         <p class="muted">ร่ายคาถาด้วยการผสมอะตอมในหม้อต้มให้ตรงสูตรสาร (น้ำ เกลือ กรด ฯลฯ) · 3 ระดับ · ผสมเร็ว ผิดน้อย ได้คะแนนสูง · ได้ EXP/เหรียญ</p>
         <button class="btn gold" onclick="SPELL.open()">🔮 เข้าห้องเวทย์</button>
+      </div>
+      <div class="card gm-card kb-card">
+        <div class="gm-ico">🏆</div><h3>ประลองครูบุ๊ค <span class="pill" style="background:#7a1020">EXTREMELY HARD</span></h3>
+        <p class="muted">8 รอบ มินิเกมโหดหลายแบบ ควิซยากขึ้น เวลาลดเร็วทุกรอบ · หัวใจ 3 ดวง · ชนะครูบุ๊คได้รางวัลก้อนโต</p>
+        <button class="btn gold" onclick="KB.open()">🏆 ท้าครูบุ๊ค</button>
       </div>
       <div class="card gm-card">
         <div class="gm-ico">⚔️</div><h3>ล่ามอนสเตอร์เคมี</h3>
