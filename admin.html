@@ -6,7 +6,7 @@
 <title>Chemistria · แอดมินครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.40">
+<link rel="stylesheet" href="style.css?v=1.41">
 <style>.wrap{max-width:1180px} h4{margin:14px 0 6px} .inbox .item{flex-wrap:wrap}</style>
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
@@ -14,8 +14,8 @@
 <div id="app" class="wrap"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="config.js?v=1.40"></script>
-<script src="lib.js?v=1.40"></script>
+<script src="config.js?v=1.41"></script>
+<script src="lib.js?v=1.41"></script>
 <script>
 const app = $("#app");
 const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
@@ -23,7 +23,7 @@ const TABS = [
   ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
   ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
   ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["teams", "🧪 ทีม"], ["boss", "👹 บอส"],
-  ["board", "📢 บอร์ด"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
+  ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
 ];
 const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
 const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };
@@ -354,6 +354,13 @@ const TAB = {
         { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) }, { k: "price", label: "ราคา(เหรียญ)", t: "number", w: 80 },
         { k: "image", label: "ภาพ (ไอเทมถือ)", w: 150 }, { k: "st_int", label: "🧠ปัญญา", t: "number", w: 55 }, { k: "st_dil", label: "💪ขยัน", t: "number", w: 55 }, { k: "st_str", label: "⚔️พลัง", t: "number", w: 55 }, { k: "st_luk", label: "🍀โชค", t: "number", w: 55 }, { k: "st_coin", label: "🪙เหรียญ%", t: "number", w: 60 }, { k: "ability", label: "ความสามารถ (ข้อความ)", w: 180 },
         { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
+  },
+
+  async news(v) {
+    const h = holder(v, "📣 ข่าวสาร/อีเว้นท์ (สไลด์หน้าแรกของนักเรียน)", "ใส่รูปเป็นพาธในเว็บ (เช่น assets/news/rank.jpg) หรือลิงก์รูป https://… ขนาดแนะนำ 920×340 · ลำดับ: เลขมากขึ้นก่อน · “แสดงถึงวันที่” ว่าง = แสดงตลอด · รายละเอียดเต็มขึ้นเมื่อนักเรียนกดสไลด์ · สไลด์แรก “อัปเดตใหม่” ระบบสร้างเอง");
+    await crud(h, { table: "news_posts", order: "sort", defaults: { kind: "news", sort: 0, active: true }, addLabel: "เพิ่มข่าว",
+      cols: [{ k: "kind", label: "ชนิด", t: "select", opts: () => [["news", "ข่าว"], ["event", "อีเว้นท์"]] }, { k: "title", label: "หัวข้อ", w: 180 }, { k: "summary", label: "ข้อความสั้นบนสไลด์", w: 220 }, { k: "body", label: "รายละเอียดเต็ม", w: 280 },
+        { k: "image", label: "รูป (พาธ/URL)", w: 190 }, { k: "starts_at", label: "เริ่ม", t: "date" }, { k: "ends_at", label: "แสดงถึงวันที่", t: "date" }, { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
   async board(v) {

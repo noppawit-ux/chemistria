@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.40">
+<link rel="stylesheet" href="style.css?v=1.41">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,27 +14,27 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.40"></script>
-<script src="lib.js?v=1.40"></script>
-<script src="sfx.js?v=1.40"></script>
-<script src="pixelfx.js?v=1.40"></script>
-<script src="fx.js?v=1.40"></script>
-<script src="games.js?v=1.40"></script>
-<script src="battle.js?v=1.40"></script>
-<script src="duel.js?v=1.40"></script>
-<script src="spell.js?v=1.40"></script>
-<script src="kb.js?v=1.40"></script>
-<script src="bgm.js?v=1.40"></script>
+<script src="config.js?v=1.41"></script>
+<script src="lib.js?v=1.41"></script>
+<script src="sfx.js?v=1.41"></script>
+<script src="pixelfx.js?v=1.41"></script>
+<script src="fx.js?v=1.41"></script>
+<script src="games.js?v=1.41"></script>
+<script src="battle.js?v=1.41"></script>
+<script src="duel.js?v=1.41"></script>
+<script src="spell.js?v=1.41"></script>
+<script src="kb.js?v=1.41"></script>
+<script src="bgm.js?v=1.41"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
   ["class", "⚔️ คลาส"], ["decor", "🎨 ตกแต่ง"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"], ["board", "📢 บอร์ด"],
 ];
-let D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
+let NEWS = [], D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";
 /* โหมดส่องนักเรียน (ครูเปิดจากหน้าครู): ใช้โทเคนใน sessionStorage อ่านอย่างเดียว ไม่แตะ login จริง */
 const PEEK = (() => { try { const m = location.hash.match(/peek=([0-9a-f-]{36})/); if (m) { sessionStorage.setItem("kb_peek", m[1]); history.replaceState(null, "", location.pathname); } return sessionStorage.getItem("kb_peek"); } catch (e) { return null; } })();
-const PEEK_OK = ["student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "list_classes"];
+const PEEK_OK = ["student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "news_list", "list_classes"];
 if (PEEK) { const _r = rpc; rpc = async (n, a) => { if (!PEEK_OK.includes(n)) throw new Error("👁 โหมดส่องนักเรียน: ดูได้อย่างเดียว"); return _r(n, a); }; }
 const app = $("#app");
 
@@ -79,8 +79,55 @@ async function showLogin(msg) {
   $("#lp").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
 }
 
+/* ---------------- ไอคอนภาพแทนอิโมจิ ---------------- */
+const ic = (k, c = "") => `<img class="ico ${c}" src="assets/icons/${k}.png" alt="" draggable="false" onerror="this.replaceWith(document.createTextNode(''))">`;
+const tabHtml = ([k, l]) => `${ic(k)}<span>${esc(l.replace(/^\S+\s/, ""))}</span>`;
+
+/* ---------------- สไลด์ข่าว/อีเว้นท์ หน้าแรก ---------------- */
+let NEWS_I = 0, NEWS_T = null;
+function newsSlides() {
+  const sl = [{ kind: "update", title: `อัปเดตใหม่ v${APP_VERSION}`, summary: PATCH.items.map((i) => i[1]).slice(0, 2).join(" · "), image: "assets/patch-banner.jpg", act: "patchShow(true)" }];
+  NEWS.forEach((n, i) => sl.push({ ...n, act: `newsOpen(${i})` }));
+  return sl;
+}
+function newsHtml() {
+  const sl = newsSlides(); if (!sl.length) return "";
+  const lab = { update: "อัปเดต", news: "ข่าว", event: "อีเว้นท์" };
+  return `<div class="card newscard"><div class="newshead">${ic("news")}<b>ข่าวสาร &amp; อีเว้นท์</b></div>
+    <div class="newsc" id="newsc">${sl.map((n, i) => `<button class="newss" data-i="${i}" onclick="${n.act}" aria-label="${esc(n.title)}">
+      <img src="${esc(n.image || "assets/patch-banner.jpg")}" alt="" loading="lazy" draggable="false" onerror="this.style.display='none'">
+      <span class="newsg"></span><span class="newsk k-${n.kind}">${ic(n.kind === "event" ? "event" : "news")}${lab[n.kind] || "ข่าว"}</span>
+      <span class="newst"><b>${esc(n.title)}</b><small>${esc(n.summary || "")}</small></span></button>`).join("")}</div>
+    <div class="newsd" id="newsd">${sl.map((_, i) => `<i class="${i === 0 ? "on" : ""}" onclick="newsTo(${i})"></i>`).join("")}</div></div>`;
+}
+function newsTo(i) { const c = document.getElementById("newsc"); if (c) c.scrollTo({ left: c.clientWidth * i, behavior: "smooth" }); }
+function newsInit() {
+  clearInterval(NEWS_T); const c = document.getElementById("newsc"); if (!c) return;
+  const n = c.children.length, dots = document.querySelectorAll("#newsd i");
+  c.onscroll = () => { NEWS_I = Math.round(c.scrollLeft / c.clientWidth); dots.forEach((d, i) => d.classList.toggle("on", i === NEWS_I)); };
+  if (n > 1 && !matchMedia("(prefers-reduced-motion: reduce)").matches) NEWS_T = setInterval(() => {
+    if (document.hidden || tab !== "home" || document.getElementById("newsov")) return;
+    newsTo((Math.round(c.scrollLeft / c.clientWidth) + 1) % n);
+  }, 5000);
+}
+function newsOpen(i) {
+  const n = NEWS[i]; if (!n) return;
+  const d = (x) => x ? new Date(x + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" }) : "";
+  const when = n.starts_at || n.ends_at ? `<div class="muted" style="text-align:center">${ic("cal", "sm")} ${n.starts_at ? d(n.starts_at) : ""}${n.starts_at && n.ends_at ? " – " : n.ends_at ? "ถึง " : ""}${n.ends_at ? d(n.ends_at) : ""}</div>` : "";
+  const ov = document.createElement("div"); ov.id = "newsov"; ov.className = "patchov-like"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+  ov.innerHTML = `<div class="patchbox"><button class="patchx" aria-label="ปิด" onclick="newsClose()">✕</button>
+    ${n.image ? `<div class="patchimgw"><img class="patchimg" src="${esc(n.image)}" alt="" onerror="this.parentNode.remove()"></div>` : ""}
+    <div class="patchh">${ic(n.kind === "event" ? "event" : "news")} ${esc(n.title)}</div>${when}
+    <div class="newsbody">${esc(n.body || n.summary || "").replace(/\n/g, "<br>")}</div>
+    <div class="row" style="justify-content:center"><button class="btn gold" onclick="newsClose()">ปิด</button></div></div>`;
+  ov.addEventListener("click", (e) => { if (e.target === ov) newsClose(); });
+  document.body.appendChild(ov);
+}
+function newsClose() { document.getElementById("newsov")?.remove(); }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
+
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.40";
+const APP_VERSION = "1.41";
 const PATCH = {
   id: "2026-11-07", ver: APP_VERSION, title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
   items: [
@@ -125,12 +172,14 @@ async function load() {
   try {
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
-    const [dash, hof, ext, brd] = await Promise.all([
+    const [dash, hof, ext, brd, nws] = await Promise.all([
       rpc("student_dashboard", { p_token: tk() }),
       rpc("hall_of_fame", { p_token: tk() }).catch(() => []),
       rpc("student_extras", { p_token: tk() }).catch(() => ({})),
       rpc("board_list", { p_token: tk() }).catch(() => ({ posts: [], unread: 0 })),
+      rpc("news_list", { p_token: tk() }).catch(() => []),
     ]);
+    NEWS = nws || [];
     D = dash; HOF = hof || []; X = ext || {}; B = brd || { posts: [], unread: 0 };
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
     render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
@@ -252,7 +301,7 @@ function render() {
         <div class="row" style="margin:6px 0">
           ${cls ? `<span class="pill" style="color:var(--gold2);cursor:pointer" onclick="go('class')">${esc(cls.emoji)} ${esc(cls.name)}</span>`
                 : `<button class="btn small gold" onclick="go('class')">⚔️ เลือกคลาส</button>`}
-          <span class="coin">🪙 ${s.coins}</span><span class="muted">EXP ${s.exp}</span>
+          <span class="coin">${ic("coin","sm")} ${s.coins}</span><span class="muted">EXP ${s.exp}</span>
         </div>
         <div class="lvrow"><b style="color:var(--text)">Lv.${s.level}</b><span>${s.exp - s.exp_this_level} / ${span} EXP ถึงเลเวล ${s.level + 1}</span></div>
         <div class="lvgauge"><i style="width:${pct}%"></i></div>
@@ -264,14 +313,15 @@ function render() {
     </div>
     <div class="navwrap ${NAVOPEN ? "open" : ""}" id="nav">
       <div class="navbar">
-        <button class="navbtn" onclick="toggleNav()">☰ <b>${esc((TABS.find((t) => t[0] === tab) || ["", ""])[1])}</b> <span class="car">▾</span></button>
+        <button class="navbtn" onclick="toggleNav()">☰ <b>${tabHtml(TABS.find((t) => t[0] === tab) || ["home", ""])}</b> <span class="car">▾</span></button>
         <span class="grow"></span>
-        <button class="bellbtn" onclick="openNotif()" aria-label="การแจ้งเตือน">🔔${notifCount() ? `<i class="bdg">${notifCount()}</i>` : ""}</button>
+        <button class="bellbtn" onclick="openNotif()" aria-label="การแจ้งเตือน">${ic("bell")}${notifCount() ? `<i class="bdg">${notifCount()}</i>` : ""}</button>
       </div>
-      <div class="navgrid">${TABS.map(([k, l]) => `<button class="tab ${k === tab ? "on" : ""}" onclick="go('${k}')">${l}${k === "board" && B.unread ? `<i class="bdg">${B.unread}</i>` : ""}</button>`).join("")}</div>
+      <div class="navgrid">${TABS.map(([k, l]) => `<button class="tab ${k === tab ? "on" : ""}" onclick="go('${k}')">${tabHtml([k, l])}${k === "board" && B.unread ? `<i class="bdg">${B.unread}</i>` : ""}</button>`).join("")}</div>
     </div>
     <div id="view"></div>`;
   $("#view").innerHTML = VIEWS[tab]();
+  newsInit();
 }
 const go = (k) => { tab = k; NAVOPEN = false; closeNotif(); render(); window.scrollTo({ top: 0 }); };
 const toggleNav = () => { NAVOPEN = !NAVOPEN; $("#nav").classList.toggle("open", NAVOPEN); };
@@ -522,7 +572,7 @@ const VIEWS = {
   home() {
     const a = D.attendance_summary;
     const me = D.student;
-    return `<div class="card mychar"><h3 style="margin-bottom:6px">ตัวละครของฉัน <small class="muted" style="font-weight:400">แตะช่องอุปกรณ์เพื่อเปลี่ยน</small></h3>
+    return `${newsHtml()}<div class="card mychar"><h3 style="margin-bottom:6px">ตัวละครของฉัน <small class="muted" style="font-weight:400">แตะช่องอุปกรณ์เพื่อเปลี่ยน</small></h3>
       <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
         <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
         <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
