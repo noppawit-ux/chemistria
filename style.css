@@ -930,3 +930,8 @@ img.em{width:1.2em;height:1.2em;object-fit:contain;vertical-align:-.22em;display
 .lbr{display:flex;flex-direction:column;align-items:flex-end;gap:0;line-height:1.2}
 .lbr b{font-size:1.15rem;color:var(--gold2);font-family:"Prompt",sans-serif}
 .lbr small{font-size:.65rem}
+
+/* ---- ไอเทมตกแต่งใหม่ (v1.44) ---- */
+.avf.dc-f-amethyst{background:conic-gradient(from 20deg,#e9d5ff,#9b6bff,#5a2bb8,#c9a4ff,#e9d5ff);box-shadow:0 0 16px #9b6bffaa,inset 0 0 6px #0008}
+.av.dc-b-volcano{background:radial-gradient(ellipse at 50% 120%,#ffb300 0,#ff4d00 22%,transparent 52%),linear-gradient(180deg,#1a0a14,#4a1410 60%,#7a1f0a)}
+.av.dc-b-crystal{background:linear-gradient(135deg,transparent 40%,#7fe9ff33 41% 44%,transparent 45%),linear-gradient(225deg,transparent 55%,#c9a4ff33 56% 60%,transparent 61%),radial-gradient(circle at 50% 110%,#7a4bd8,#241254 60%,#120a30)}
