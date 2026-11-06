@@ -643,18 +643,20 @@ const VIEWS = {
       const next = { ...DRAFT, gender: eq.gender }; if (d.id === null) delete next.outfit; else next[d.slot] = d;
       // หน้าไอเทม: แสดงเฉพาะรูป/ไอคอนของไอเทม (ตัวอย่างเต็มตัวอยู่ด้านบนของหน้า) — กรอบ/พื้นหลังแสดงบนอวาตาร์วงเล็กเพื่อให้เห็นลาย
       const big = d.image ? `<img class="dimg" src="${esc(d.image)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'demo',textContent:'${esc(d.emoji || "🎁")}'}))">` : `<span class="demo">${esc(d.emoji || "🎁")}</span>`;
-      const prev = d.slot === "title" ? titleTag({ title: d }) : (d.slot === "frame" || d.slot === "bg") ? frame(s.avatar, s.char_class, ri, 0, true, next) : big;
+      const oimg = (cls0, d0) => `assets/chars/${cls0 || "novice"}${d0.id === null ? (altGender(cls0, eq.gender) ? "_alt" : "") : "_" + d0.key}.png`;
+      const outfitPrev = d.slot === "outfit" ? `<img class="dimg outfit" src="${esc(oimg(s.char_class, d))}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'demo',textContent:'${esc(d.emoji || "👕")}'}))">` : null;
+      const prev = outfitPrev ? outfitPrev : d.slot === "title" ? titleTag({ title: d }) : (d.slot === "frame" || d.slot === "bg") ? frame(s.avatar, s.char_class, ri, 0, true, next) : big;
       const act = d.owned ? (sel ? (d.id === null ? '<span class="tag ok">เลือกอยู่</span>' : `<button class="btn small ghost" onclick="pickDecor('${d.slot}',null)">ถอดออก</button>`)
             : `<button class="btn small gold" onclick="pickDecor('${d.slot}',${d.id === null ? "null" : `'${d.id}'`})">เลือก</button>`)
           : d.price != null ? `<button class="btn small" ${s.coins < d.price ? "disabled" : ""} onclick="buyDecor('${d.id}','${esc(d.name)}',${d.price})">ซื้อ ${d.price} 🪙</button>`
-          : '<span class="muted">🔒 ได้จากกาชา</span>';
+          : '<span class="muted">ล็อก · ได้จากกาชา</span>';
       return `<div class="dtile rar-${d.rarity} ${sel ? "worn" : ""} ${d.owned ? "" : "locked"}">
-        <div class="dprev">${prev}</div><b>${["frame", "bg", "title"].includes(d.slot) ? esc(d.emoji) + " " : ""}${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>${stBadge(d)}${act}</div>`;
+        <div class="dprev">${prev}</div><b>${d.slot === "title" ? esc(d.emoji) + " " : ""}${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>${stBadge(d)}${act}</div>`;
     };
     const slotBtn = ([k, ic, lb]) => { const it = DRAFT[k]; const ch = changed.includes(k);
       return `<button class="slotbtn ${k === decSlot ? "on" : ""} ${ch ? "chg" : ""}" onclick="decSlot='${k}';render()">
-        <span class="si">${it ? (it.image ? `<img src="${esc(it.image)}" alt="">` : esc(it.emoji)) : ic}</span><span class="sl">${lb}</span><small>${it ? esc(it.name) : k === "outfit" ? "ชุดเริ่มต้น" : "— ว่าง —"}</small></button>`; };
-    return `<div class="card"><h3>🎨 ตัวละครของฉัน</h3>
+        <span class="si">${it ? (it.image ? `<img src="${esc(it.image)}" alt="">` : k === "outfit" ? `<img src="assets/chars/${esc(s.char_class || "novice")}_${esc(it.key)}.png" alt="" onerror="this.replaceWith(document.createTextNode('${esc(it.emoji)}'))">` : esc(it.emoji)) : ic}</span><span class="sl">${lb}</span><small>${it ? esc(it.name) : k === "outfit" ? "ชุดเริ่มต้น" : "— ว่าง —"}</small></button>`; };
+    return `<div class="card"><h3>ตัวละครของฉัน</h3>
       <div class="charrow"><div class="stagecol">${stage(s.char_class, ri, prevDc, "lg")}${titleTag(DRAFT)}
         <div class="row" style="justify-content:center;gap:6px;margin-top:8px"><span class="muted">เพศ</span>
         ${[["m", "👦 ชาย"], ["f", "👧 หญิง"]].map(([g, l]) => `<button class="btn small ${gOf(s.char_class, eq) === g ? "gold" : "ghost"}" onclick="setGender('${g}')">${l}</button>`).join("")}</div>
