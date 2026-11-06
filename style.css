@@ -817,3 +817,7 @@ table{max-width:100%}
 .kb-boss{overflow:visible}
 @media(max-width:480px){.kb-boss,.kb-boss .kb-img{width:124px;height:124px}.kb-hearts{align-self:flex-start}}
 @media(prefers-reduced-motion:reduce){.kb-boss .kb-img,.kb-hero .kb-img{animation:none}}
+
+/* โหมดส่องนักเรียน */
+#peekbar{position:fixed;top:0;left:0;right:0;z-index:9999;background:#b8860b;color:#111;padding:6px 10px;font-size:.85rem;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.5)}#peekbar button{margin-left:8px;padding:2px 10px;border-radius:8px;border:0;cursor:pointer}
+body.peeking{padding-top:34px}
