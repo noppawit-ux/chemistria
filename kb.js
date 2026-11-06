@@ -5,7 +5,8 @@ const KB = (() => {
   const pick = (a, n) => shuffle(a).slice(0, n);
   const SUB = "₀₁₂₃₄₅₆₇₈₉";
   const FACTOR = [1, 0.9, 0.8, 0.7, 0.62, 0.55, 0.48, 0.42];               // เวลาที่เหลือในแต่ละรอบ (สัดส่วน)
-  const BASE = { quiz: 16, calc: 28, balance: 32, pairs: 22, blitz: 4 };   // วินาทีฐาน (blitz = ต่อข้อ)
+  const BASE = { quiz: 16, calc: 28, balance: 32, pairs: 22, blitz: 4, react: 11, memory: 9, odd: 10 };   // วินาทีฐาน (blitz = ต่อข้อ)
+  const SPD = ["react", "memory", "odd"];
   const TAUNT = {
     start: ["ฮึ่ม... กล้ามาท้าครูหรือ? 😏", "ครูไม่ออมมือนะ เตรียมตัวให้ดี!"],
     ok: ["อืม... ไม่เลวนี่", "โอ้โห ยังพอมีฝีมือ", "ถูกต้อง... แต่ยังไม่จบ!", "เก่งนี่! ลองข้อต่อไป"],
@@ -83,6 +84,13 @@ const KB = (() => {
     [["Na", "H₂O"], ["NaOH", "H₂"], [2, 2, 2, 1]], [["Ca(OH)₂", "HCl"], ["CaCl₂", "H₂O"], [1, 2, 1, 2]], [["Al", "O₂"], ["Al₂O₃"], [4, 3, 2]], [["C₆H₁₂O₆", "O₂"], ["CO₂", "H₂O"], [1, 6, 6, 6]],
     [["Fe₂O₃", "CO"], ["Fe", "CO₂"], [1, 3, 2, 3]], [["H₃PO₄", "NaOH"], ["Na₃PO₄", "H₂O"], [1, 3, 1, 3]],
   ];
+  const ODD = [   // [พวกเดียวกัน×3, ตัวแปลกแยก, เหตุผล]
+    [["Na", "K", "Ca"], "Cl", "ที่เหลือเป็นโลหะ Cl เป็นอโลหะ"], [["He", "Ne", "Ar"], "O", "ที่เหลือเป็นแก๊สเฉื่อย"], [["HCl", "HNO₃", "H₂SO₄"], "NaOH", "ที่เหลือเป็นกรด NaOH เป็นเบส"],
+    [["NaCl", "KBr", "MgO"], "CO₂", "ที่เหลือเป็นสารไอออนิก CO₂ เป็นโคเวเลนต์"], [["CH₄", "C₂H₆", "C₃H₈"], "C₂H₄", "ที่เหลือเป็นแอลเคน C₂H₄ เป็นแอลคีน"], [["F", "Cl", "Br"], "Na", "ที่เหลือเป็นฮาโลเจน"],
+    [["เพชร", "แกรไฟต์", "ฟูลเลอรีน"], "ซิลิกา", "ที่เหลือเป็นอัลโลโทรปของคาร์บอน"], [["CO₂", "BF₃", "CH₄"], "NH₃", "ที่เหลือไม่มีขั้ว NH₃ มีขั้ว"], [["เอทานอล", "เมทานอล", "โพรพานอล"], "แอซีโทน", "ที่เหลือเป็นแอลกอฮอล์ แอซีโทนเป็นคีโตน"],
+    [["Li", "Na", "K"], "Be", "ที่เหลืออยู่หมู่ 1 Be อยู่หมู่ 2"], [["O₂", "N₂", "Cl₂"], "H₂O", "ที่เหลือเป็นสารบริสุทธิ์ชนิดธาตุ H₂O เป็นสารประกอบ"], [["พอลิเอทิลีน", "พีวีซี", "พอลิสไตรีน"], "ไนลอน", "ที่เหลือเกิดจากพอลิเมอไรเซชันแบบเติม"],
+  ];
+  const SYMS = ["H", "He", "Li", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "K", "Ca", "Fe", "Cu", "Zn"];
   const EL = [["โพแทสเซียม", "K"], ["ทังสเตน", "W"], ["ปรอท", "Hg"], ["ตะกั่ว", "Pb"], ["ดีบุก", "Sn"], ["พลวง", "Sb"], ["ทองแดง", "Cu"], ["เงิน", "Ag"], ["ทองคำ", "Au"], ["เหล็ก", "Fe"], ["โซเดียม", "Na"],
     ["แมงกานีส", "Mn"], ["โครเมียม", "Cr"], ["สังกะสี", "Zn"], ["นิกเกิล", "Ni"], ["โบรมีน", "Br"], ["ซีนอน", "Xe"], ["ฟอสฟอรัส", "P"], ["กำมะถัน", "S"], ["แคลเซียม", "Ca"], ["แมกนีเซียม", "Mg"], ["ไอโอดีน", "I"]];
   const TF = [   // [ข้อความ, จริง?]
@@ -101,9 +109,8 @@ const KB = (() => {
 
   async function open() { S.screen = "home"; S.st = null; GAMES.setMode("kb"); paint(); try { S.st = await rpc("kb_status", { p_token: tk() }); } catch (e) {} paint(); }
   function start() {
-    const t1 = shuffle(["quiz", "calc", "balance", "pairs", "blitz"]), t2 = shuffle(["quiz", "calc", "balance"]);
-    S.types = t1.concat(t2); S.r = 0; S.hearts = 3; S.hp = 100; S.cleared = 0; S.over = false; S.lock = false; S.t0 = Date.now(); S.msg = ""; S.say = say("start");
-    S.quizPool = shuffle(QZ); S.calcPool = shuffle(CL); S.balPool = shuffle(BL); S.tfPool = shuffle(TF);
+    S.types = shuffle(["quiz", "calc", "balance", "pairs", "blitz", "react", "memory", "odd"]); S.r = 0; S.hearts = 3; S.hp = 100; S.cleared = 0; S.over = false; S.lock = false; S.t0 = Date.now(); S.msg = ""; S.say = say("start");
+    S.quizPool = shuffle(QZ); S.calcPool = shuffle(CL); S.balPool = shuffle(BL); S.tfPool = shuffle(TF); S.oddPool = shuffle(ODD);
     S.screen = "play"; nextRound();
   }
   const secs = () => Math.max(2, Math.round(BASE[S.types[S.r]] * FACTOR[S.r]));
@@ -120,14 +127,23 @@ const KB = (() => {
     } else if (t === "blitz") {
       rd.items = []; for (let i = 0; i < 5; i++) rd.items.push(S.tfPool.pop() || TF[i]); rd.i = 0; rd.right = 0;
     }
+    else if (t === "odd") {
+      const o = S.oddPool.pop() || ODD[0]; rd.q = "ข้อใดแปลกแยกจากพวก? (คิดเร็วๆ)"; rd.ans = o[1]; rd.exp = o[2]; rd.opts = shuffle(o[0].concat([o[1]])); rd.pick = null;
+    } else if (t === "react") { rd.hit = 0; rd.need = 6; rd.cell = Math.floor(Math.random() * 9); }
+    else if (t === "memory") { const n = S.r >= 4 ? 5 : 4; rd.seq = pick(SYMS, n).concat([]); rd.pool = shuffle(rd.seq.concat(pick(SYMS.filter((x) => !rd.seq.includes(x)), 6 - n + 2))); rd.in = []; rd.phase = "show"; }
     S.rd = rd; S.lock = false; S.msg = "";
+    if (t === "memory") {
+      const ms = Math.max(1300, Math.round(2800 * f)); S.total = ms / 1000; S.end = Date.now() + ms; S.show = true; S.tmr = setInterval(tick, 80); paint();
+      setTimeout(() => { if (S.rd !== rd || S.over || S.lock) return; clearInterval(S.tmr); rd.phase = "rec"; S.show = false; const sec = Math.max(4, Math.round(BASE.memory * f)); S.total = sec; S.end = Date.now() + sec * 1000; S.tmr = setInterval(tick, 80); paint(); }, ms);
+      return;
+    }
     const sec = t === "blitz" ? Math.max(2, Math.round(BASE.blitz * f * 10) / 10) : secs(); S.total = sec; S.end = Date.now() + sec * 1000;
     S.tmr = setInterval(tick, 80); paint();
   }
   function tick() {
     const left = Math.max(0, S.end - Date.now()), bar = $q(".kb-time i");
     if (bar) { bar.style.width = (left / (S.total * 1000)) * 100 + "%"; bar.parentElement.classList.toggle("low", left < S.total * 300); const n = $q(".kb-secs"); if (n) n.textContent = (left / 1000).toFixed(1) + " วิ"; }
-    if (left <= 0 && !S.lock) { S.timeouts++; if (S.rd.type === "blitz") blitzAns(null, true); else roundEnd(false, "⏱ หมดเวลา!"); }
+    if (left <= 0 && !S.lock && !S.show) { S.timeouts++; if (S.rd.type === "blitz") blitzAns(null, true); else roundEnd(false, "⏱ หมดเวลา!"); }
   }
   function roundEnd(ok, msg) {
     if (S.lock) return; S.lock = true; clearInterval(S.tmr); S.msg = msg || "";
@@ -141,6 +157,17 @@ const KB = (() => {
 
   /* ---- ตอบแต่ละแบบ ---- */
   function pickOpt(i) { if (S.lock) return; const rd = S.rd; rd.pick = i; const ok = rd.opts[i] === rd.ans; roundEnd(ok, ok ? "✅ ถูกต้อง! " + rd.exp : "❌ เฉลย: " + rd.ans + " — " + rd.exp); }
+  function tap(i) {
+    if (S.lock) return; const rd = S.rd;
+    if (i === rd.cell) { rd.hit++; SFX.play("ok"); if (rd.hit >= rd.need) return roundEnd(true, "⚡ เร็วมาก!"); let n; do { n = Math.floor(Math.random() * 9); } while (n === rd.cell); rd.cell = n; S.msg = ""; }
+    else { S.end -= 1500; S.msg = "❌ พลาด! หักเวลา 1.5 วินาที"; SFX.play("bad"); if (S.end <= Date.now()) return; }
+    paint();
+  }
+  function mem(s) {
+    if (S.lock) return; const rd = S.rd; if (rd.phase !== "rec") return;
+    if (rd.seq[rd.in.length] === s) { rd.in.push(s); SFX.play("ok"); if (rd.in.length === rd.seq.length) return roundEnd(true, "🧠 จำแม่น!"); paint(); }
+    else roundEnd(false, "❌ ลำดับที่ถูก: " + rd.seq.join(" → "));
+  }
   function bal(i, d) { if (S.lock) return; const c = S.rd.co; c[i] = Math.max(1, Math.min(20, c[i] + d)); SFX.play("click"); paint(); }
   const gcd = (a, b) => (b ? gcd(b, a % b) : a);
   function balCheck() {
@@ -179,13 +206,13 @@ const KB = (() => {
 
   /* ---------------- มุมมอง ---------------- */
   const KIMG = '<img class="kb-img" src="assets/chars/krubook.png" alt="" onerror="this.replaceWith(document.createTextNode(\'👨‍🏫\'))">';
-  const TYPE = { quiz: ["🧠", "ควิซสุดโหด"], calc: ["🧮", "คำนวณเคมี"], balance: ["⚖️", "ดุลสมการ"], pairs: ["🔗", "จับคู่ธาตุ"], blitz: ["⚡", "จริง/เท็จ สายฟ้า"] };
+  const TYPE = { quiz: ["🧠", "ควิซสุดโหด"], react: ["⚡", "ไวแสง"], memory: ["🧩", "จำลำดับ"], odd: ["🔍", "หาตัวแปลกแยก"], calc: ["🧮", "คำนวณเคมี"], balance: ["⚖️", "ดุลสมการ"], pairs: ["🔗", "จับคู่ธาตุ"], blitz: ["⚡", "จริง/เท็จ สายฟ้า"] };
   function view() {
     if (S.screen === "play") return playView();
     if (S.screen === "res") return resView();
     const t = S.st;
     return `<div class="card center"><div class="kb-hero">${KIMG}</div><h3>⚔️ ประลองครูบุ๊ค <span class="pill" style="background:#7a1020">EXTREMELY HARD</span></h3>
-      <p class="muted">8 รอบ 5 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ · จริง/เท็จสายฟ้า · <b>เวลาลดลงทุกรอบ</b> · มีหัวใจ 3 ดวง พลาดหรือหมดเวลาเสีย 1 ดวง${t ? `<br>ผ่านครบ 8 รอบได้ +${t.per_round * 8 + t.win_exp} EXP +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP) · รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays}${t.wins ? ` · ชนะแล้ว ${t.wins} ครั้ง 🏆` : ""})` : ""}</p>
+      <p class="muted">8 รอบ 8 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ · จริง/เท็จสายฟ้า · ไวแสง (วัดความเร็ว) · จำลำดับ · หาตัวแปลกแยก (วัดไหวพริบ) · <b>เวลาลดลงทุกรอบ</b> · มีหัวใจ 3 ดวง พลาดหรือหมดเวลาเสีย 1 ดวง${t ? `<br>ผ่านครบ 8 รอบได้ +${t.per_round * 8 + t.win_exp} EXP +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP) · รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays}${t.wins ? ` · ชนะแล้ว ${t.wins} ครั้ง 🏆` : ""})` : ""}</p>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าครูบุ๊ค!</button><button class="btn ghost" onclick="GAMES.home()">กลับ</button></div></div>`;
   }
   function head() {
@@ -196,8 +223,13 @@ const KB = (() => {
   function playView() {
     const rd = S.rd, ty = TYPE[rd.type];
     let body = "";
-    if (rd.type === "quiz" || rd.type === "calc") {
+    if (rd.type === "quiz" || rd.type === "calc" || rd.type === "odd") {
       body = `<div class="kb-q">${esc(rd.q)}</div><div class="kb-opts">${rd.opts.map((o, i) => `<button class="kb-opt ${S.lock ? (o === rd.ans ? "ok" : rd.pick === i ? "no" : "") : ""}" ${S.lock ? "disabled" : ""} onclick="KB.pick(${i})">${esc(o)}</button>`).join("")}</div>`;
+    } else if (rd.type === "react") {
+      body = `<div class="kb-q">แตะช่องที่สว่างให้ครบ ${rd.need} ครั้ง · ถูก ${rd.hit}/${rd.need} · แตะพลาดหักเวลา</div><div class="kb-grid">${[0,1,2,3,4,5,6,7,8].map((i) => `<button class="kb-cell ${i === rd.cell ? "on" : ""}" onclick="KB.tap(${i})"></button>`).join("")}</div>`;
+    } else if (rd.type === "memory") {
+      body = rd.phase === "show" ? `<div class="kb-q">จำลำดับให้ดี!</div><div class="kb-seq">${rd.seq.map((s) => `<span>${s}</span>`).join("")}</div>`
+        : `<div class="kb-q">กดตามลำดับที่เห็น (${rd.in.length}/${rd.seq.length})</div><div class="kb-seq done">${rd.seq.map((s, i) => `<span>${i < rd.in.length ? rd.in[i] : "?"}</span>`).join("")}</div><div class="kb-opts kb-mem">${rd.pool.map((s) => `<button class="kb-opt" ${S.lock ? "disabled" : ""} onclick="KB.mem('${s}')">${s}</button>`).join("")}</div>`;
     } else if (rd.type === "balance") {
       const all = rd.b[0].concat(rd.b[1]), nr = rd.b[0].length;
       body = `<div class="kb-q">ดุลสมการให้ถูกต้อง (สัมประสิทธิ์จำนวนเต็มน้อยที่สุด)</div><div class="kb-eq">${all.map((f, i) => `${i === nr ? '<span class="kb-arr">→</span>' : i ? '<span class="kb-arr">+</span>' : ""}<span class="kb-term"><button onclick="KB.bal(${i},1)">▲</button><b>${rd.co[i]}</b><button onclick="KB.bal(${i},-1)">▼</button><span class="kb-f">${f}</span></span>`).join("")}</div>
@@ -218,5 +250,5 @@ const KB = (() => {
       <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (ฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าอีกครั้ง</button><button class="btn ghost" onclick="KB.open()">เมนู</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
-  return { open, view, start, quit, pick: pickOpt, bal, balCheck, pn: pairName, ps: pairSym, tf: (v) => blitzAns(v) };
+  return { open, view, start, quit, pick: pickOpt, tap, mem, bal, balCheck, pn: pairName, ps: pairSym, tf: (v) => blitzAns(v) };
 })();
