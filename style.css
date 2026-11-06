@@ -997,3 +997,19 @@ body.peeking .navwrap{top:34px}
 .qchip.exp{background:#9b6bff30;color:#d8c4ff}.qchip.coin{background:#f6c45326;color:var(--gold2)}.qchip.coin .ico{width:14px;height:14px;margin:0}
 .qchip.auto{background:#5aa9ff26;color:#a9d1ff;font-weight:600;font-family:inherit}
 .qa{align-self:center}.qa .btn{white-space:nowrap}
+
+/* รอบ 53: หน้าต่างรายละเอียดบอส */
+.card.boss{cursor:pointer}
+#bossov{position:fixed;inset:0;z-index:10000;background:rgba(5,3,16,.78);display:flex;align-items:center;justify-content:center;padding:14px}
+.bossbox{max-width:480px}
+.bossbig{display:flex;justify-content:center;font-size:90px;margin:6px 0}
+.bossbig img{width:min(78vw,300px);height:min(78vw,300px);object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+.bsec{margin:14px 0 6px}
+.babil{display:grid;gap:6px}
+.batk{display:grid;gap:6px}
+.batkr{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;background:rgba(255,255,255,.05)}
+.batkr.me{background:rgba(245,197,66,.16);outline:1px solid var(--gold2)}
+.batkn{width:28px;text-align:center}
+.batkt{display:flex;justify-content:space-between;gap:8px}
+.batkb{height:6px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px}
+.batkb i{display:block;height:100%;background:linear-gradient(90deg,#ef4444,#f5c542)}

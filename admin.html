@@ -6,7 +6,7 @@
 <title>Chemistria · แอดมินครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.52">
+<link rel="stylesheet" href="style.css?v=1.53">
 <style>.wrap{max-width:1180px} h4{margin:14px 0 6px} .inbox .item{flex-wrap:wrap}</style>
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
@@ -14,8 +14,8 @@
 <div id="app" class="wrap"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="config.js?v=1.52"></script>
-<script src="lib.js?v=1.52"></script>
+<script src="config.js?v=1.53"></script>
+<script src="lib.js?v=1.53"></script>
 <script>
 const app = $("#app");
 const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
@@ -85,6 +85,7 @@ function cellInput(c, val, id) {
   if (c.t === "bool") return `<input type="checkbox" ${a} ${val ? "checked" : ""}>`;
   if (c.t === "select")
     return `<select ${a}>${c.opts().map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(val ?? "") ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  if (c.t === "abil") { const s = Array.isArray(val) ? val.map((x) => [x.icon, x.name, x.desc].join("|")).join(" ;; ") : ""; return `<input type="text" ${a} value="${esc(s)}" placeholder="ไอคอน|ชื่อ|คำอธิบาย ;; อีกอัน" style="min-width:${c.w || 80}px">`; }
   const type = c.t === "number" ? "number" : c.t === "date" ? "date" : "text";
   return `<input type="${type}" ${c.t === "number" ? 'step="any"' : ""} value="${esc(val ?? "")}" ${a} style="min-width:${c.w || 80}px">`;
 }
@@ -92,6 +93,7 @@ const conv = (el) => {
   const t = el.dataset.t;
   if (t === "bool") return el.checked;
   if (t === "number") return el.value === "" ? null : Number(el.value);
+  if (t === "abil") { const l = el.value.split(";;").map((x) => x.split("|").map((y) => y.trim())).filter((p) => p[1]).map((p) => ({ icon: p[0] || "💥", name: p[1], desc: p[2] || "" })); return l.length ? l : null; }
   if (t === "date" || t === "select") return el.value === "" ? null : el.value;
   return el.value;
 };
@@ -419,7 +421,7 @@ const TAB = {
     const h = holder(v, "👹 บอสประจำสัปดาห์",
       "เลือดบอส = “เลือดต่อคน” × จำนวนนักเรียนในห้อง · ความเสียหาย = EXP ของเควสที่สำเร็จ (อนุมัติแล้ว) ของทั้งห้องในช่วงที่บอสเปิด (เควสอัตโนมัติก็นับ) · มีบอสหมุนเวียน 6 ตัวตั้งไว้ให้ ตัวละ 1 สัปดาห์ต่อเนื่องกัน · ปราบได้ → ทุกคนที่ช่วยโจมตีอย่างน้อย 1 ครั้งกดรับรางวัลได้ · เว้นห้องว่าง = บอสของทุกห้อง · วันเริ่มควรเป็นวันจันทร์ · ถ้ามีบอสเฉพาะห้องและบอสทุกห้องพร้อมกัน จะใช้บอสเฉพาะห้อง");
     await crud(h, { table: "bosses", order: "start_date", defaults: { emoji: "👹", hp_per_student: 150, days: 7, reward_exp: 50, reward_coins: 30, active: true, start_date: ymd(new Date(Date.now() - ((new Date().getDay() + 6) % 7) * 86400000)) },
-      cols: [{ k: "image", label: "ภาพมอนสเตอร์", t: "select", opts: () => [["", "(ใช้อีโมจิ)"], ["assets/bosses/acid_dragon.png", "มังกรกรด"], ["assets/bosses/beaker_golem.png", "โกเลมบีกเกอร์"], ["assets/bosses/electron_wizard.png", "จอมเวทอิเล็กตรอน"], ["assets/bosses/element_robot.png", "หุ่นยนต์ธาตุ"], ["assets/bosses/flame_demon.png", "ปีศาจเพลิง"], ["assets/bosses/germ_hydra.png", "ไฮดราเชื้อโรค"]] }, { k: "emoji", label: "ไอคอนสำรอง", w: 50 }, { k: "name", label: "ชื่อบอส", w: 160 }, { k: "description", label: "คำอธิบาย", w: 200 },
+      cols: [{ k: "image", label: "ภาพมอนสเตอร์", t: "select", opts: () => [["", "(ใช้อีโมจิ)"], ["assets/bosses/acid_dragon.png", "มังกรกรด"], ["assets/bosses/beaker_golem.png", "โกเลมบีกเกอร์"], ["assets/bosses/electron_wizard.png", "จอมเวทอิเล็กตรอน"], ["assets/bosses/element_robot.png", "หุ่นยนต์ธาตุ"], ["assets/bosses/flame_demon.png", "ปีศาจเพลิง"], ["assets/bosses/germ_hydra.png", "ไฮดราเชื้อโรค"]] }, { k: "emoji", label: "ไอคอนสำรอง", w: 50 }, { k: "abilities", label: "ความสามารถ (ไอคอน|ชื่อ|คำอธิบาย ;; ...)", t: "abil", w: 260 }, { k: "name", label: "ชื่อบอส", w: 160 }, { k: "description", label: "คำอธิบาย", w: 200 },
         { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "hp_per_student", label: "เลือด/คน", t: "number", w: 70 },
         { k: "start_date", label: "เริ่ม", t: "date" }, { k: "days", label: "กี่วัน", t: "number", w: 60 },
         { k: "reward_exp", label: "รางวัล EXP", t: "number", w: 70 }, { k: "reward_coins", label: "รางวัลเหรียญ", t: "number", w: 70 }, { k: "active", label: "เปิด", t: "bool" }] });

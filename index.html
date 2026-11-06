@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.52">
+<link rel="stylesheet" href="style.css?v=1.53">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,18 +14,18 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.52"></script>
-<script src="lib.js?v=1.52"></script>
-<script src="sfx.js?v=1.52"></script>
-<script src="pixelfx.js?v=1.52"></script>
-<script src="fx.js?v=1.52"></script>
-<script src="games.js?v=1.52"></script>
-<script src="battle.js?v=1.52"></script>
-<script src="duel.js?v=1.52"></script>
-<script src="spell.js?v=1.52"></script>
-<script src="kb.js?v=1.52"></script>
+<script src="config.js?v=1.53"></script>
+<script src="lib.js?v=1.53"></script>
+<script src="sfx.js?v=1.53"></script>
+<script src="pixelfx.js?v=1.53"></script>
+<script src="fx.js?v=1.53"></script>
+<script src="games.js?v=1.53"></script>
+<script src="battle.js?v=1.53"></script>
+<script src="duel.js?v=1.53"></script>
+<script src="spell.js?v=1.53"></script>
+<script src="kb.js?v=1.53"></script>
 <script src="run.js?v=1.46"></script>
-<script src="bgm.js?v=1.52"></script>
+<script src="bgm.js?v=1.53"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -145,7 +145,7 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.52";
+const APP_VERSION = "1.53";
 const PATCH = {
   id: "2026-11-07b", ver: APP_VERSION, title: "ไอเทมใหม่มาแล้ว! 🎉", date: "7 พ.ย. 2569", img: "assets/news/items.jpg",
   items: [
@@ -495,14 +495,38 @@ function bossHtml(full) {
   const state = b.defeated ? '<span class="tag ok">ปราบแล้ว 🎉</span>' : b.ended ? '<span class="tag no">บอสหนีไปแล้ว</span>' : `<span class="tag late">เหลือ ${b.days_left} วัน</span>`;
   const claim = b.can_claim ? `<button class="btn gold" onclick="claimBoss()">🎁 รับรางวัลปราบบอส (+${b.reward_exp} EXP · +${b.reward_coins} 🪙)</button>`
     : b.claimed ? '<span class="tag ok">รับรางวัลแล้ว ✔</span>' : "";
-  return `<div class="card boss ${b.defeated ? "dead" : ""}"><div class="brow"><div class="bemoji">${b.image ? `<img src="${esc(b.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div><div class="grow">
+  return `<div class="card boss ${b.defeated ? "dead" : ""}" role="button" tabindex="0" onclick="bossOpen()" onkeydown="if(event.key==='Enter')bossOpen()"><div class="brow"><div class="bemoji">${b.image ? `<img src="${esc(b.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div><div class="grow">
     <h3 style="margin:0">บอสประจำสัปดาห์: ${esc(b.name)} ${state}</h3>
     <div class="hpbar"><i style="width:${pct}%"></i><span>HP ${b.hp} / ${b.max_hp}</span></div>
     <div class="muted">${esc(b.description || "")}</div>
-    <div class="muted">ฉันโจมตีไปแล้ว <b style="color:var(--gold2)">${b.my_damage}</b> · ปราบได้รับ +${b.reward_exp} EXP +${b.reward_coins} 🪙 ทั้งห้อง</div></div></div>
+    <div class="muted">ฉันโจมตีไปแล้ว <b style="color:var(--gold2)">${b.my_damage}</b> · ปราบได้รับ +${b.reward_exp} EXP +${b.reward_coins} 🪙 ทั้งห้อง</div><div class="muted" style="color:var(--gold2)">👆 แตะเพื่อดูภาพบอส สถิติเพื่อน และความสามารถ</div></div></div>
     ${full && b.top.length ? `<div class="row" style="margin-top:8px">${b.top.map((t, i) => `<span class="pill ${t.me ? "me" : ""}">${["🥇", "🥈", "🥉"][i] || "⚔️"} ${esc(t.name)} ${t.dmg}</span>`).join("")}</div>` : ""}
-    ${claim ? `<div style="margin-top:10px">${claim}</div>` : ""}</div>`;
+    ${claim ? `<div style="margin-top:10px" onclick="event.stopPropagation()">${claim}</div>` : ""}</div>`;
 }
+function bossOpen() {
+  const b = X && X.boss; if (!b || document.getElementById("bossov")) return;
+  const pct = Math.max(0, Math.min(100, (b.hp / b.max_hp) * 100));
+  const at = b.attackers || b.top || [];
+  const tot = at.reduce((a, t) => a + t.dmg, 0) || 1;
+  const mx = at.length ? at[0].dmg : 1;
+  const ab = b.abilities || [];
+  const ov = document.createElement("div"); ov.id = "bossov"; ov.className = "modalov"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+  ov.innerHTML = `<div class="patchbox bossbox"><button class="patchx" aria-label="ปิด" onclick="bossClose()">✕</button>
+    <div class="bossbig">${b.image ? `<img src="${esc(b.image)}" alt="${esc(b.name)}" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div>
+    <div class="patchh">${esc(b.name)} ${b.defeated ? '<span class="tag ok">ปราบแล้ว 🎉</span>' : b.ended ? '<span class="tag no">หนีไปแล้ว</span>' : `<span class="tag late">เหลือ ${b.days_left} วัน</span>`}</div>
+    <div class="hpbar"><i style="width:${pct}%"></i><span>HP ${b.hp} / ${b.max_hp}</span></div>
+    <div class="muted" style="text-align:center;margin:6px 0">${esc(b.description || "")}</div>
+    <div class="muted" style="text-align:center">รางวัลปราบบอส +${b.reward_exp} EXP · +${b.reward_coins} 🪙 · ฉันโจมตี <b style="color:var(--gold2)">${b.my_damage}</b></div>
+    ${ab.length ? `<h4 class="bsec">✨ ความสามารถของบอส</h4><div class="babil">${ab.map((a) => `<div class="patchi"><span>${esc(a.icon || "💥")}</span><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc || "")}</div></div></div>`).join("")}</div>` : ""}
+    <h4 class="bsec">⚔️ สถิติผู้โจมตีบอส (${at.length} คน)</h4>
+    ${at.length ? `<div class="batk">${at.map((t, i) => `<div class="batkr ${t.me ? "me" : ""}"><b class="batkn">${["🥇", "🥈", "🥉"][i] || i + 1}</b><div class="grow"><div class="batkt"><span>${esc(t.name)}${t.me ? " (ฉัน)" : ""}</span><b>${t.dmg} <span class="muted">· ${Math.round((t.dmg / tot) * 100)}%</span></b></div><div class="batkb"><i style="width:${Math.max(4, (t.dmg / mx) * 100)}%"></i></div>${t.hits ? `<div class="muted" style="font-size:.75em">โจมตี ${t.hits} ครั้ง</div>` : ""}</div></div>`).join("")}</div>` : '<p class="muted" style="text-align:center">ยังไม่มีใครโจมตีบอส — ทำเควสเพื่อเป็นคนแรก!</p>'}
+    <div class="row" style="justify-content:center;margin-top:10px"><button class="btn gold" onclick="bossClose()">ปิด</button></div></div>`;
+  ov.addEventListener("click", (e) => { if (e.target === ov) bossClose(); });
+  document.body.appendChild(ov);
+  try { SFX.play("pop"); } catch (e) {}
+}
+function bossClose() { document.getElementById("bossov")?.remove(); }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") bossClose(); });
 function teamsHtml() {
   const T = X.teams; if (!T) return "";
   const rows = (T.teams || []);
