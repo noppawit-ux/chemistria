@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.50">
+<link rel="stylesheet" href="style.css?v=1.51">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,18 +14,18 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.50"></script>
-<script src="lib.js?v=1.50"></script>
-<script src="sfx.js?v=1.50"></script>
-<script src="pixelfx.js?v=1.50"></script>
-<script src="fx.js?v=1.50"></script>
-<script src="games.js?v=1.50"></script>
-<script src="battle.js?v=1.50"></script>
-<script src="duel.js?v=1.50"></script>
-<script src="spell.js?v=1.50"></script>
-<script src="kb.js?v=1.50"></script>
+<script src="config.js?v=1.51"></script>
+<script src="lib.js?v=1.51"></script>
+<script src="sfx.js?v=1.51"></script>
+<script src="pixelfx.js?v=1.51"></script>
+<script src="fx.js?v=1.51"></script>
+<script src="games.js?v=1.51"></script>
+<script src="battle.js?v=1.51"></script>
+<script src="duel.js?v=1.51"></script>
+<script src="spell.js?v=1.51"></script>
+<script src="kb.js?v=1.51"></script>
 <script src="run.js?v=1.46"></script>
-<script src="bgm.js?v=1.50"></script>
+<script src="bgm.js?v=1.51"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -145,7 +145,7 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.50";
+const APP_VERSION = "1.51";
 const PATCH = {
   id: "2026-11-07b", ver: APP_VERSION, title: "ไอเทมใหม่มาแล้ว! 🎉", date: "7 พ.ย. 2569", img: "assets/news/items.jpg",
   items: [
@@ -610,6 +610,7 @@ function questRow(q, full) {
       <div class="qchips"><span class="qchip exp">+${q.exp} EXP</span><span class="qchip coin">${ic("coin", "sm")} +${q.coins}</span>${auto && !st ? `<span class="qchip auto">⚡ ${esc(AUTO_HINT[auto] || "อัตโนมัติ")}</span>` : ""}</div></div>
     ${act ? `<div class="qa">${act}</div>` : ""}</div>`;
 }
+const questsSorted = () => D.quests.map((q, i) => [q, i]).sort((a, b) => (a[0].status === "approved") - (b[0].status === "approved") || a[1] - b[1]).map((x) => x[0]);
 const questProg = () => { const n = D.quests.length, d = D.quests.filter((q) => q.status === "approved").length; return n ? `<span class="qprog">สำเร็จ ${d}/${n}</span>` : ""; };
 
 const questAct = (q) => q.status ? statusTag(q.status) : autoOf(q) ? `<span class="tag wait">⚡ อัตโนมัติ: ${esc(AUTO_HINT[autoOf(q)] || "")}</span>` : null;
@@ -631,7 +632,7 @@ const VIEWS = {
       <div class="card stat"><span class="muted">มาสาย / ขาด</span><b>${a.late} / ${a.absent}</b>ครั้ง</div>
     </div>
     <div class="card quests"><h3>🗺️ เควสวันนี้ ${questProg()}</h3>
-      ${D.quests.map((q) => questRow(q, false)).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}
+      ${questsSorted().map((q) => questRow(q, false)).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}
       <button class="btn small ghost" onclick="go('quest')">ไปหน้าเควส</button></div>
     <div class="card"><h3>📜 ความเคลื่อนไหวล่าสุด</h3>
       ${D.ledger.slice(0, 8).map((l) => `<div class="item"><div class="grow">${esc(l.reason)}</div>
@@ -714,7 +715,7 @@ const VIEWS = {
 
   quest() {
     return `${bossHtml(true)}<div class="card quests"><h3>🗺️ เควสวันนี้ & รายสัปดาห์ ${questProg()}</h3><p class="muted">เควส ⚡ อัตโนมัติ: ระบบเช็คให้เอง ทำเงื่อนไขแล้วได้รางวัลทันที · เควสอื่น: ทำเสร็จแล้วกดขอรับรางวัล ครูจะตรวจแล้วให้ EXP/เหรียญ · ทุกเควสที่สำเร็จคือการโจมตีบอส ✨</p>
-      ${D.quests.map((q) => questRow(q, true)).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}</div>`;
+      ${questsSorted().map((q) => questRow(q, true)).join("") || '<p class="muted">วันนี้ยังไม่มีเควส</p>'}</div>`;
   },
 
   gacha() {
