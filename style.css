@@ -850,3 +850,23 @@ body.peeking{padding-top:34px}
 .stagecol .avf.stg,.pod .avf.stg,.profile .avf.stg{margin-left:auto;margin-right:auto}
 .stagecol{display:flex;flex-direction:column;align-items:center}
 .radarcol svg{overflow:visible}.radarcol{padding:0 14px}
+
+/* ช่องอุปกรณ์ข้างตัวละคร (paper-doll) */
+.paperdoll{display:flex;gap:8px;align-items:center;justify-content:center}
+.eqcol{display:grid;gap:8px}
+.eqslot{position:relative;width:56px;height:56px;border-radius:14px;border:2px dashed #ffffff33;background:#ffffff0d;color:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:2px;cursor:pointer;font:inherit}
+.eqslot .eqi{font-size:24px;line-height:1;opacity:.55;display:flex;width:32px;height:32px;align-items:center;justify-content:center}
+.eqslot.on{border:2px solid var(--c,#f6c453);background:#ffffff14;box-shadow:0 0 10px color-mix(in srgb,var(--c,#f6c453) 45%,transparent)}.eqslot.on .eqi{opacity:1}
+.eqslot .eqi img,.eqt .eqi img{width:100%;height:100%;object-fit:contain}
+.eqslot small{font-size:9.5px;line-height:1.1;opacity:.8;margin-top:1px}
+.eqslot:active{transform:scale(.95)}
+@media(max-width:480px){.paperdoll .avf.stg.lg{--s:168px}.eqslot{width:52px;height:52px}.paperdoll{gap:6px}}
+#eqov{position:fixed;inset:0;z-index:9500;background:rgba(5,3,16,.7);display:flex;align-items:flex-end;justify-content:center}
+.eqbox{position:relative;width:100%;max-width:520px;max-height:72vh;overflow:auto;background:linear-gradient(160deg,#241a4a,#150f30);border:2px solid #f6c453;border-bottom:0;border-radius:18px 18px 0 0;padding:16px;animation:equp .22s ease-out}
+@keyframes equp{from{transform:translateY(40px);opacity:0}}
+.eqbox h3{margin:0 0 10px}
+.eqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-bottom:10px}
+.eqt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:12px;border:2px solid #ffffff22;background:#ffffff0d;color:inherit;font:inherit;cursor:pointer}
+.eqt .eqi{width:56px;height:56px;font-size:34px;display:flex;align-items:center;justify-content:center}
+.eqt small{font-size:11px;text-align:center;line-height:1.2}
+.eqt.worn{border-color:var(--c,#f6c453);background:#f6c45322;box-shadow:0 0 10px color-mix(in srgb,var(--c,#f6c453) 50%,transparent)}
