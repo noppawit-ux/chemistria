@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.47">
+<link rel="stylesheet" href="style.css?v=1.48">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,18 +14,18 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.47"></script>
-<script src="lib.js?v=1.47"></script>
-<script src="sfx.js?v=1.47"></script>
-<script src="pixelfx.js?v=1.47"></script>
-<script src="fx.js?v=1.47"></script>
-<script src="games.js?v=1.47"></script>
-<script src="battle.js?v=1.47"></script>
-<script src="duel.js?v=1.47"></script>
-<script src="spell.js?v=1.47"></script>
-<script src="kb.js?v=1.47"></script>
+<script src="config.js?v=1.48"></script>
+<script src="lib.js?v=1.48"></script>
+<script src="sfx.js?v=1.48"></script>
+<script src="pixelfx.js?v=1.48"></script>
+<script src="fx.js?v=1.48"></script>
+<script src="games.js?v=1.48"></script>
+<script src="battle.js?v=1.48"></script>
+<script src="duel.js?v=1.48"></script>
+<script src="spell.js?v=1.48"></script>
+<script src="kb.js?v=1.48"></script>
 <script src="run.js?v=1.46"></script>
-<script src="bgm.js?v=1.47"></script>
+<script src="bgm.js?v=1.48"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -145,7 +145,7 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.47";
+const APP_VERSION = "1.48";
 const PATCH = {
   id: "2026-11-07b", ver: APP_VERSION, title: "ไอเทมใหม่มาแล้ว! 🎉", date: "7 พ.ย. 2569", img: "assets/news/items.jpg",
   items: [
@@ -473,8 +473,9 @@ function kbAuto() {   // เด้งอัตโนมัติ 1 ครั้�
 function remindHtml() {
   const list = D.assignments.filter((a) => !a.status && a.due_date).map((a) => ({ a, n: dayDiff(a.due_date) }))
     .filter((x) => x.n <= 3).sort((x, y) => x.n - y.n);
-  const tk0 = (X.free_pulls || 0) > 0
-    ? `<div class="notice gold" onclick="go('gacha')">🎟️ มีตั๋วสุ่มกาชาฟรี <b>${X.free_pulls}</b> ใบ — กดเพื่อไปสุ่มเลย!</div>` : "";
+  const ptn = !PEEK && pointsLeft() > 0 ? `<div class="notice gold" onclick="go('decor');setTimeout(()=>document.getElementById('statcard')?.scrollIntoView({behavior:'smooth'}),60)">⭐ มีแต้มสเตตัส <b>${pointsLeft()}</b> แต้ม — กดเพื่อไปแจกแต้มเลย!</div>` : "";
+  const tk0 = ptn + ((X.free_pulls || 0) > 0
+    ? `<div class="notice gold" onclick="go('gacha')">🎟️ มีตั๋วสุ่มกาชาฟรี <b>${X.free_pulls}</b> ใบ — กดเพื่อไปสุ่มเลย!</div>` : "");
   if (!list.length) return tk0 + `<div class="card remind ok"><b>✅ ไม่มีงานค้างหรือใกล้ครบกำหนด</b> <span class="muted">เก่งมาก! ไปทำเควสหรือเล่นเกมสะสม EXP ต่อได้เลย</span></div>`;
   return tk0 + `<div class="card remind"><h3>⏰ งานที่ต้องส่ง</h3>${list.slice(0, 5).map(({ a, n }) => {
     const late = n < 0, tag = late ? `<span class="tag no">เลยกำหนด ${-n} วัน</span>` : n === 0 ? '<span class="tag late">ส่งวันนี้!</span>' : `<span class="tag wait">อีก ${n} วัน</span>`;
@@ -548,14 +549,14 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") eqClose();
 function statTotals(dc) {
   const S = X.stats || {}, IS = X.item_stats || {}, o = {};
   const add = (k) => Object.entries(dc || {}).reduce((a, [sl, it]) => a + (it && it.id && IS[it.id] ? +IS[it.id][k] || 0 : 0), 0);
-  ["int", "dil", "str", "luk"].forEach((k) => { const b = (S[k] || {}).base || 0; o[k] = { base: b, item: add(k), total: b + add(k) }; });
+  ["int", "dil", "str", "luk"].forEach((k) => { const b = ((S[k] || {}).base || 0) + ((S[k] || {}).pts || 0); o[k] = { base: b, item: add(k), total: b + add(k) }; });
   o.coin = add("coin");
   return o;
 }
 function radarHtml(dc, size = 250) {
   if (!X.stats) return "";
   const T = statTotals(dc), AX = [["int", "🧠", "ปัญญา", T.int.total], ["dil", "💪", "ขยัน", T.dil.total], ["str", "⚔️", "พลัง", T.str.total], ["luk", "🍀", "โชค", T.luk.total], ["coin", "🪙", "เหรียญ%", T.coin]];
-  const MAXV = 12, cx = size / 2, cy = size / 2 + 4, R = size * 0.32, n = AX.length;
+  const MAXV = 20, cx = size / 2, cy = size / 2 + 4, R = size * 0.32, n = AX.length;
   const pt = (i, r) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
   const ring = (f) => AX.map((_, i) => pt(i, R * f).map((v) => v.toFixed(1)).join(",")).join(" ");
   const poly = AX.map(([, , , v], i) => pt(i, R * Math.min(1, v / MAXV)).map((x) => x.toFixed(1)).join(",")).join(" ");
@@ -568,18 +569,28 @@ function radarHtml(dc, size = 250) {
       <polygon points="${poly}" fill="#9b6bff" fill-opacity=".38" stroke="#c9a8ff" stroke-width="2" stroke-linejoin="round"/>${dots}${labels}</svg>
     <div class="radfx"><span>🧠 +${E.quiz} EXP/ควิซ</span><span>💪 +${E.exp}% EXP</span><span>⚔️ +${E.boss}% ดาเมจบอส</span><span>🍀 +${E.rare}% SR/SSR</span>${T.coin ? `<span>🪙 +${T.coin}% เหรียญ</span>` : ""}</div></div>`;
 }
+const pointsLeft = () => ((X.stats || {}).points || {}).left || 0;
+async function statAdd(k) { try { X.stats = await rpc("stat_add", { p_token: tk(), p_stat: k, p_n: 1 }); try { SFX.play("pop"); } catch (e) {} render(); } catch (e) { toast(e.message); } }
+async function statReset() {
+  const P = (X.stats || {}).points || {}; if (!confirm(`รีเซ็ตแต้มสเตตัสทั้งหมด? ต้องเสีย ${P.reset_cost} เหรียญ (ได้แต้มคืนทั้งหมดไปแจกใหม่)`)) return;
+  try { X.stats = await rpc("stat_reset", { p_token: tk() }); toast("รีเซ็ตแล้ว แจกแต้มใหม่ได้เลย"); await load(); } catch (e) { toast(e.message); }
+}
 function statsHtml() {
   const S = X.stats; if (!S) return "";
-  const E = S.effects || {};
+  const E = S.effects || {}, P = S.points || {};
   const eff = { int: `+${E.quiz_exp || 0} EXP/ควิซ`, dil: `+${E.exp_pct || 0}% EXP`, str: `+${E.boss_pct || 0}% ดาเมจ`, luk: `+${E.rare_pct || 0}% SR/SSR` };
-  return `<div class="card"><h3>📊 สเตตัสของฉัน</h3>
-    ${STN.map(([k, ic, nm, ds]) => { const v = S[k] || { base: 0, item: 0, total: 0 };
+  const can = !PEEK && P.left > 0;
+  return `<div class="card" id="statcard"><h3>📊 สเตตัสของฉัน</h3>
+    <div class="ptbar ${P.left > 0 ? "on" : ""}"><div><b>แต้มสเตตัสคงเหลือ <span class="ptn">${P.left || 0}</span></b><small>เลเวลอัพรับ +${P.per_level || 2} แต้ม · ใส่ได้ด้านละสูงสุด ${P.cap || 15} · ใช้แล้ว ${P.spent || 0}/${P.total || 0}</small></div>
+      ${!PEEK && (P.spent || 0) > 0 ? `<button class="btn ghost small" onclick="statReset()">↺ รีเซ็ต (${P.reset_cost} 🪙)</button>` : ""}</div>
+    ${STN.map(([k, ic, nm, ds]) => { const v = S[k] || { base: 0, pts: 0, item: 0, total: 0 };
       return `<div class="item"><span style="font-size:22px">${ic}</span><div class="grow"><b>${nm}</b> <span class="muted">${ds}</span>
         <div class="hpbar" style="height:10px"><i style="width:${Math.min(100, v.total * 5)}%"></i></div></div>
-        <div style="text-align:right"><b>${v.total}</b><div class="muted" style="font-size:11px">${v.base}${v.item ? ` +${v.item} ไอเทม` : ""}<br>${eff[k]}</div></div></div>`; }).join("")}
+        <div style="text-align:right"><b>${v.total}</b><div class="muted" style="font-size:11px">${v.base}${v.pts ? ` +${v.pts} แต้ม` : ""}${v.item ? ` +${v.item} ไอเทม` : ""}<br>${eff[k]}</div></div>
+        ${PEEK ? "" : `<button class="stplus" ${can && v.pts < (P.cap || 15) ? "" : "disabled"} onclick="statAdd('${k}')" aria-label="เพิ่ม${nm}">＋</button>`}</div>`; }).join("")}
     ${E.coin_pct ? `<div class="item"><span style="font-size:22px">🪙</span><div class="grow"><b>โบนัสเหรียญ</b> <span class="muted">จากเช็คชื่อ/ส่งงาน/เควส</span></div><b>+${E.coin_pct}%</b></div>` : ""}
     ${(X.stats_abilities || []).map((a) => `<div class="abl">✨ ${esc(a)}</div>`).join("")}
-    <p class="muted" style="font-size:12px">ค่าพื้นฐานมาจากการเรียน/เล่น (ด้านละสูงสุด 10) · สวมไอเทมตกแต่งเพื่อเพิ่มสเตตัสอีกเล็กน้อย</p></div>`;
+    <p class="muted" style="font-size:12px">ค่าพื้นฐานมาจากการเรียน/เล่น (ด้านละสูงสุด 10) · แต้มสเตตัสจากเลเวลแจกได้เอง · สวมไอเทมตกแต่งเพื่อเพิ่มสเตตัสอีกเล็กน้อย</p></div>`;
 }
 const autoOf = (q) => (X.auto || {})[q.id];
 const questAct = (q) => q.status ? statusTag(q.status) : autoOf(q) ? `<span class="tag wait">⚡ อัตโนมัติ: ${esc(AUTO_HINT[autoOf(q)] || "")}</span>` : null;

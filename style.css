@@ -949,3 +949,16 @@ img.em{width:1.2em;height:1.2em;object-fit:contain;vertical-align:-.22em;display
 .run-how{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
 .run-how>div{background:#ffffff0f;border-radius:12px;padding:8px;display:flex;flex-direction:column}
 .run-how small{color:var(--muted);font-size:.78rem}
+
+/* ---- แต้มสเตตัส ---- */
+.ptbar{display:flex;align-items:center;gap:10px;justify-content:space-between;background:#ffffff0d;border:1px solid #ffffff1f;border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.ptbar>div{display:flex;flex-direction:column;gap:2px}.ptbar small{color:var(--muted);font-size:.78rem}
+.ptbar.on{background:linear-gradient(90deg,#4a3a0a55,#ffffff0d);border-color:#f6c45388;box-shadow:0 0 16px #f6c45333}
+.ptn{display:inline-block;min-width:1.6em;text-align:center;background:var(--gold);color:#3a2600;border-radius:99px;padding:0 .4em;margin-left:4px;font-family:"Prompt",sans-serif}
+.stplus{flex:none;width:40px;height:40px;border-radius:12px;border:2px solid #f6c453;background:linear-gradient(180deg,#ffe48a,#e0a31b);color:#3a2600;font-size:1.4rem;font-weight:800;line-height:1;cursor:pointer;touch-action:manipulation}
+.stplus:disabled{background:#ffffff14;border-color:#ffffff26;color:#ffffff55;cursor:default}
+.stplus:not(:disabled):active{transform:scale(.92)}
+#statcard .item{flex-wrap:nowrap;gap:10px}
+#statcard .item .grow{min-width:0}
+#statcard .item>div:nth-of-type(2){flex:none;max-width:42%}
+.ptbar .btn{white-space:nowrap;flex:none}
