@@ -80,7 +80,7 @@ async function showLogin(msg) {
 }
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.36";
+const APP_VERSION = "1.38";
 const PATCH = {
   id: "2026-11-07", ver: APP_VERSION, title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
   items: [
@@ -90,6 +90,7 @@ const PATCH = {
     ["✨", "ปรับปรุงอื่นๆ", "ป๊อปอัปแจ้งรางวัล/เลื่อนขั้นที่มุมจอ · เสียงเอฟเฟกต์และเพลงประกอบ (ปรับได้ที่ปุ่ม 🎵) · ห้องฝึกเวทย์ผสมธาตุ"],
   ],
 };
+document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("anim-off", document.hidden));
 const PATCH_KEY = "chem_patch_seen";
 function patchShow(force) {
   if (PEEK || !D) return;
@@ -122,14 +123,19 @@ const tk = () => PEEK || localStorage.getItem(TOKEN_KEY);
 async function load() {
   if (!tk()) return showLogin();
   try {
-    const prev = D; D = await rpc("student_dashboard", { p_token: tk() });
-    try { HOF = (await rpc("hall_of_fame", { p_token: tk() })) || []; } catch (e) { HOF = []; }
-    try { X = (await rpc("student_extras", { p_token: tk() })) || {}; } catch (e) { X = {}; }
+    const prev = D;
+    // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
+    const [dash, hof, ext, brd] = await Promise.all([
+      rpc("student_dashboard", { p_token: tk() }),
+      rpc("hall_of_fame", { p_token: tk() }).catch(() => []),
+      rpc("student_extras", { p_token: tk() }).catch(() => ({})),
+      rpc("board_list", { p_token: tk() }).catch(() => ({ posts: [], unread: 0 })),
+    ]);
+    D = dash; HOF = hof || []; X = ext || {}; B = brd || { posts: [], unread: 0 };
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
-    try { B = (await rpc("board_list", { p_token: tk() })) || { posts: [], unread: 0 }; } catch (e) { B = { posts: [], unread: 0 }; }
     render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
   } catch (e) {
-    if (!PEEK) localStorage.removeItem(TOKEN_KEY);
+    if (!PEEK && /เซสชัน|หมดอายุ|JWT/.test(e.message || "")) localStorage.removeItem(TOKEN_KEY);   // ไม่ล้างล็อกอินเมื่อแค่เน็ตหลุด
     showLogin(e.message);
   }
 }
