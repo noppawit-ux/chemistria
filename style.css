@@ -797,3 +797,23 @@ table{max-width:100%}
 .kb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:260px;margin:10px auto}.kb-cell{aspect-ratio:1;border-radius:12px;border:2px solid #34506e;background:#14263a;cursor:pointer}.kb-cell.on{background:#f5c542;border-color:#fff;box-shadow:0 0 14px #f5c542}
 .kb-seq{display:flex;gap:8px;justify-content:center;margin:10px 0}.kb-seq span{min-width:42px;padding:10px 6px;text-align:center;font-weight:700;font-size:1.2rem;border-radius:10px;background:#1d3550;border:2px solid #4b7aa8}.kb-seq.done span{opacity:.8}
 .kb-mem{grid-template-columns:repeat(4,1fr)}
+
+/* ประลองครูบุ๊ค: ครูตัวใหญ่ + สนาม + เอฟเฟกต์ถูก/ผิด */
+.kb-hero.big .kb-img,.kb-hero .kb-img{width:170px;height:170px;animation:kbbob 2.4s ease-in-out infinite}
+.kb-boss{width:150px;height:150px}.kb-boss .kb-img{width:150px;height:150px;animation:kbbob 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 8px rgba(0,0,0,.6))}
+@keyframes kbbob{50%{transform:translateY(-5px)}}
+.kb-field{position:relative;overflow:hidden;background-size:cover!important;background-position:center bottom!important;border:2px solid #4b3a7a}
+.kb-ar-lab{background:linear-gradient(rgba(6,3,20,.55),rgba(6,3,20,.7)),url(assets/arenas/lab.jpg)}
+.kb-ar-storm{background:linear-gradient(rgba(4,4,20,.5),rgba(4,4,20,.7)),url(assets/arenas/storm.jpg)}
+.kb-ar-volcano{background:linear-gradient(rgba(20,4,0,.5),rgba(20,4,0,.7)),url(assets/arenas/volcano.jpg)}
+.kb-ar-crystal{background:linear-gradient(rgba(14,4,30,.5),rgba(14,4,30,.7)),url(assets/arenas/crystal.jpg)}
+.kb-field>*{position:relative;z-index:1}.kb-field>.kb-fl{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0}
+.kb-field .kb-q,.kb-field .kb-tf{background:rgba(8,6,24,.55);border-radius:10px;padding:8px}
+.kb-ok>.kb-fl{background:radial-gradient(circle,rgba(61,220,151,.55),transparent 70%);animation:kbflash .7s}
+.kb-bad>.kb-fl{background:radial-gradient(circle,rgba(255,60,80,.6),transparent 70%);animation:kbflash .7s}
+@keyframes kbflash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+.kb-hurt .kb-img{animation:kbhurt .6s}@keyframes kbhurt{0%,100%{transform:none;filter:none}20%{transform:translateX(12px) rotate(6deg);filter:brightness(2.2) saturate(0)}50%{transform:translateX(-8px) rotate(-4deg)}}
+.kb-laugh .kb-img{animation:kblaugh .9s}@keyframes kblaugh{0%,100%{transform:none}20%,60%{transform:translateY(-14px) scale(1.12)}40%,80%{transform:translateY(0) scale(1.05)}}
+.kb-boss{overflow:visible}
+@media(max-width:480px){.kb-boss,.kb-boss .kb-img{width:124px;height:124px}.kb-hearts{align-self:flex-start}}
+@media(prefers-reduced-motion:reduce){.kb-boss .kb-img,.kb-hero .kb-img{animation:none}}

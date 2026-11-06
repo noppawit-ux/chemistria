@@ -150,8 +150,18 @@ const KB = (() => {
     if (ok) { S.cleared++; S.hp = Math.max(0, S.hp - 12.5); S.say = say("ok"); SFX.play("hit"); }
     else { S.hearts--; S.say = say("bad"); SFX.play("bad"); }
     paint();
-    if (ok) { const kb = $q(".kb-boss"); if (kb) FX.at(kb, "hit-spark", { scale: 1.2 }); }
-    else { const p = $q(".kb-play"); if (p) { p.classList.remove("sp-shake"); void p.offsetWidth; p.classList.add("sp-shake"); } }
+    const pl = $q(".kb-play"), bs = $q(".kb-boss"), qq = $q(".kb-q");
+    const cls = (el, c, ms) => { if (!el) return; el.classList.remove(c); void el.offsetWidth; el.classList.add(c); setTimeout(() => el.classList.remove(c), ms); };
+    if (ok) {
+      cls(pl, "kb-ok", 700); cls(bs, "kb-hurt", 700);
+      if (bs) { FX.at(bs, "hit-spark", { scale: 1.6 }); setTimeout(() => FX.at(bs, "blunt-hit", { scale: 1.2 }), 120); }
+      if (qq) FX.at(qq, "collect-burst", { scale: 1.8 });
+      S.hp <= 0 && bs && FX.at(bs, "shatter-death", { scale: 1.2 });
+    } else {
+      cls(pl, "kb-bad", 700); cls(pl, "sp-shake", 500); cls(bs, "kb-laugh", 900);
+      if (qq) FX.at(qq, "curse", { scale: 1.6 });
+      const hs = $q(".kb-hearts"); if (hs) FX.at(hs, "small-explosion", { scale: 0.7 });
+    }
     setTimeout(() => { if (S.hearts <= 0) return finish(false); S.r++; if (S.r >= 8) return finish(true); nextRound(); }, ok ? 1100 : 1700);
   }
 
@@ -206,12 +216,13 @@ const KB = (() => {
 
   /* ---------------- มุมมอง ---------------- */
   const KIMG = '<img class="kb-img" src="assets/chars/krubook.png" alt="" onerror="this.replaceWith(document.createTextNode(\'👨‍🏫\'))">';
+  const ARENA = ["lab", "lab", "storm", "storm", "volcano", "volcano", "crystal", "crystal"];
   const TYPE = { quiz: ["🧠", "ควิซสุดโหด"], react: ["⚡", "ไวแสง"], memory: ["🧩", "จำลำดับ"], odd: ["🔍", "หาตัวแปลกแยก"], calc: ["🧮", "คำนวณเคมี"], balance: ["⚖️", "ดุลสมการ"], pairs: ["🔗", "จับคู่ธาตุ"], blitz: ["⚡", "จริง/เท็จ สายฟ้า"] };
   function view() {
     if (S.screen === "play") return playView();
     if (S.screen === "res") return resView();
     const t = S.st;
-    return `<div class="card center"><div class="kb-hero">${KIMG}</div><h3>⚔️ ประลองครูบุ๊ค <span class="pill" style="background:#7a1020">EXTREMELY HARD</span></h3>
+    return `<div class="card center"><div class="kb-hero big">${KIMG}</div><h3>⚔️ ประลองครูบุ๊ค <span class="pill" style="background:#7a1020">EXTREMELY HARD</span></h3>
       <p class="muted">8 รอบ 8 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ · จริง/เท็จสายฟ้า · ไวแสง (วัดความเร็ว) · จำลำดับ · หาตัวแปลกแยก (วัดไหวพริบ) · <b>เวลาลดลงทุกรอบ</b> · มีหัวใจ 3 ดวง พลาดหรือหมดเวลาเสีย 1 ดวง${t ? `<br>ผ่านครบ 8 รอบได้ +${t.per_round * 8 + t.win_exp} EXP +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP) · รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays}${t.wins ? ` · ชนะแล้ว ${t.wins} ครั้ง 🏆` : ""})` : ""}</p>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าครูบุ๊ค!</button><button class="btn ghost" onclick="GAMES.home()">กลับ</button></div></div>`;
   }
@@ -241,7 +252,7 @@ const KB = (() => {
       const it = rd.items[Math.min(rd.i, 4)];
       body = `<div class="kb-q">ข้อ ${Math.min(rd.i + 1, 5)}/5 · ต้องถูก ≥ 4 (ข้อละ ${S.total} วินาที)</div><div class="kb-tf">${esc(it[0])}</div><div class="row" style="justify-content:center;gap:12px"><button class="kb-tfb t" ${S.lock ? "disabled" : ""} onclick="KB.tf(1)">✓ จริง</button><button class="kb-tfb f" ${S.lock ? "disabled" : ""} onclick="KB.tf(0)">✗ เท็จ</button></div>`;
     }
-    return `<div class="card kb-play">${head()}<div class="kb-type">${ty[0]} ${ty[1]}</div><div class="kb-time"><i style="width:${Math.max(0, (S.end - Date.now()) / (S.total * 10))}%"></i></div><div class="kb-secs">${Math.max(0, (S.end - Date.now()) / 1000).toFixed(1)} วิ</div>${body}<p class="kb-msg">${esc(S.msg)}</p><div class="row" style="justify-content:center"><button class="btn ghost small" onclick="KB.quit()">ยอมแพ้</button></div></div>`;
+    return `<div class="card kb-play kb-field kb-ar-${ARENA[Math.min(S.r,7)]}"><div class="kb-fl" aria-hidden="true"></div>${head()}<div class="kb-type">${ty[0]} ${ty[1]}</div><div class="kb-time"><i style="width:${Math.max(0, (S.end - Date.now()) / (S.total * 10))}%"></i></div><div class="kb-secs">${Math.max(0, (S.end - Date.now()) / 1000).toFixed(1)} วิ</div>${body}<p class="kb-msg">${esc(S.msg)}</p><div class="row" style="justify-content:center"><button class="btn ghost small" onclick="KB.quit()">ยอมแพ้</button></div></div>`;
   }
   function resView() {
     const r = S.res;
