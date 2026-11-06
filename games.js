@@ -92,7 +92,7 @@ const GAMES = (() => {
     try {
       st.res = await rpc("quiz_submit", { p_token: tk(), p_answers: st.picks });
       st.mode = "quizres"; st.status = null; await load();
-      if (st.res.correct === st.res.total) setTimeout(() => FX.victory(), 300); else if (st.res.correct >= st.res.total / 2) setTimeout(() => FX.screen("confetti", 0.5, 0.7, { scale: 3 }), 300);
+      if (st.res.correct === st.res.total) setTimeout(() => FX.victory(), 300); else if (st.res.correct >= st.res.total / 2) setTimeout(() => FX.victory(), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
     st.busy = false; go("game");
   }
@@ -145,7 +145,7 @@ const GAMES = (() => {
     try {
       const r = await rpc("match_submit", { p_token: tk(), p_score: score, p_pairs: g.n, p_seconds: secs });
       st.mres = { ...r, secs, wrong: g.wrong, level: g.level }; st.mode = "matchres"; st.status = null; await load();
-      setTimeout(() => (score >= 90 ? FX.victory() : FX.screen("confetti", 0.5, 0.7, { scale: 3 })), 300);
+      setTimeout(() => (score >= 90 ? FX.victory() : FX.victory()), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
     go("game");
   }

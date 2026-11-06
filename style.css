@@ -765,3 +765,12 @@ table{max-width:100%}
 .dprev .demo{font-size:54px;line-height:1;filter:drop-shadow(0 3px 6px #000a)}
 .dtile .btn.small{width:100%;max-width:150px}
 @media(max-width:560px){.dgrid{grid-template-columns:repeat(2,1fr)}}
+
+/* popup มุมบนจอ (รางวัล/เลื่อนขั้น/ประกาศ) */
+#notes{position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:9100;display:flex;flex-direction:column;gap:8px;width:min(300px,calc(100vw - 20px));pointer-events:none}
+.note{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:#1b1340f2;border:2px solid var(--gold);color:#fff;box-shadow:0 4px 16px #000a;animation:notein .3s ease-out;cursor:pointer}
+.note.out{opacity:0;transform:translateX(30px);transition:.3s}
+.note .n-ic{font-size:26px;line-height:1}
+.note .n-tx{display:flex;flex-direction:column;min-width:0}.note b{font-size:.95em}.note small{opacity:.85;font-size:.8em;overflow-wrap:anywhere}
+.note.n-level{border-color:#7dffb3}.note.n-rank{border-color:#7fe0ff}.note.n-ssr{border-color:#ff5ca8}.note.n-ach{border-color:#b98cff}.note.n-cel{border-color:#7fe0ff}
+@keyframes notein{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}

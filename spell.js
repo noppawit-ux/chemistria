@@ -122,7 +122,7 @@ const SPELL = (() => {
     try {
       const r = await rpc("spell_submit", { p_token: tk(), p_score: score, p_spells: n, p_seconds: secs });
       S.res = { ...r, secs, wrong: S.wrong, hints: S.hints, level: S.level, combo: S.best }; S.screen = "res"; await load();
-      setTimeout(() => { if (score >= 90) { FX.victory(); SFX.play("win"); } else FX.screen("confetti", 0.5, 0.7, { scale: 3 }); }, 300);
+      setTimeout(() => { if (score >= 90) { FX.victory(); SFX.play("win"); } else FX.victory(); }, 300);
     } catch (e) { toast(e.message); S.screen = "home"; }
     S.busy = false; go("game");
   }

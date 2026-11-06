@@ -26,11 +26,12 @@ const FX = (() => {
   const later = (ms, fn) => setTimeout(fn, ms);
   /* ชุดเอฟเฟกต์สำเร็จรูป */
   const kit = {
-    levelUp() { screen("level-up", 0.5, 0.42, { scale: 3 }); screen("confetti", 0.5, 0.7, { scale: 4 }); later(400, () => screen("firework-burst", 0.25, 0.3, { scale: 2 })); later(700, () => screen("firework-burst", 0.75, 0.3, { scale: 2 })); },
-    rankUp() { screen("resurrection", 0.5, 0.65, { scale: 3 }); screen("sunburst", 0.5, 0.35, { scale: 4, loops: 2 }); later(500, () => screen("confetti", 0.5, 0.7, { scale: 4 })); },
-    victory() { screen("confetti", 0.5, 0.75, { scale: 4 }); later(300, () => screen("firework-burst", 0.3, 0.35, { scale: 2.4 })); later(600, () => screen("firework-burst", 0.7, 0.3, { scale: 2.4 })); },
-    coins(el, n = 5) { for (let i = 0; i < n; i++) later(i * 110, () => at(el, "coin-spin", { scale: 1.6, dx: (i - n / 2) * 12, dy: -6 - (i % 2) * 8 })); },
-    xp(el, n = 3) { for (let i = 0; i < n; i++) later(i * 140, () => at(el, "xp-orb", { scale: 2, dx: i * 16 - 16 })); },
+    // ลดเอฟเฟกต์: รางวัล/เลื่อนขั้นแสดงเป็น popup มุมจอ (NOTE ใน index.html) + ประกายเล็กๆ ที่มุมเดียวกัน
+    levelUp() { screen("level-up", 0.86, 0.07, { scale: 1.3 }); },
+    rankUp() { screen("level-up", 0.86, 0.07, { scale: 1.3 }); },
+    victory() { screen("star-fall", 0.5, 0.2, { scale: 1.4 }); },
+    coins() {},
+    xp() {},
     gacha(el, rar) {
       const r = { N: () => at(el, "xp-orb", { scale: 2.4 }), R: () => at(el, "mana-burst", { scale: 1.6 }),
         SR: () => { at(el, "feather-burst", { scale: 2 }); at(el, "power-star", { scale: 2.4 }); },

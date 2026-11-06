@@ -113,33 +113,40 @@ async function celCheck() {
   clearTimeout(CELTIMER); CELTIMER = setTimeout(celCheck, 60000);
 }
 function celNext() {
-  if (CELBUSY || !CELQ.length) return;
-  const x = CELQ.shift(); CELBUSY = true;
-  const who = x.mine ? "คุณ" : esc(x.name);
-  const pic = x.image ? `<img src="${esc(x.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${x.kind === "ssr" ? esc(x.emoji || "🎁") : "🏆"}'))">` : (x.kind === "ssr" ? esc(x.emoji || "🎁") : "🏆");
-  const msg = x.kind === "ssr"
-    ? `<div class="cel-h">🎉 ขอแสดงความยินดี! 🎉</div><div class="cel-b"><b>${who}</b> สุ่มกาชาได้ไอเทมระดับ <span class="cel-ssr">SSR</span></div><div class="cel-t">${esc(x.title)}</div>`
-    : `<div class="cel-h">🏆 เลื่อนแรงค์แล้ว! 🏆</div><div class="cel-b"><b>${who}</b> ไต่ขึ้นสู่แรงค์</div><div class="cel-t rk-${esc(String(x.title).toLowerCase())}">${esc(x.title)}</div>`;
-  const el = document.createElement("div"); el.className = "celpop";
-  el.innerHTML = `<div class="celbox ${x.kind}"><div class="cel-pic">${pic}</div>${msg}<button class="btn gold" type="button">${x.mine ? "เย้!" : "ยินดีด้วย 👏"}</button></div>`;
-  const close = () => { el.remove(); CELBUSY = false; setTimeout(celNext, 250); };
-  el.addEventListener("click", (e) => { if (e.target === el || e.target.tagName === "BUTTON") close(); });
-  document.body.appendChild(el);
-  try { if (typeof FX !== "undefined") { FX.screen("confetti", 0.5, 0.6, { scale: 4 }); if (x.kind === "rank") FX.screen("sunburst", 0.5, 0.35, { scale: 3 }); } } catch (e) {}
-  setTimeout(() => { if (el.isConnected) close(); }, 9000);
+  CELQ.splice(0).slice(-4).forEach((x) => {
+    const who = x.mine ? "คุณ" : x.name;
+    if (x.kind === "ssr") NOTE.show({ kind: "ssr", icon: x.emoji || "🎁", title: `🎉 ${who} ได้ SSR!`, text: x.title, ms: 4500 });
+    else NOTE.show({ kind: "cel", icon: "🏆", title: `🎉 ${who} เลื่อนแรงค์!`, text: x.title, ms: 4500 });
+  });
 }
-
 /* เอฟเฟกต์พิกเซลเมื่อค่าเปลี่ยน: เลเวล/แรงก์/เหรียญ/EXP/เหรียญตรา */
+/* popup แจ้งรางวัล/เลื่อนขั้นที่มุมบนของจอ แล้วหายเอง (แทนเอฟเฟกต์เต็มจอ) */
+const NOTE = (() => {
+  let box = null; const MAX = 3;
+  const SND = { level: "levelup", rank: "rank", reward: "coin", ach: "chime", ssr: "chime", cel: "toast" };
+  function show(o) {                       // o: {kind, icon, title, text, ms}
+    if (!box) { box = document.createElement("div"); box.id = "notes"; document.body.appendChild(box); }
+    while (box.children.length >= MAX) box.firstChild.remove();
+    const el = document.createElement("div"); el.className = "note n-" + (o.kind || "reward");
+    el.innerHTML = `<span class="n-ic">${o.icon || "🎁"}</span><span class="n-tx"><b>${esc(o.title || "")}</b>${o.text ? `<small>${esc(o.text)}</small>` : ""}</span>`;
+    const close = () => { el.classList.add("out"); setTimeout(() => el.remove(), 300); };
+    el.onclick = close; box.appendChild(el); setTimeout(close, o.ms || 3800);
+    try { if (typeof SFX !== "undefined") SFX.play(SND[o.kind] || "toast", { gap: 200 }); } catch (e) {}
+  }
+  return { show };
+})();
 function fxDiff(o) {
   if (typeof FX === "undefined" || !o || !o.student || !D || !D.student || o.student.id !== D.student.id) return;
   const a = o.student, b = D.student;
   setTimeout(() => {
-    if (b.level > a.level) FX.levelUp();
-    else if (o.rank_info && D.rank_info && o.rank_info.key !== D.rank_info.key) FX.rankUp();
-    if (b.coins > a.coins) FX.coins(".profile .coin", Math.min(8, 3 + Math.floor((b.coins - a.coins) / 10)));
-    if (b.exp > a.exp) FX.xp(".lvgauge", 3);
+    const gain = [];
+    if (b.exp > a.exp) gain.push(`+${b.exp - a.exp} EXP`);
+    if (b.coins > a.coins) gain.push(`+${b.coins - a.coins} 🪙`);
+    if (b.level > a.level) NOTE.show({ kind: "level", icon: "⬆️", title: `เลเวลอัป! Lv.${b.level}`, text: gain.join(" · ") }), FX.levelUp();
+    else if (o.rank_info && D.rank_info && o.rank_info.key !== D.rank_info.key) NOTE.show({ kind: "rank", icon: "🏆", title: `เลื่อนแรงค์เป็น ${D.rank_info.name}!`, text: gain.join(" · ") }), FX.rankUp();
+    else if (gain.length) NOTE.show({ kind: "reward", icon: "🎁", title: "ได้รับรางวัล", text: gain.join(" · "), ms: 2800 });
     const had = new Set((o.achievements || []).filter((x) => x.earned_at).map((x) => x.id));
-    if ((D.achievements || []).some((x) => x.earned_at && !had.has(x.id))) { FX.screen("power-star", 0.5, 0.4, { scale: 4 }); FX.screen("confetti", 0.5, 0.7, { scale: 4 }); }
+    (D.achievements || []).filter((x) => x.earned_at && !had.has(x.id)).forEach((x) => NOTE.show({ kind: "ach", icon: x.emoji || "🏅", title: "ปลดล็อกความสำเร็จ", text: x.name }));
   }, 250);
 }
 
