@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=1.40">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,17 +14,17 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="lib.js"></script>
-<script src="sfx.js"></script>
-<script src="pixelfx.js"></script>
-<script src="fx.js"></script>
-<script src="games.js"></script>
-<script src="battle.js"></script>
-<script src="duel.js"></script>
-<script src="spell.js"></script>
-<script src="kb.js"></script>
-<script src="bgm.js"></script>
+<script src="config.js?v=1.40"></script>
+<script src="lib.js?v=1.40"></script>
+<script src="sfx.js?v=1.40"></script>
+<script src="pixelfx.js?v=1.40"></script>
+<script src="fx.js?v=1.40"></script>
+<script src="games.js?v=1.40"></script>
+<script src="battle.js?v=1.40"></script>
+<script src="duel.js?v=1.40"></script>
+<script src="spell.js?v=1.40"></script>
+<script src="kb.js?v=1.40"></script>
+<script src="bgm.js?v=1.40"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -80,7 +80,7 @@ async function showLogin(msg) {
 }
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.38";
+const APP_VERSION = "1.40";
 const PATCH = {
   id: "2026-11-07", ver: APP_VERSION, title: "อัปเดตใหม่! 🎉", date: "7 พ.ย. 2569",
   items: [
@@ -456,10 +456,9 @@ const SLOTS = [["outfit", "👕", "ชุด"], ["fx", "✨", "เอฟเฟ�
 /* ช่องอุปกรณ์ข้างตัวละคร: แตะแล้วเลือกสลับไอเทมที่มีอยู่ได้ทันที */
 const slotIco = (k, it, cls) => !it ? "" : it.image ? `<img src="${esc(it.image)}" alt="">`
   : k === "outfit" ? `<img src="assets/chars/${esc(cls || "novice")}_${esc(it.key)}.png" alt="" onerror="this.replaceWith(document.createTextNode('${esc(it.emoji || "👕")}'))">` : esc(it.emoji || "🎁");
-function eqPanel(me, side) {
-  const list = side === "L" ? SLOTS.slice(0, 4) : SLOTS.slice(4);
-  return `<div class="eqcol">${list.map(([k, ic, lb]) => { const it = (me.decor || {})[k];
-    return `<button class="eqslot ${it ? "on rar-" + esc(it.rarity || "N") : ""}" onclick="eqOpen('${k}')" aria-label="${lb}${it ? ": " + esc(it.name) : ""}" title="${lb}${it ? ": " + esc(it.name) : ""}"><span class="eqi">${it ? slotIco(k, it, me.char_class) : ic}</span><small>${lb}</small></button>`; }).join("")}</div>`;
+function eqPanel(me) {   // ช่องอุปกรณ์ทั้งหมดอยู่ฝั่งขวาของตัวละคร (2 คอลัมน์ × 4 แถว) · ช่องว่างใช้ไอคอนเทา
+  return `<div class="eqcol">${SLOTS.map(([k, ic, lb]) => { const it = (me.decor || {})[k];
+    return `<button class="eqslot ${it ? "on rar-" + esc(it.rarity || "N") : ""}" onclick="eqOpen('${k}')" aria-label="${lb}${it ? ": " + esc(it.name) : ""}" title="${lb}${it ? ": " + esc(it.name) : ""}"><span class="eqi">${it ? slotIco(k, it, me.char_class) : `<img class="eqgrey" src="assets/slots/${k}.png" alt="">`}</span><small>${lb}</small></button>`; }).join("")}</div>`;
 }
 function eqClose() { document.getElementById("eqov")?.remove(); }
 function eqOpen(k) {
@@ -467,7 +466,7 @@ function eqOpen(k) {
   const me = D.student, cur = (me.decor || {})[k], lb = (SLOTS.find((s) => s[0] === k) || [])[2] || "";
   const own = (D.decor_catalog || []).filter((d) => d.slot === k && d.owned);
   const tile = (d) => `<button class="eqt ${cur && d && cur.id === d.id ? "worn" : !cur && !d ? "worn" : ""} ${d ? "rar-" + esc(d.rarity || "N") : ""}" onclick="eqPick('${k}',${d ? `'${d.id}'` : "null"})">
-    <span class="eqi">${d ? (k === "title" ? esc(d.emoji || "🏷️") : slotIco(k, d, me.char_class) || esc(d.emoji || "🎁")) : "✕"}</span><small>${d ? esc(d.name) : k === "outfit" ? "ชุดเริ่มต้น" : "ถอดออก"}</small></button>`;
+    <span class="eqi">${d ? (k === "title" ? esc(d.emoji || "🏷️") : slotIco(k, d, me.char_class) || esc(d.emoji || "🎁")) : `<img class="eqgrey" src="assets/slots/${k}.png" alt="">`}</span><small>${d ? esc(d.name) : k === "outfit" ? "ชุดเริ่มต้น" : "ถอดออก"}</small></button>`;
   const ov = document.createElement("div"); ov.id = "eqov"; ov.setAttribute("role", "dialog");
   ov.innerHTML = `<div class="eqbox"><button class="patchx" aria-label="ปิด" onclick="eqClose()">✕</button><h3>เลือก${lb}</h3>
     <div class="eqgrid">${tile(null)}${own.map(tile).join("")}</div>
@@ -524,7 +523,7 @@ const VIEWS = {
     const a = D.attendance_summary;
     const me = D.student;
     return `<div class="card mychar"><h3 style="margin-bottom:6px">ตัวละครของฉัน <small class="muted" style="font-weight:400">แตะช่องอุปกรณ์เพื่อเปลี่ยน</small></h3>
-      <div class="charrow"><div class="stagecol"><div class="paperdoll">${eqPanel(me, "L")}${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me, "R")}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
+      <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
         <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
         <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
     ${remindHtml()}${teamChip()}${bossHtml(false)}

@@ -870,3 +870,10 @@ body.peeking{padding-top:34px}
 .eqt .eqi{width:56px;height:56px;font-size:34px;display:flex;align-items:center;justify-content:center}
 .eqt small{font-size:11px;text-align:center;line-height:1.2}
 .eqt.worn{border-color:var(--c,#f6c453);background:#f6c45322;box-shadow:0 0 10px color-mix(in srgb,var(--c,#f6c453) 50%,transparent)}
+
+/* รอบ 40: ช่องอุปกรณ์ทั้งหมดอยู่ฝั่งขวา 2×4 + ไอคอนเทาจาก Canva */
+.eqcol{grid-template-columns:repeat(2,56px);grid-auto-rows:56px;gap:8px}
+.eqslot .eqi img.eqgrey,.eqt .eqi img.eqgrey{width:26px;height:26px;opacity:.9;object-fit:contain}
+.eqslot:not(.on) .eqi{opacity:1}
+.eqt .eqi img.eqgrey{width:34px;height:34px}
+@media(max-width:480px){.paperdoll .avf.stg.lg{--s:158px}.eqcol{grid-template-columns:repeat(2,52px);grid-auto-rows:52px;gap:6px}.eqslot{width:52px;height:52px}.paperdoll{gap:6px}}
