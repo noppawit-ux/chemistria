@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.57">
+<link rel="stylesheet" href="style.css?v=1.58">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,18 +14,18 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.57"></script>
-<script src="lib.js?v=1.57"></script>
-<script src="sfx.js?v=1.57"></script>
-<script src="pixelfx.js?v=1.57"></script>
-<script src="fx.js?v=1.57"></script>
-<script src="games.js?v=1.57"></script>
-<script src="battle.js?v=1.57"></script>
-<script src="duel.js?v=1.57"></script>
-<script src="spell.js?v=1.57"></script>
-<script src="kb.js?v=1.57"></script>
+<script src="config.js?v=1.58"></script>
+<script src="lib.js?v=1.58"></script>
+<script src="sfx.js?v=1.58"></script>
+<script src="pixelfx.js?v=1.58"></script>
+<script src="fx.js?v=1.58"></script>
+<script src="games.js?v=1.58"></script>
+<script src="battle.js?v=1.58"></script>
+<script src="duel.js?v=1.58"></script>
+<script src="spell.js?v=1.58"></script>
+<script src="kb.js?v=1.58"></script>
 <script src="run.js?v=1.46"></script>
-<script src="bgm.js?v=1.57"></script>
+<script src="bgm.js?v=1.58"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -145,14 +145,14 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.57";
+const APP_VERSION = "1.58";
 const PATCH = {
-  id: "2026-11-07b", ver: APP_VERSION, title: "ไอเทมใหม่มาแล้ว! 🎉", date: "7 พ.ย. 2569", img: "assets/news/items.jpg",
+  id: "2026-11-07c", ver: APP_VERSION, title: "มินิเกมใหม่ เคมีรัน! 🏃", date: "7 พ.ย. 2569", img: "assets/news/run.jpg",
   items: [
-    ["🎩", "ไอเทมตกแต่งใหม่ 14 ชิ้น", "หมวกพ่อมดธาตุ มงกุฎลอเรล หุ่นยนต์จิ๋ว สไลม์สารเคมี ฟีนิกซ์น้อย เพชรคาร์บอน พื้นภูเขาไฟ/ถ้ำผลึก กรอบอเมทิสต์ และฉายาใหม่ — ซื้อในแท็บ ตกแต่ง หรือลุ้นจากกาชา"],
-    ["🥋", "ชุดตัวละครใหม่ 2 แบบ", "ชุดฮาซ์แมท (R ซื้อได้ 300 เหรียญ) และชุดซามูไรนักเคมี (SSR จากกาชา) ครบทุกคลาส"],
-    ["📣", "สไลด์ข่าว & อีเว้นท์ที่หน้าหลัก", "ข่าวและกิจกรรมใหม่ๆ จะขึ้นเป็นสไลด์ กดดูรายละเอียดได้ · ไอคอนภาพใหม่ทั้งระบบ · จัดหน้าอันดับใหม่"],
-    ["🏆", "ก่อนหน้านี้", "โหมดประลองครูบุ๊ค · ปรับแรงค์ใหม่ · ช่องอุปกรณ์ข้างตัวละคร (ดูย้อนหลังได้ที่ข่าวในสไลด์)"],
+    ["🏃", "เคมีรัน มินิเกมวิ่งไม่หยุด", "แตะ = กระโดด (กระโดดซ้ำได้) · ปุ่มสไลด์ = มุดใต้เมฆพิษ · เก็บเหรียญ แผ่นธาตุ ยาเติมพลัง และดาว ไปที่แท็บเกม"],
+    ["🧑‍🔬", "ตัวละครของคุณคือนักวิ่ง", "ใส่ชุดอะไรอยู่ก็วิ่งด้วยชุดนั้น มีสัตว์เลี้ยงวิ่งตามด้วย"],
+    ["🎁", "เล่นได้วันละ 3 รอบที่ได้รางวัล", "ได้ EXP และเหรียญตามคะแนน ยิ่งวิ่งไกลยิ่งได้เยอะ"],
+    ["🐲", "บอสประจำสัปดาห์แบบใหม่", "แตะการ์ดบอสเพื่อดูภาพใหญ่ ความสามารถ และสถิติเพื่อนที่ช่วยกันโจมตี"],
   ],
 };
 document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("anim-off", document.hidden));
