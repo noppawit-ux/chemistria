@@ -166,6 +166,7 @@ const KB = (() => {
     if (S.lock) return; S.lock = true; clearInterval(S.tmr); S.msg = msg || "";
     if (ok) { S.cleared++; S.hp = Math.max(0, S.hp - 12.5); S.say = say("ok"); SFX.play("hit"); }
     else { S.hearts--; S.say = say("bad"); SFX.play("bad"); }
+    clearTimeout(S.adv); S.adv = setTimeout(advance, ok ? 900 : 1500);
     paint();
     const pl = $q(".kb-play"), bs = $q(".kb-boss"), qq = $q(".kb-q");
     const cls = (el, c, ms) => { if (!el) return; el.classList.remove(c); void el.offsetWidth; el.classList.add(c); setTimeout(() => el.classList.remove(c), ms); };
@@ -179,8 +180,16 @@ const KB = (() => {
       if (qq) FX.at(qq, "curse", { scale: 1.6 });
       const hs = $q(".kb-hearts"); if (hs) FX.at(hs, "small-explosion", { scale: 0.7 });
     }
-    setTimeout(() => { if (S.hearts <= 0) return finish(false); S.r++; if (S.r >= 8) return finish(true); nextRound(); }, ok ? 1100 : 1700);
+    // พักสั้นๆ ให้อ่านเฉลย แล้วไปรอบต่อไปเอง — กด "ต่อไป ▶" / Enter / Space เพื่อข้ามได้ทันที
   }
+  function advance() {
+    clearTimeout(S.adv); S.adv = 0;
+    if (!S.lock || S.over || S.screen !== "play") return;
+    if (S.hearts <= 0) return finish(false);
+    S.r++; if (S.r >= 8) return finish(true);
+    S.enter = true; nextRound();
+  }
+  document.addEventListener("keydown", (e) => { if (S.adv && (e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); advance(); } });
 
   /* ---- ตอบแต่ละแบบ ---- */
   function pickOpt(i) { if (S.lock) return; const rd = S.rd; rd.pick = i; const ok = rd.opts[i] === rd.ans; roundEnd(ok, ok ? "✅ ถูกต้อง! " + rd.exp : "❌ เฉลย: " + rd.ans + " — " + rd.exp); }
@@ -220,7 +229,7 @@ const KB = (() => {
   }
 
   async function finish(won) {
-    clearInterval(S.tmr); S.over = true;
+    clearInterval(S.tmr); clearTimeout(S.adv); S.adv = 0; S.over = true;
     const sec = Math.max(S.cleared * 3, Math.round((Date.now() - S.t0) / 1000));
     S.say = say(won ? "win" : "lose");
     try {
@@ -229,7 +238,7 @@ const KB = (() => {
     } catch (e) { toast(e.message); S.screen = "home"; }
     go("game");
   }
-  const quit = () => { if (S.screen === "play" && !confirm("ยอมแพ้ครูบุ๊ค? จะไม่ได้รางวัลจากรอบนี้")) return; clearInterval(S.tmr); S.screen = "home"; S.over = true; GAMES.home(); };
+  const quit = () => { if (S.screen === "play" && !confirm("ยอมแพ้ครูบุ๊ค? จะไม่ได้รางวัลจากรอบนี้")) return; clearInterval(S.tmr); clearTimeout(S.adv); S.adv = 0; S.screen = "home"; S.over = true; GAMES.home(); };
 
   /* ---------------- มุมมอง ---------------- */
   const KIMG = '<img class="kb-img" src="assets/chars/krubook.png" alt="" onerror="this.replaceWith(document.createTextNode(\'👨‍🏫\'))">';
@@ -269,7 +278,8 @@ const KB = (() => {
       const it = rd.items[Math.min(rd.i, 4)];
       body = `<div class="kb-q">ข้อ ${Math.min(rd.i + 1, 5)}/5 · ต้องถูก ≥ 4 (ข้อละ ${S.total} วินาที)</div><div class="kb-tf">${esc(it[0])}</div><div class="row" style="justify-content:center;gap:12px"><button class="kb-tfb t" ${S.lock ? "disabled" : ""} onclick="KB.tf(1)">✓ จริง</button><button class="kb-tfb f" ${S.lock ? "disabled" : ""} onclick="KB.tf(0)">✗ เท็จ</button></div>`;
     }
-    return `<div class="card kb-play kb-field kb-ar-${ARENA[Math.min(S.r,7)]}"><div class="kb-fl" aria-hidden="true"></div>${head()}<div class="kb-type">${ty[0]} ${ty[1]}</div><div class="kb-time"><i style="width:${Math.max(0, (S.end - Date.now()) / (S.total * 10))}%"></i></div><div class="kb-secs">${Math.max(0, (S.end - Date.now()) / 1000).toFixed(1)} วิ</div>${body}<p class="kb-msg">${esc(S.msg)}</p><div class="row" style="justify-content:center"><button class="btn ghost small" onclick="KB.quit()">ยอมแพ้</button></div></div>`;
+    const enter = S.enter; S.enter = false;
+    return `<div class="card kb-play kb-field kb-ar-${ARENA[Math.min(S.r,7)]}${enter ? " kb-enter" : ""}"><div class="kb-fl" aria-hidden="true"></div>${head()}<div class="kb-type">${ty[0]} ${ty[1]}</div><div class="kb-time"><i style="width:${Math.max(0, (S.end - Date.now()) / (S.total * 10))}%"></i></div><div class="kb-secs">${Math.max(0, (S.end - Date.now()) / 1000).toFixed(1)} วิ</div>${body}<p class="kb-msg">${esc(S.msg)}</p><div class="row" style="justify-content:center;gap:8px">${S.lock && S.adv ? '<button class="btn gold small" onclick="KB.go()">ต่อไป ▶</button>' : ""}<button class="btn ghost small" onclick="KB.quit()">ยอมแพ้</button></div></div>`;
   }
   function resView() {
     const r = S.res;
@@ -278,5 +288,5 @@ const KB = (() => {
       <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (ฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าอีกครั้ง</button><button class="btn ghost" onclick="KB.open()">เมนู</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
-  return { open, view, start, quit, pick: pickOpt, tap, mem, bal, balCheck, pn: pairName, ps: pairSym, tf: (v) => blitzAns(v) };
+  return { open, view, start, quit, pick: pickOpt, tap, mem, bal, balCheck, pn: pairName, ps: pairSym, tf: (v) => blitzAns(v), go: advance };
 })();

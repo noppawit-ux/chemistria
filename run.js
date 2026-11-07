@@ -252,7 +252,6 @@ const RUN = (() => {
       ctx.textAlign = "left"; ctx.font = "800 15px Prompt, Sarabun, sans-serif"; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 4;
       eff.forEach((t) => { ctx.strokeText(t, 14, ey + 14); ctx.fillStyle = "#fff"; ctx.fillText(t, 14, ey + 14); ey += 20; });
       if (g.boost > 0) { ctx.fillStyle = "#fff3a0"; ctx.strokeText(`⚡ บูสต์ ${g.boost.toFixed(1)}`, 14, ey + 14); ctx.fillText(`⚡ บูสต์ ${g.boost.toFixed(1)}`, 14, ey + 14); } }
-    if (false) { ctx.textAlign = "left"; ctx.fillStyle = "#fff3a0"; ctx.font = "800 16px Prompt, Sarabun, sans-serif"; ctx.fillText(`⚡ บูสต์ ${g.boost.toFixed(1)}`, 14, 58); }
     if (g.cd > 0) { ctx.textAlign = "center"; ctx.font = "800 96px Prompt, Sarabun, sans-serif"; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 10; const n = Math.ceil(g.cd); ctx.strokeText(n, W / 2, H / 2 - 20); ctx.fillStyle = "#ffe48a"; ctx.fillText(n, W / 2, H / 2 - 20); }
     ctx.restore();
   }
@@ -300,5 +299,5 @@ const RUN = (() => {
       <div class="row" style="justify-content:center"><button class="btn gold" ${r.busy ? "disabled" : ""} onclick="RUN.again()">วิ่งอีกครั้ง</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
   async function again() { try { S.st = await rpc("run_status", { p_token: tk() }); } catch (e) {} start(); }
-  return { open, view, start, jump, slide, quit, again, dbg: () => S };
+  return { open, view, start, jump, slide, quit, again };
 })();
