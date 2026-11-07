@@ -66,8 +66,9 @@ const BATTLE = (() => {
     S.def = { i: 0, hits: 0, marks: [], seq: p.seq.split(""), n: p.n, open: true, state: "ready" };
     S.def.t = setTimeout(nextArrow, 900); paint();
   }
-  /* เวลากดต่อ 1 ลูกศร: มอนสเตอร์เก่งขึ้น (เลเวล 1→5) เวลาลดลง 2200→1000 ms */
-  const winOf = (lv) => Math.max(1000, 2200 - 300 * ((lv || 1) - 1));
+  /* เวลากดต่อ 1 ลูกศร: มอนสเตอร์เก่งขึ้น (เลเวล 1→5) เวลาลดลง 1400→600 ms และช่วงพักระหว่างลูกศรสั้นลง 380→180 ms */
+  const winOf = (lv) => Math.max(550, 1400 - 200 * ((lv || 1) - 1));
+  const gapOf = (lv) => Math.max(160, 380 - 50 * ((lv || 1) - 1));
   const curWin = () => winOf(S.bat && S.bat.monster && S.bat.monster.level);
   function nextArrow() {
     const d = S.def; if (!d) return;
@@ -78,7 +79,7 @@ const BATTLE = (() => {
   function judge(k) {
     const d = S.def; if (!d || d.state !== "go") return; clearTimeout(d.t);
     const ok = k === d.seq[d.i]; d.marks.push(ok ? 1 : 0); if (ok) d.hits++; d.state = ok ? "ok" : "miss";
-    paint(); d.i++; d.t = setTimeout(nextArrow, 380);
+    paint(); d.i++; d.t = setTimeout(nextArrow, gapOf(S.bat && S.bat.monster && S.bat.monster.level));
   }
   async function endDef() {
     const d = S.def; if (!d || d.sent) return; d.sent = true; d.state = "send"; paint();
