@@ -6,7 +6,7 @@
 <title>Chemistria · แอดมินครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.58">
+<link rel="stylesheet" href="style.css?v=1.59">
 <style>.wrap{max-width:1180px} h4{margin:14px 0 6px} .inbox .item{flex-wrap:wrap}</style>
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
@@ -14,8 +14,8 @@
 <div id="app" class="wrap"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="config.js?v=1.58"></script>
-<script src="lib.js?v=1.58"></script>
+<script src="config.js?v=1.59"></script>
+<script src="lib.js?v=1.59"></script>
 <script>
 const app = $("#app");
 const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
@@ -23,7 +23,7 @@ const TABS = [
   ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
   ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
   ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["teams", "🧪 ทีม"], ["boss", "👹 บอส"],
-  ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
+  ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["timetable", "🕒 ตารางสอน"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
 ];
 const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
 const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };
@@ -358,6 +358,13 @@ const TAB = {
         { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
   },
 
+  async timetable(v) {
+    const h = holder(v, "🕒 ตารางสอน (ขึ้นในปฏิทินและหน้าหลักของนักเรียนทุกสัปดาห์)", "วัน: 1=จันทร์ … 5=ศุกร์ · เวลาพิมพ์แบบ 08:40 · ใช้ตั้งแต่/ถึงวันที่ ใช้ปิดตารางเก่าเมื่อเปลี่ยนภาคเรียน (ปิดแถวด้วยติ๊กใช้งาน)");
+    await crud(h, { table: "timetable", order: "dow", defaults: { dow: 1, start_time: "08:40", end_time: "09:30", effective_from: "2026-11-02", active: true, class_id: S.cls }, addLabel: "เพิ่มคาบ",
+      cols: [{ k: "class_id", label: "ห้อง", t: "select", opts: classOpts("— เลือกห้อง —") }, { k: "dow", label: "วัน (1-7)", t: "number", w: 60 }, { k: "start_time", label: "เริ่ม", w: 70 }, { k: "end_time", label: "จบ", w: 70 },
+        { k: "period", label: "คาบ", w: 80 }, { k: "title", label: "วิชา", w: 160 }, { k: "room", label: "ห้องเรียน", w: 70 },
+        { k: "effective_from", label: "ใช้ตั้งแต่", t: "date" }, { k: "effective_to", label: "ถึง", t: "date" }, { k: "active", label: "ใช้งาน", t: "bool" }] });
+  },
   async news(v) {
     const h = holder(v, "📣 ข่าวสาร/อีเว้นท์ (สไลด์หน้าแรกของนักเรียน)", "ใส่รูปเป็นพาธในเว็บ (เช่น assets/news/rank.jpg) หรือลิงก์รูป https://… ขนาดแนะนำ 920×340 · ลำดับ: เลขมากขึ้นก่อน · “แสดงถึงวันที่” ว่าง = แสดงตลอด · รายละเอียดเต็มขึ้นเมื่อนักเรียนกดสไลด์ · สไลด์แรก “อัปเดตใหม่” ระบบสร้างเอง");
     await crud(h, { table: "news_posts", order: "sort", defaults: { kind: "news", sort: 0, active: true }, addLabel: "เพิ่มข่าว",

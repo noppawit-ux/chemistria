@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.58">
+<link rel="stylesheet" href="style.css?v=1.59">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,28 +14,28 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.58"></script>
-<script src="lib.js?v=1.58"></script>
-<script src="sfx.js?v=1.58"></script>
-<script src="pixelfx.js?v=1.58"></script>
-<script src="fx.js?v=1.58"></script>
-<script src="games.js?v=1.58"></script>
-<script src="battle.js?v=1.58"></script>
-<script src="duel.js?v=1.58"></script>
-<script src="spell.js?v=1.58"></script>
-<script src="kb.js?v=1.58"></script>
+<script src="config.js?v=1.59"></script>
+<script src="lib.js?v=1.59"></script>
+<script src="sfx.js?v=1.59"></script>
+<script src="pixelfx.js?v=1.59"></script>
+<script src="fx.js?v=1.59"></script>
+<script src="games.js?v=1.59"></script>
+<script src="battle.js?v=1.59"></script>
+<script src="duel.js?v=1.59"></script>
+<script src="spell.js?v=1.59"></script>
+<script src="kb.js?v=1.59"></script>
 <script src="run.js?v=1.46"></script>
-<script src="bgm.js?v=1.58"></script>
+<script src="bgm.js?v=1.59"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
   ["class", "⚔️ คลาส"], ["decor", "🎨 ตกแต่ง"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"], ["board", "📢 บอร์ด"],
 ];
-let NEWS = [], D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
+let TT = [], NEWS = [], D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";
 /* โหมดส่องนักเรียน (ครูเปิดจากหน้าครู): ใช้โทเคนใน sessionStorage อ่านอย่างเดียว ไม่แตะ login จริง */
 const PEEK = (() => { try { const m = location.hash.match(/peek=([0-9a-f-]{36})/); if (m) { sessionStorage.setItem("kb_peek", m[1]); history.replaceState(null, "", location.pathname); } return sessionStorage.getItem("kb_peek"); } catch (e) { return null; } })();
-const PEEK_OK = ["student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "run_status", "news_list", "list_classes"];
+const PEEK_OK = ["student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "run_status", "news_list", "timetable_list", "list_classes"];
 if (PEEK) { const _r = rpc; rpc = async (n, a) => { if (!PEEK_OK.includes(n)) throw new Error("👁 โหมดส่องนักเรียน: ดูได้อย่างเดียว"); return _r(n, a); }; }
 const app = $("#app");
 
@@ -145,7 +145,7 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.58";
+const APP_VERSION = "1.59";
 const PATCH = {
   id: "2026-11-07c", ver: APP_VERSION, title: "มินิเกมใหม่ เคมีรัน! 🏃", date: "7 พ.ย. 2569", img: "assets/news/run.jpg",
   items: [
@@ -190,14 +190,15 @@ async function load() {
   try {
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
-    const [dash, hof, ext, brd, nws] = await Promise.all([
+    const [dash, hof, ext, brd, nws, ttl] = await Promise.all([
       rpc("student_dashboard", { p_token: tk() }),
       rpc("hall_of_fame", { p_token: tk() }).catch(() => []),
       rpc("student_extras", { p_token: tk() }).catch(() => ({})),
       rpc("board_list", { p_token: tk() }).catch(() => ({ posts: [], unread: 0 })),
       rpc("news_list", { p_token: tk() }).catch(() => []),
+      rpc("timetable_list", { p_token: tk() }).catch(() => []),
     ]);
-    NEWS = nws || [];
+    NEWS = nws || []; TT = ttl || [];
     D = dash; HOF = hof || []; X = ext || {}; B = brd || { posts: [], unread: 0 };
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
     render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
@@ -518,6 +519,15 @@ function bossHit(ev) {
   w.appendChild(d); setTimeout(() => d.remove(), 900);
   try { SFX.play("blip"); } catch (e) {}
 }
+function lessonsOn(d) {
+  const k = ymd(d), w = d.getDay() || 7;
+  return (TT || []).filter((t) => t.dow === w && (!t.from || k >= String(t.from).slice(0, 10)) && (!t.to || k <= String(t.to).slice(0, 10)))
+    .map((t) => ({ kind: "lesson", lesson: true, title: `${t.start}–${t.end} ${t.title}`, note: [t.period, t.room ? "ห้อง " + t.room : ""].filter(Boolean).join(" · ") }));
+}
+function todayLessonsHtml() {
+  const L = lessonsOn(new Date()); if (!L.length) return "";
+  return `<div class="card"><h3>📚 คาบเรียนวันนี้</h3>${L.map((x) => `<div class="item"><span class="dot k-lesson"></span><div class="grow"><b>${esc(x.title)}</b><div class="muted">${esc(x.note)}</div></div></div>`).join("")}</div>`;
+}
 function bossHtml(full) {
   const b = X.boss; if (!b) return "";
   const pct = Math.max(0, Math.min(100, (b.hp / b.max_hp) * 100));
@@ -678,7 +688,7 @@ const VIEWS = {
       <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
         <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
         <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
-    ${remindHtml()}${teamChip()}${bossHtml(false)}
+    ${remindHtml()}${todayLessonsHtml()}${teamChip()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
@@ -723,6 +733,7 @@ const VIEWS = {
     });
     D.assignments.forEach((a) => a.due_date && add(a.due_date, { kind: "assignment", title: "ส่งงาน: " + a.title, note: a.status ? "" : "ยังไม่ส่ง" }));
     D.attendance.forEach((a) => add(a.date, { kind: "att", title: "เช็คชื่อ: " + STATUS_LABEL[a.status], note: "" }));
+    for (let i = 0; i < 42; i++) { const d = new Date(start); d.setDate(start.getDate() + i); const L = lessonsOn(d); if (L.length) (byDay[ymd(d)] ||= []).unshift(...L); }
     let cells = "";
     for (let i = 0; i < 42; i++) {
       const d = new Date(start); d.setDate(start.getDate() + i); const k = ymd(d);
