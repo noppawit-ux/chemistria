@@ -1041,3 +1041,8 @@ body.peeking .navwrap{top:34px}
 @keyframes fxorbit{0%{opacity:.9;transform:rotate(var(--a)) translateX(46%) rotate(0)}100%{opacity:.9;transform:rotate(calc(var(--a) + 360deg)) translateX(46%)}}
 .dead .bemoji .bfx,.dead .bemoji .baura{display:none}
 @media(prefers-reduced-motion:reduce){.bossbig img,.baura,.bfx i{animation:none}.bfx{display:none}}
+
+/* รอบ 60: โปรโมชันเปิดระบบ */
+.card.promo{background:linear-gradient(135deg,rgba(168,85,247,.28),rgba(245,197,66,.22));border:1.5px solid var(--gold2);box-shadow:0 0 18px rgba(245,197,66,.25);animation:promoglow 2.4s ease-in-out infinite}
+@keyframes promoglow{0%,100%{box-shadow:0 0 10px rgba(245,197,66,.2)}50%{box-shadow:0 0 22px rgba(245,197,66,.5)}}
+@media(prefers-reduced-motion:reduce){.card.promo{animation:none}}

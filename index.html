@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.59">
+<link rel="stylesheet" href="style.css?v=1.60">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,28 +14,28 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.59"></script>
-<script src="lib.js?v=1.59"></script>
-<script src="sfx.js?v=1.59"></script>
-<script src="pixelfx.js?v=1.59"></script>
-<script src="fx.js?v=1.59"></script>
-<script src="games.js?v=1.59"></script>
-<script src="battle.js?v=1.59"></script>
-<script src="duel.js?v=1.59"></script>
-<script src="spell.js?v=1.59"></script>
-<script src="kb.js?v=1.59"></script>
+<script src="config.js?v=1.60"></script>
+<script src="lib.js?v=1.60"></script>
+<script src="sfx.js?v=1.60"></script>
+<script src="pixelfx.js?v=1.60"></script>
+<script src="fx.js?v=1.60"></script>
+<script src="games.js?v=1.60"></script>
+<script src="battle.js?v=1.60"></script>
+<script src="duel.js?v=1.60"></script>
+<script src="spell.js?v=1.60"></script>
+<script src="kb.js?v=1.60"></script>
 <script src="run.js?v=1.46"></script>
-<script src="bgm.js?v=1.59"></script>
+<script src="bgm.js?v=1.60"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
   ["class", "⚔️ คลาส"], ["decor", "🎨 ตกแต่ง"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"], ["board", "📢 บอร์ด"],
 ];
-let TT = [], NEWS = [], D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
+let PROMO = { active: false }, TT = [], NEWS = [], D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";
 /* โหมดส่องนักเรียน (ครูเปิดจากหน้าครู): ใช้โทเคนใน sessionStorage อ่านอย่างเดียว ไม่แตะ login จริง */
 const PEEK = (() => { try { const m = location.hash.match(/peek=([0-9a-f-]{36})/); if (m) { sessionStorage.setItem("kb_peek", m[1]); history.replaceState(null, "", location.pathname); } return sessionStorage.getItem("kb_peek"); } catch (e) { return null; } })();
-const PEEK_OK = ["student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "run_status", "news_list", "timetable_list", "list_classes"];
+const PEEK_OK = ["student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "run_status", "news_list", "timetable_list", "promo_status", "list_classes"];
 if (PEEK) { const _r = rpc; rpc = async (n, a) => { if (!PEEK_OK.includes(n)) throw new Error("👁 โหมดส่องนักเรียน: ดูได้อย่างเดียว"); return _r(n, a); }; }
 const app = $("#app");
 
@@ -145,14 +145,14 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.59";
+const APP_VERSION = "1.60";
 const PATCH = {
-  id: "2026-11-07c", ver: APP_VERSION, title: "มินิเกมใหม่ เคมีรัน! 🏃", date: "7 พ.ย. 2569", img: "assets/news/run.jpg",
+  id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
-    ["🏃", "เคมีรัน มินิเกมวิ่งไม่หยุด", "แตะ = กระโดด (กระโดดซ้ำได้) · ปุ่มสไลด์ = มุดใต้เมฆพิษ · เก็บเหรียญ แผ่นธาตุ ยาเติมพลัง และดาว ไปที่แท็บเกม"],
-    ["🧑‍🔬", "ตัวละครของคุณคือนักวิ่ง", "ใส่ชุดอะไรอยู่ก็วิ่งด้วยชุดนั้น มีสัตว์เลี้ยงวิ่งตามด้วย"],
-    ["🎁", "เล่นได้วันละ 3 รอบที่ได้รางวัล", "ได้ EXP และเหรียญตามคะแนน ยิ่งวิ่งไกลยิ่งได้เยอะ"],
-    ["🐲", "บอสประจำสัปดาห์แบบใหม่", "แตะการ์ดบอสเพื่อดูภาพใหญ่ ความสามารถ และสถิติเพื่อนที่ช่วยกันโจมตี"],
+    ["🎁", "ของขวัญต้อนรับ รับฟรีคนละ 1 ครั้ง", "เหรียญ + EXP + ตั๋วสุ่มกาชา กดรับที่การ์ดโปรบนหน้าหลัก"],
+    ["⚡", "EXP x2 ช่วงเปิดระบบ", "ทุกการเช็คชื่อ ส่งงาน และเควสได้ EXP เพิ่มเป็น 2 เท่า จนถึงวันสิ้นสุดโปร"],
+    ["📚", "ตารางสอนขึ้นในปฏิทินแล้ว", "เห็นคาบเรียนของห้องตัวเองทุกสัปดาห์ และการ์ดคาบเรียนวันนี้บนหน้าหลัก"],
+    ["🏃", "มินิเกมเคมีรัน + บอสแบบใหม่", "แตะการ์ดบอสดูภาพใหญ่ ความสามารถ และสถิติเพื่อนที่ช่วยโจมตี"],
   ],
 };
 document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("anim-off", document.hidden));
@@ -190,15 +190,16 @@ async function load() {
   try {
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
-    const [dash, hof, ext, brd, nws, ttl] = await Promise.all([
+    const [dash, hof, ext, brd, nws, ttl, prm] = await Promise.all([
       rpc("student_dashboard", { p_token: tk() }),
       rpc("hall_of_fame", { p_token: tk() }).catch(() => []),
       rpc("student_extras", { p_token: tk() }).catch(() => ({})),
       rpc("board_list", { p_token: tk() }).catch(() => ({ posts: [], unread: 0 })),
       rpc("news_list", { p_token: tk() }).catch(() => []),
       rpc("timetable_list", { p_token: tk() }).catch(() => []),
+      rpc("promo_status", { p_token: tk() }).catch(() => ({ active: false })),
     ]);
-    NEWS = nws || []; TT = ttl || [];
+    NEWS = nws || []; TT = ttl || []; PROMO = prm || { active: false };
     D = dash; HOF = hof || []; X = ext || {}; B = brd || { posts: [], unread: 0 };
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
     render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
@@ -519,6 +520,15 @@ function bossHit(ev) {
   w.appendChild(d); setTimeout(() => d.remove(), 900);
   try { SFX.play("blip"); } catch (e) {}
 }
+function promoHtml() {
+  const p = PROMO; if (!p || !p.active) return "";
+  const g = p.gift || {};
+  const gift = [g.coins ? `+${g.coins} 🪙` : "", g.exp ? `+${g.exp} EXP` : "", g.pulls ? `🎟️ ตั๋วกาชา ×${g.pulls}` : ""].filter(Boolean).join(" · ");
+  return `<div class="card promo"><div class="row"><div class="grow"><h3 style="margin:0">🎉 โปรเปิดระบบใหม่!</h3>
+    <div class="muted">${p.mult > 1 ? `⚡ EXP x${p.mult} จากเช็คชื่อ/ส่งงาน/เควส · ` : ""}เหลืออีก ${p.days_left} วัน (ถึง ${fmtDate(p.until)})</div></div></div>
+    <div style="margin-top:8px">${p.claimed ? '<span class="tag ok">🎁 รับของขวัญต้อนรับแล้ว</span>' : `<div class="muted" style="margin-bottom:6px">🎁 ของขวัญต้อนรับ: <b style="color:var(--gold2)">${gift}</b></div>${PEEK ? "" : '<button class="btn gold" onclick="claimPromo()">🎁 รับของขวัญเลย</button>'}`}</div></div>`;
+}
+const claimPromo = () => act(() => rpc("promo_claim", { p_token: tk() }), "รับของขวัญต้อนรับแล้ว 🎁").then((r) => { try { FX.victory(); } catch (e) {} return r; });
 function lessonsOn(d) {
   const k = ymd(d), w = d.getDay() || 7;
   return (TT || []).filter((t) => t.dow === w && (!t.from || k >= String(t.from).slice(0, 10)) && (!t.to || k <= String(t.to).slice(0, 10)))
@@ -688,7 +698,7 @@ const VIEWS = {
       <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
         <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
         <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
-    ${remindHtml()}${todayLessonsHtml()}${teamChip()}${bossHtml(false)}
+    ${promoHtml()}${remindHtml()}${todayLessonsHtml()}${teamChip()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
