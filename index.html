@@ -6,7 +6,7 @@
 <title>Chemistria · ห้องเรียนครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.56">
+<link rel="stylesheet" href="style.css?v=1.57">
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
 <body>
@@ -14,18 +14,18 @@
 <div id="overlay" class="overlay"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=1.56"></script>
-<script src="lib.js?v=1.56"></script>
-<script src="sfx.js?v=1.56"></script>
-<script src="pixelfx.js?v=1.56"></script>
-<script src="fx.js?v=1.56"></script>
-<script src="games.js?v=1.56"></script>
-<script src="battle.js?v=1.56"></script>
-<script src="duel.js?v=1.56"></script>
-<script src="spell.js?v=1.56"></script>
-<script src="kb.js?v=1.56"></script>
+<script src="config.js?v=1.57"></script>
+<script src="lib.js?v=1.57"></script>
+<script src="sfx.js?v=1.57"></script>
+<script src="pixelfx.js?v=1.57"></script>
+<script src="fx.js?v=1.57"></script>
+<script src="games.js?v=1.57"></script>
+<script src="battle.js?v=1.57"></script>
+<script src="duel.js?v=1.57"></script>
+<script src="spell.js?v=1.57"></script>
+<script src="kb.js?v=1.57"></script>
 <script src="run.js?v=1.46"></script>
-<script src="bgm.js?v=1.56"></script>
+<script src="bgm.js?v=1.57"></script>
 <script>
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
@@ -145,7 +145,7 @@ function newsClose() { document.getElementById("newsov")?.remove(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") newsClose(); });
 
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.56";
+const APP_VERSION = "1.57";
 const PATCH = {
   id: "2026-11-07b", ver: APP_VERSION, title: "ไอเทมใหม่มาแล้ว! 🎉", date: "7 พ.ย. 2569", img: "assets/news/items.jpg",
   items: [
@@ -489,13 +489,42 @@ function remindHtml() {
     return `<div class="item"><div class="grow"><b>${esc(a.title)}</b><div class="muted">กำหนดส่ง ${fmtDate(a.due_date)} · ${get}</div></div>${tag}${submitBtn(a) || `<button class="btn small ghost" onclick="go('att')">ดูงาน</button>`}</div>`;
   }).join("")}</div>`;
 }
+const BOSS_FX = {
+  acid_dragon: { c: "#9be21b", n: 14, k: "drip", glow: "#a3e635" },
+  beaker_golem: { c: "#c084fc", n: 16, k: "rise", glow: "#a855f7" },
+  electron_wizard: { c: "#7dd3fc", n: 14, k: "orbit", glow: "#38bdf8" },
+  element_robot: { c: "#fbbf24", n: 12, k: "spark", glow: "#f59e0b" },
+  flame_demon: { c: "#fb923c", n: 18, k: "rise", glow: "#ef4444" },
+  germ_hydra: { c: "#d946ef", n: 14, k: "float", glow: "#a3e635" },
+};
+function bossFxKey(b) { const m = /bosses\/([a-z_]+)\./.exec((b && b.image) || ""); return m ? m[1] : ""; }
+function bossFxHtml(b, n) {
+  const f = BOSS_FX[bossFxKey(b)]; if (!f) return "";
+  let h = "";
+  const cnt = n || f.n;
+  for (let i = 0; i < cnt; i++) {
+    const x = Math.round(8 + Math.random() * 84), sz = 3 + Math.round(Math.random() * 6), d = (Math.random() * 3.2).toFixed(2), t = (2.2 + Math.random() * 2.4).toFixed(2), a = Math.round(Math.random() * 360);
+    h += `<i style="--x:${x}%;--s:${sz}px;--d:${d}s;--t:${t}s;--a:${a}deg"></i>`;
+  }
+  return `<span class="bfx bfx-${f.k}" style="--c:${f.c}">${h}</span>`;
+}
+function bossGlow(b) { const f = BOSS_FX[bossFxKey(b)]; return f ? f.glow : "#ff6b81"; }
+function bossHit(ev) {
+  const w = document.querySelector("#bossov .bossbig"); if (!w) return;
+  w.classList.remove("hit"); void w.offsetWidth; w.classList.add("hit");
+  const r = w.getBoundingClientRect(); const d = document.createElement("b"); d.className = "bdmg";
+  d.textContent = "-" + (10 + Math.floor(Math.random() * 40));
+  d.style.left = ((ev.clientX || r.left + r.width / 2) - r.left) + "px"; d.style.top = ((ev.clientY || r.top + r.height / 2) - r.top) + "px";
+  w.appendChild(d); setTimeout(() => d.remove(), 900);
+  try { SFX.play("blip"); } catch (e) {}
+}
 function bossHtml(full) {
   const b = X.boss; if (!b) return "";
   const pct = Math.max(0, Math.min(100, (b.hp / b.max_hp) * 100));
   const state = b.defeated ? '<span class="tag ok">ปราบแล้ว 🎉</span>' : b.ended ? '<span class="tag no">บอสหนีไปแล้ว</span>' : `<span class="tag late">เหลือ ${b.days_left} วัน</span>`;
   const claim = b.can_claim ? `<button class="btn gold" onclick="claimBoss()">🎁 รับรางวัลปราบบอส (+${b.reward_exp} EXP · +${b.reward_coins} 🪙)</button>`
     : b.claimed ? '<span class="tag ok">รับรางวัลแล้ว ✔</span>' : "";
-  return `<div class="card boss ${b.defeated ? "dead" : ""}" role="button" tabindex="0" onclick="bossOpen()" onkeydown="if(event.key==='Enter')bossOpen()"><div class="brow"><div class="bemoji">${b.image ? `<img src="${esc(b.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div><div class="grow">
+  return `<div class="card boss ${b.defeated ? "dead" : ""}" role="button" tabindex="0" onclick="bossOpen()" onkeydown="if(event.key==='Enter')bossOpen()"><div class="brow"><div class="bemoji" style="--g:${bossGlow(b)}">${bossFxHtml(b, 6)}${b.image ? `<img src="${esc(b.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div><div class="grow">
     <h3 style="margin:0">บอสประจำสัปดาห์: ${esc(b.name)} ${state}</h3>
     <div class="hpbar"><i style="width:${pct}%"></i><span>HP ${b.hp} / ${b.max_hp}</span></div>
     <div class="muted">${esc(b.description || "")}</div>
@@ -512,7 +541,7 @@ function bossOpen() {
   const ab = b.abilities || [];
   const ov = document.createElement("div"); ov.id = "bossov"; ov.className = "modalov"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
   ov.innerHTML = `<div class="patchbox bossbox"><button class="patchx" aria-label="ปิด" onclick="bossClose()">✕</button>
-    <div class="bossbig">${b.image ? `<img src="${esc(b.image)}" alt="${esc(b.name)}" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div>
+    <div class="bossbig" style="--g:${bossGlow(b)}" onclick="bossHit(event)">${bossFxHtml(b)}<span class="baura"></span>${b.image ? `<img src="${esc(b.image)}" alt="${esc(b.name)}" onerror="this.replaceWith(document.createTextNode('${esc(b.emoji)}'))">` : esc(b.emoji)}</div>
     <div class="patchh">${esc(b.name)} ${b.defeated ? '<span class="tag ok">ปราบแล้ว 🎉</span>' : b.ended ? '<span class="tag no">หนีไปแล้ว</span>' : `<span class="tag late">เหลือ ${b.days_left} วัน</span>`}</div>
     <div class="hpbar"><i style="width:${pct}%"></i><span>HP ${b.hp} / ${b.max_hp}</span></div>
     <div class="muted" style="text-align:center;margin:6px 0">${esc(b.description || "")}</div>

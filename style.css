@@ -1013,3 +1013,31 @@ body.peeking .navwrap{top:34px}
 .batkt{display:flex;justify-content:space-between;gap:8px}
 .batkb{height:6px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px}
 .batkb i{display:block;height:100%;background:linear-gradient(90deg,#ef4444,#f5c542)}
+
+/* รอบ 57: เอฟเฟกต์ประกอบบอสแต่ละตัว */
+.bemoji,.bossbig{position:relative}
+.bemoji img{position:relative;z-index:1;filter:drop-shadow(0 6px 14px var(--g,#ff6b81)) }
+.bossbig{overflow:visible;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bossbig img{position:relative;z-index:1;animation:bossfloat 3.4s ease-in-out infinite;filter:drop-shadow(0 0 22px var(--g,#ff6b81)) drop-shadow(0 8px 18px rgba(0,0,0,.6))}
+.baura{position:absolute;left:50%;top:52%;width:80%;height:80%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,var(--g,#ff6b81) 0%,transparent 68%);opacity:.38;animation:aura 2.6s ease-in-out infinite;pointer-events:none}
+.bossbig.hit img{animation:bosshit .4s ease-out}
+.bdmg{position:absolute;color:#fff;font-size:26px;text-shadow:0 0 6px #f43f5e,0 2px 0 #7f1d1d;pointer-events:none;z-index:3;animation:dmgup .9s ease-out forwards;transform:translate(-50%,-50%)}
+.bfx{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible}
+.bfx i{position:absolute;left:var(--x);width:var(--s);height:var(--s);border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);opacity:0}
+.bfx-rise i{bottom:10%;animation:fxrise var(--t) ease-in var(--d) infinite}
+.bfx-drip i{top:55%;border-radius:50% 50% 50% 50%/30% 30% 70% 70%;animation:fxdrip var(--t) ease-in var(--d) infinite}
+.bfx-float i{top:50%;animation:fxfloat var(--t) ease-in-out var(--d) infinite}
+.bfx-spark i{top:40%;width:calc(var(--s)*.5);height:calc(var(--s)*2.4);border-radius:2px;animation:fxspark calc(var(--t)*.5) ease-out var(--d) infinite}
+.bfx-orbit i{left:50%;top:50%;animation:fxorbit calc(var(--t)*2) linear var(--d) infinite;transform:rotate(var(--a)) translateX(46%)}
+.bemoji .bfx i{--s:3px}
+@keyframes bossfloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.02)}}
+@keyframes aura{0%,100%{opacity:.25;transform:translate(-50%,-50%) scale(.92)}50%{opacity:.5;transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes bosshit{0%{transform:translateX(0) scale(1);filter:brightness(2) drop-shadow(0 0 22px #fff)}25%{transform:translateX(-10px) scale(.97)}50%{transform:translateX(9px)}75%{transform:translateX(-5px)}100%{transform:translateX(0) scale(1)}}
+@keyframes dmgup{0%{opacity:1;transform:translate(-50%,-50%) scale(.6)}20%{transform:translate(-50%,-80%) scale(1.3)}100%{opacity:0;transform:translate(-50%,-230%) scale(1)}}
+@keyframes fxrise{0%{opacity:0;transform:translateY(0) scale(.6)}15%{opacity:.95}100%{opacity:0;transform:translateY(-230px) translateX(14px) scale(1.2)}}
+@keyframes fxdrip{0%{opacity:0;transform:translateY(0)}15%{opacity:.95}100%{opacity:0;transform:translateY(120px)}}
+@keyframes fxfloat{0%{opacity:0;transform:translate(0,0) scale(.5)}30%{opacity:.9}100%{opacity:0;transform:translate(26px,-140px) scale(1.4)}}
+@keyframes fxspark{0%{opacity:0;transform:translateY(0) rotate(20deg)}10%{opacity:1}100%{opacity:0;transform:translateY(-90px) translateX(30px) rotate(60deg)}}
+@keyframes fxorbit{0%{opacity:.9;transform:rotate(var(--a)) translateX(46%) rotate(0)}100%{opacity:.9;transform:rotate(calc(var(--a) + 360deg)) translateX(46%)}}
+.dead .bemoji .bfx,.dead .bemoji .baura{display:none}
+@media(prefers-reduced-motion:reduce){.bossbig img,.baura,.bfx i{animation:none}.bfx{display:none}}
