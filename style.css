@@ -1051,3 +1051,32 @@ body.peeking .navwrap{top:34px}
 .kb-play.kb-enter{animation:kbenter .35s ease-out both}
 @keyframes kbenter{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.kb-play.kb-enter{animation:none}}
+
+/* รอบ 65: กรอบสีรุ้งใหม่ (หมุนสีด้วย @property ไม่หมุนทั้งกรอบ → ใช้กับกรอบเวทีสี่เหลี่ยมได้) + เอฟเฟกต์ประกายวิ่งบนกรอบ */
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+.avf.dc-f-rainbow{background:conic-gradient(from var(--ang),#ff3b3b,#ffb02e,#f5ff3b,#3bff6b,#3bd0ff,#7a3bff,#ff3bd6,#ff3b3b);
+  box-shadow:0 0 16px #ff8ad9aa;animation:rbspin 4s linear infinite,rbglow 4s linear infinite}
+.avf.dc-f-rainbow::before{animation:none;background:none;inset:0;border-radius:inherit}
+@keyframes rbspin{to{--ang:360deg}}
+@keyframes rbglow{0%{box-shadow:0 0 14px #ff3b3bbb,0 0 26px #ffb02e55}25%{box-shadow:0 0 14px #f5ff3bbb,0 0 26px #3bff6b55}
+  50%{box-shadow:0 0 14px #3bd0ffbb,0 0 26px #7a3bff55}75%{box-shadow:0 0 14px #ff3bd6bb,0 0 26px #ff3b3b55}100%{box-shadow:0 0 14px #ff3b3bbb,0 0 26px #ffb02e55}}
+/* ประกายขาววิ่งผ่านกรอบ (อยู่ใต้รูปตัวละคร เห็นเฉพาะวงกรอบ) */
+.avf.dc-f-rainbow::before,.avf.dc-f-ice::before,.avf.dc-f-gold::before,.avf.dc-f-neon::before,.avf.dc-f-amethyst::before,.avf.dc-f-solid::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.85) 50%,transparent 62%);background-size:260% 100%;background-position:130% 0;
+  animation:glint 3.2s ease-in-out infinite}
+.avf.dc-f-gold::before{animation-duration:2.6s}
+.avf.dc-f-ice::before{animation-duration:3.8s}
+@keyframes glint{0%,35%{background-position:130% 0}70%,100%{background-position:-30% 0}}
+/* กรอบเรืองแสงหายใจ */
+.avf.dc-f-gold{animation:gbreath 2.6s ease-in-out infinite}
+@keyframes gbreath{50%{box-shadow:0 0 30px #ffd75acc,0 0 8px #fff3b0}}
+.avf.dc-f-ice{animation:ibreath 3.4s ease-in-out infinite}
+@keyframes ibreath{50%{box-shadow:0 0 26px #7fd8ffee,0 0 8px #fff}}
+.avf.dc-f-amethyst{animation:abreath 3s ease-in-out infinite}
+@keyframes abreath{50%{box-shadow:0 0 28px #b78cffee,0 0 8px #e9d5ff}}
+.avf.dc-f-solid{animation:sbreath 3s ease-in-out infinite}
+@keyframes sbreath{50%{box-shadow:0 0 24px color-mix(in srgb,var(--dc,#4fe3b0) 85%,transparent),inset 0 0 6px #0008}}
+.avf.stg.dc-f-rainbow,.avf.stg.dc-f-gold,.avf.stg.dc-f-ice,.avf.stg.dc-f-amethyst,.avf.stg.dc-f-solid,.avf.stg.dc-f-neon{animation-name:inherit}
+@media(prefers-reduced-motion:reduce){.avf.dc-f-rainbow,.avf.dc-f-gold,.avf.dc-f-ice,.avf.dc-f-amethyst,.avf.dc-f-solid{animation:none}
+  .avf[class*="dc-f-"]::before{animation:none;background-position:130% 0}}
