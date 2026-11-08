@@ -249,7 +249,11 @@ const KB = (() => {
     if (S.screen === "res") return resView();
     const t = S.st;
     return `<div class="card center"><div class="kb-hero big">${KIMG}</div><h3>⚔️ ประลองครูบุ๊ค ${S.lv === "jr" ? '<span class="pill" style="background:#1f7a4d">ระดับ ม.ต้น (เนื้อหา ม.1)</span>' : '<span class="pill" style="background:#7a1020">EXTREMELY HARD</span>'}</h3>
-      <p class="muted">8 รอบ 8 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ · จริง/เท็จสายฟ้า · ไวแสง (วัดความเร็ว) · จำลำดับ · หาตัวแปลกแยก (วัดไหวพริบ) · <b>เวลาลดลงทุกรอบ</b> · มีหัวใจ 3 ดวง พลาดหรือหมดเวลาเสีย 1 ดวง${t ? `<br>ผ่านครบ 8 รอบได้ +${t.per_round * 8 + t.win_exp} EXP +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP) · รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays}${t.wins ? ` · ชนะแล้ว ${t.wins} ครั้ง 🏆` : ""})` : ""}</p>
+      <div class="run-info">
+        <section><h4>🎮 วิธีเล่น</h4><ul><li>8 รอบ 8 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ</li><li>จริง/เท็จสายฟ้า · ไวแสง (วัดความเร็ว) · จำลำดับ · หาตัวแปลกแยก</li><li><b>เวลาลดลงทุกรอบ</b></li></ul></section>
+        <section><h4>❤️ หัวใจ</h4><ul><li>มีหัวใจ 3 ดวง</li><li>พลาดหรือหมดเวลาเสีย 1 ดวง</li></ul></section>
+        ${t ? `<section><h4>🏆 รางวัล</h4><ul><li>ผ่านครบ 8 รอบได้ <b>+${t.per_round * 8 + t.win_exp} EXP</b> +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP)</li><li>รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays})</li>${t.wins ? `<li>ชนะแล้ว ${t.wins} ครั้ง 🏆</li>` : ""}</ul></section>` : ""}
+      </div>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าครูบุ๊ค!</button><button class="btn ghost" onclick="GAMES.home()">กลับ</button></div></div>`;
   }
   function head() {

@@ -133,9 +133,12 @@ const SPELL = (() => {
     if (S.screen === "res") return resView();
     const t = S.st;
     return `<div class="card center"><div class="gm-ico">🔮</div><h3>ห้องฝึกเวทย์ผสมธาตุ</h3>
-      <p class="muted">คาถาแต่ละบทคือสารเคมี! ผสมอะตอมในหม้อให้ตรงสูตร และปลดผนึกด้วยการวาดโครงสร้างลิวอิส · ยิ่งเร็วและผิดน้อย ยิ่งได้คะแนนสูง${t ? ` · สูงสุด +${t.max_exp} EXP/รอบ · ได้รางวัล ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays}${t.best != null ? ` · ดีที่สุด ${t.best}` : ""})` : ""}</p>
+      <div class="run-info">
+        <section><h4>🎮 วิธีเล่น</h4><ul><li>คาถาแต่ละบทคือสารเคมี!</li><li>ผสมอะตอมในหม้อให้ตรงสูตร</li><li>ปลดผนึกด้วยการวาดโครงสร้างลิวอิส</li><li>ยิ่งเร็วและผิดน้อย ยิ่งได้คะแนนสูง</li></ul></section>
+        <section><h4>📊 ระดับความยาก</h4><ul><li><b>ง่าย:</b> เห็นสูตร</li><li><b>กลาง:</b> เห็นเฉพาะธาตุที่ใช้</li><li><b>ยาก:</b> เห็นแค่ชื่อสาร (ขอใบ้ได้ แต่หักคะแนน)</li></ul></section>
+        ${t ? `<section><h4>🏆 รางวัล</h4><ul><li>สูงสุด <b>+${t.max_exp} EXP</b>/รอบ</li><li>ได้รางวัล ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays})</li>${t.best != null ? `<li>ดีที่สุด ${t.best}</li>` : ""}</ul></section>` : ""}
+      </div>
       <div class="row" style="justify-content:center">${Object.entries(LV).map(([k, l]) => `<button class="btn small ${k === "mid" ? "gold" : "ghost"}" onclick="SPELL.start('${k}')">${l.label} (${l.n} โจทย์)</button>`).join("")}</div>
-      <p class="muted" style="margin-top:8px">ง่าย: เห็นสูตร · กลาง: เห็นเฉพาะธาตุที่ใช้ · ยาก: เห็นแค่ชื่อสาร (ขอใบ้ได้ แต่หักคะแนน)</p>
       <button class="btn ghost small" onclick="GAMES.home()">กลับ</button></div>`;
   }
   function lewSvg(d) {

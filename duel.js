@@ -126,7 +126,7 @@ const DUEL = (() => {
         <button class="btn small gold" ${o.busy || l.sent || S.busy ? "disabled" : ""} onclick="DUEL.invite('${o.f.id}')">⚔️ ท้าดวล</button></div>`).join("")
       || '<p class="muted center" style="margin:10px 0">ยังไม่มีเพื่อนออนไลน์ในห้อง<br><small>ชวนเพื่อนเปิดหน้านี้ไว้พร้อมกัน แล้วท้าดวลได้เลย</small></p>';
     return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">🤝 ท้าดวลเพื่อน</h3><button class="btn ghost small" onclick="DUEL.exit()">‹ กลับ</button></div>
-      <p class="muted" style="margin:6px 0">ตอบคำถามพร้อมกัน 8 รอบ · ตอบถูกทำดาเมจใส่อีกฝ่าย · ตอบไว (≤6 วิ) และตอบก่อนได้โบนัส · ท่าไม้ตายประจำคลาสใช้ได้ 1 ครั้ง/แมตช์ (ตอบผิด = เสียสิทธิ์)</p>
+      <div class="run-info"><section><h4>🎮 วิธีเล่น</h4><ul><li>ตอบคำถามพร้อมกัน 8 รอบ</li><li>ตอบถูกทำดาเมจใส่อีกฝ่าย</li><li>ตอบไว (≤6 วิ) และตอบก่อนได้โบนัส</li></ul></section><section><h4>💥 ท่าไม้ตาย</h4><ul><li>ประจำคลาส ใช้ได้ 1 ครั้ง/แมตช์</li><li>ตอบผิด = เสียสิทธิ์</li></ul></section></div>
       <p><span class="pill">🏆 ชนะ ${l.wins}</span> <span class="pill">💀 แพ้ ${l.losses}</span> ${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${l.limit}</span>` : '<span class="pill">โควตารางวัลวันนี้หมดแล้ว — เล่นเพื่อความสนุกได้</span>'}</p></div>
       ${inv ? `<div class="card"><h3 style="margin:0 0 4px">📨 คำท้าที่ได้รับ</h3>${inv}</div>` : ""}
       <div class="card"><h3 style="margin:0 0 4px">🏟️ เลือกสนามที่จะท้าดวล</h3>${arenas}</div>

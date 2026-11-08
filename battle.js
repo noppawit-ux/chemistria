@@ -219,7 +219,7 @@ const BATTLE = (() => {
     const d = S.data; if (!d) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
     const left = Math.max(0, d.limit - d.used);
     return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">⚔️ ล่ามอนสเตอร์เคมี</h3><button class="btn ghost small" onclick="BATTLE.exit()">‹ กลับ</button></div>
-      <p class="muted" style="margin:6px 0">ตอบคำถามเพื่อใช้สกิล · มอนสเตอร์โจมตีกลับให้กดลูกศรลดดาเมจ · ชนะได้ EXP + เหรียญ + สุ่มดรอปไอเทม</p>
+      <div class="run-info"><section><h4>🎮 วิธีเล่น</h4><ul><li>ตอบคำถามเพื่อใช้สกิล</li><li>มอนสเตอร์โจมตีกลับ ให้กดลูกศรลดดาเมจ</li></ul></section><section><h4>🏆 รางวัล</h4><ul><li>ชนะได้ EXP + เหรียญ</li><li>สุ่มดรอปไอเทม</li></ul></section></div>
       <p>${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${d.limit}</span>` : '<span class="pill">รอบที่ได้รางวัลวันนี้หมดแล้ว — เล่นฝึกได้ไม่จำกัด (ไม่ได้รางวัล)</span>'} <span class="pill">❤️ HP ${d.p_max}</span></p>
       <div class="bt-skills">${d.skills.map((s) => `<span class="bt-sk ${s.kind}" title="${esc(s.descr || "")}">${s.emoji} <b>${esc(s.name)}</b> <small>${KIND[s.kind][1]}</small></span>`).join("")}</div></div>
       ${arenaPicker()}
