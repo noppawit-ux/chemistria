@@ -1080,3 +1080,10 @@ body.peeking .navwrap{top:34px}
 .avf.stg.dc-f-rainbow,.avf.stg.dc-f-gold,.avf.stg.dc-f-ice,.avf.stg.dc-f-amethyst,.avf.stg.dc-f-solid,.avf.stg.dc-f-neon{animation-name:inherit}
 @media(prefers-reduced-motion:reduce){.avf.dc-f-rainbow,.avf.dc-f-gold,.avf.dc-f-ice,.avf.dc-f-amethyst,.avf.dc-f-solid{animation:none}
   .avf[class*="dc-f-"]::before{animation:none;background-position:130% 0}}
+
+/* รอบ 66: คำอธิบายเคมีรันแบ่งหัวข้อ */
+.run-info{text-align:left;display:grid;gap:8px;margin:10px 0}
+.run-info section{background:#ffffff0a;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.run-info h4{margin:0 0 4px;font-size:.95rem;color:var(--gold,#f6c453)}
+.run-info ul{margin:0;padding-left:1.2em;font-size:.88rem;line-height:1.55;color:var(--muted,#cbbfe8)}
+.run-info b{color:#fff}

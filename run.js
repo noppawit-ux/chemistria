@@ -277,9 +277,14 @@ const RUN = (() => {
     if (S.screen === "res") return resView();
     const s = S.st;
     return `<div class="card center run-home"><div class="gm-ico">🏃</div><h2 style="margin:4px 0">เคมีรัน <span class="pill" style="background:#2a7a5a">วิ่งเก็บเหรียญ</span></h2>
-      <p class="muted">วิ่งให้ไกลที่สุด เก็บเหรียญและแผ่นธาตุ หลบเตาไฟ ชั้นหลอดทดลอง และเมฆพิษ · เก็บยาแดงเติมพลังชีวิต (พลังลดลงเรื่อยๆ) · เก็บดาวได้บูสต์วิ่งทะลุ 4 วินาที</p>
-      <p class="muted" style="font-size:.85rem">⚠ ระวัง: หยดกรดตกจากเพดาน (มีเครื่องหมายเตือน) · หลอดแก้วกลิ้งใส่ · ก๊าซพิษ · ลูกไฟฟ้าลอยขึ้นลง<br>✨ ไอเทมพิเศษ: 🛡️ โล่กันชน 1 ครั้ง · ⏳ ชะลอเวลา · 🧲 แม่เหล็กดูดเหรียญ · เก็บเหรียญติดกัน 10 เหรียญ = คอมโบ +3 HP</p><div class="run-how"><div><b>⬆ กระโดด</b><small>แตะซ้ำ = กระโดด 2 ชั้น (ข้ามชั้นหลอดทดลอง)</small></div><div><b>⬇ สไลด์</b><small>ลอดใต้เมฆพิษ (กดค้างได้)</small></div></div>
-      ${s ? `<p>รางวัล EXP สูงสุด <b>+${s.max_exp}</b> เมื่อได้ ${s.target} คะแนน · เล่นรับรางวัลแล้ว ${Math.min(s.plays, s.max_plays)}/${s.max_plays} รอบวันนี้${s.best != null ? ` · คะแนนดีที่สุด <b>${s.best}</b>` : ""}</p>` : '<p class="muted">กำลังโหลด...</p>'}
+      <p class="muted">วิ่งให้ไกลที่สุด เก็บเหรียญและแผ่นธาตุให้ได้มากที่สุด</p>
+      <div class="run-info">
+        <section><h4>🎯 วิธีเล่น</h4><ul><li>เก็บเหรียญและแผ่นธาตุ</li><li>เก็บ ❤️ ยาแดงเติมพลังชีวิต (พลังลดลงเรื่อยๆ)</li><li>เก็บ ⭐ ดาว = บูสต์วิ่งทะลุ 4 วินาที</li><li>เหรียญติดกัน 10 เหรียญ = คอมโบ +3 HP</li></ul></section>
+        <section><h4>⚠️ สิ่งที่ต้องระวัง</h4><ul><li>เตาไฟ · ชั้นหลอดทดลอง · เมฆพิษ</li><li>หยดกรดตกจากเพดาน (มีเครื่องหมายเตือน)</li><li>หลอดแก้วกลิ้งใส่ · ก๊าซพิษ · ลูกไฟฟ้าลอยขึ้นลง</li></ul></section>
+        <section><h4>✨ ไอเทมพิเศษ</h4><ul><li>🛡️ โล่กันชน 1 ครั้ง</li><li>⏳ ชะลอเวลา</li><li>🧲 แม่เหล็กดูดเหรียญ</li></ul></section>
+      </div>
+      <div class="run-how"><div><b>⬆ กระโดด</b><small>แตะซ้ำ = กระโดด 2 ชั้น (ข้ามชั้นหลอดทดลอง)</small></div><div><b>⬇ สไลด์</b><small>ลอดใต้เมฆพิษ (กดค้างได้)</small></div></div>
+      ${s ? `<div class="run-info"><section><h4>🏆 รางวัล</h4><ul><li>EXP สูงสุด <b>+${s.max_exp}</b> เมื่อได้ ${s.target} คะแนน</li><li>เล่นรับรางวัลแล้ว ${Math.min(s.plays, s.max_plays)}/${s.max_plays} รอบวันนี้</li>${s.best != null ? `<li>คะแนนดีที่สุด <b>${s.best}</b></li>` : ""}</ul></section></div>` : '<p class="muted">กำลังโหลด...</p>'}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="RUN.start()">▶ เริ่มวิ่ง</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
   function playView() {
