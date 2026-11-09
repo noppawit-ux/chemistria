@@ -122,14 +122,16 @@ const VIEWS = {
 
   gacha() {
     const c = D.settings.gacha_cost, s = D.student, pm = D.settings.pity_max;
-    return `<div class="card center"><h3>🎰 กาชาห้องทดลอง</h3>
-      <p>เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span> · ครั้งละ ${c} เหรียญ</p>
-      <p>${(X.free_pulls || 0) > 0 ? `🎟️ ตั๋วสุ่มฟรี <b style="color:var(--gold2)">${X.free_pulls}</b> ใบ (ใช้กับ ×1)` : '<span class="muted">🎟️ เข้าเรียนแล้วครูเช็คชื่อ → ได้ตั๋วสุ่มฟรี 1 ใบ</span>'}</p>
-      <div class="bar" style="max-width:320px;margin:0 auto"><i style="width:${(s.pity / pm) * 100}%"></i></div>
-      <p class="muted">การันตี SR ขึ้นไปเมื่อสุ่มไม่ได้ครบ ${pm} ครั้ง (สะสม ${s.pity}/${pm - 1})</p>
-      <div class="row" style="justify-content:center">
-        <button class="btn gold" ${s.coins < c && !(X.free_pulls > 0) ? "disabled" : ""} onclick="pull(1)">${X.free_pulls > 0 ? "🎟️ ใช้ตั๋วฟรี ×1" : `สุ่ม ×1 (${c}🪙)`}</button>
-        <button class="btn gold" ${s.coins < c * 10 ? "disabled" : ""} onclick="pull(10)">สุ่ม ×10 (${c * 10}🪙)</button></div></div>
+    const fr = X.free_pulls || 0, pct = Math.min(100, (s.pity / pm) * 100);
+    return `<div class="card gh center"><div class="ghglow"></div>
+      <img class="ghm" src="assets/gacha-machine.jpg" alt="" draggable="false">
+      <h3 class="ghh">🎰 กาชาห้องทดลอง</h3>
+      <div class="ghchips"><span class="ghchip">เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span></span><span class="ghchip">ครั้งละ <b>${c}</b> 🪙</span>${fr > 0 ? `<span class="ghchip fr">🎟️ ตั๋วฟรี <b>${fr}</b> ใบ</span>` : ""}</div>
+      ${fr > 0 ? "" : '<p class="muted small">🎟️ เข้าเรียนแล้วครูเช็คชื่อ → ได้ตั๋วสุ่มฟรี 1 ใบ</p>'}
+      <div class="ghpity"><div class="bar"><i style="width:${pct}%"></i></div><small class="muted">การันตี SR ขึ้นไปเมื่อสุ่มไม่ได้ครบ ${pm} ครั้ง (สะสม ${s.pity}/${pm - 1})</small></div>
+      <div class="row" style="justify-content:center;margin-top:10px">
+        <button class="btn gold ghbtn" ${s.coins < c && !(fr > 0) ? "disabled" : ""} onclick="pull(1)">${fr > 0 ? "🎟️ ใช้ตั๋วฟรี ×1" : `สุ่ม ×1 · ${c}🪙`}</button>
+        <button class="btn gold ghbtn big" ${s.coins < c * 10 ? "disabled" : ""} onclick="pull(10)">สุ่ม ×10 · ${c * 10}🪙</button></div></div>
       <div class="card"><h3>ของรางวัลที่มีในตู้</h3><div class="row">
       <p class="muted" style="margin:0 0 8px">🔴 <b style="color:#ff5a68">LEGENDARY</b> โอกาส 0.5% ต่อครั้ง · ได้ครั้งแรก = แลกคะแนนจริง +2 คะแนน</p>${[...D.gacha_pool].sort((a, b) => ["LEG", "SSR", "SR", "R", "N"].indexOf(a.rarity) - ["LEG", "SSR", "SR", "R", "N"].indexOf(b.rarity)).map((g) => `<span class="pill rar-${g.rarity}" style="border-color:var(--c)">${itemImg(g.image, g.emoji)} ${esc(g.name)} <b class="rar">${g.rarity}</b></span>`).join("")}</div></div>`;
   },

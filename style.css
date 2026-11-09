@@ -88,7 +88,7 @@ label { display: block; font-size: .85em; color: var(--muted); margin-bottom: 3p
 .gcard.flip .in { transform: rotateY(180deg); }
 .gcard .f, .gcard .b { position: absolute; inset: 0; border-radius: 14px; backface-visibility: hidden; display: grid;
   place-items: center; text-align: center; padding: 6px; }
-.gcard .b { background: linear-gradient(160deg, #3b1c7a, #120b24) url("assets/gacha-card-back.png") center/cover;
+.gcard .b { background: linear-gradient(160deg, #3b1c7a, #120b24) url("assets/gacha-card-back2.jpg") center/cover;
   border: 2px solid var(--gold); }
 .gcard .f { transform: rotateY(180deg); background: linear-gradient(180deg, #2b2058, #170f31);
   border: 3px solid var(--c); box-shadow: 0 0 18px var(--c); }
@@ -1099,3 +1099,16 @@ body.peeking .navwrap{top:34px}
 .rar-LEG .rar,.rar.rar-LEG{color:#ff5a68;text-shadow:0 0 8px #ff2a3c}
 @keyframes legpulse{50%{box-shadow:0 0 36px #ff2a3c,0 0 8px #fff8}}
 .note.n-leg{border-color:#ff2a3c;box-shadow:0 0 18px #ff2a3caa}
+
+/* หน้ากาชา (ภาพจาก Canva) */
+.gh{position:relative;overflow:hidden;background:radial-gradient(120% 90% at 50% 0%,#4b2a8f 0%,#231446 55%,#120a26 100%);border:1px solid #8f6bff88}
+.ghglow{position:absolute;left:50%;top:6px;width:240px;height:240px;margin-left:-120px;background:radial-gradient(circle,#ffd86b55,#b46bff33 45%,transparent 70%);animation:pulse2 3.2s ease-in-out infinite;pointer-events:none}
+@keyframes pulse2{50%{transform:scale(1.12);opacity:.75}}
+.ghm{position:relative;width:176px;height:176px;object-fit:cover;border-radius:50%;box-shadow:0 0 0 3px #ffd86b99,0 0 30px #b46bffaa;animation:float 3.6s ease-in-out infinite;-webkit-mask-image:none}
+.ghh{position:relative;margin:8px 0 4px;text-shadow:0 0 14px #ffd86b88}
+.ghchips{position:relative;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0}
+.ghchip{background:#ffffff14;border:1px solid #ffffff26;border-radius:99px;padding:5px 12px;font-size:.9em}
+.ghchip.fr{border-color:#ffd86b;background:#ffd86b22;color:#ffe9a8}
+.ghpity{position:relative;max-width:320px;margin:8px auto 0}
+.ghbtn{min-width:128px;box-shadow:0 4px 0 #8a5a00,0 0 18px #ffd86b66}
+.ghbtn.big{animation:pulse2 2.4s ease-in-out infinite}
