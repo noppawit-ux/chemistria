@@ -372,6 +372,15 @@ select pg_temp.t('สเตตัส LEG สูงกว่า SSR ทุกช�
   (select min(st_int+st_dil+st_str+st_luk) from decor_items where rarity='LEG') > (select max(st_int+st_dil+st_str+st_luk) from decor_items where rarity='SSR'));
 update app_settings set value='0.005' where key='gacha_leg_rate';
 
+-- ================= ฟังก์ชันที่เรียก _sid ต้องเป็น VOLATILE (SQL 47) =================
+select pg_temp.t('ไม่มีฟังก์ชัน STABLE ที่เรียก _sid (ซึ่ง UPDATE ตัวนับ rate limit)',
+  not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.provolatile <> 'v' and p.prosrc ~ '_sid\(' and p.proname <> '_sid'));
+set role anon;
+select pg_temp.t('news_list เรียกด้วยโทเค็นนักเรียนได้', (select news_list((select tok from _gt where no=12)) is not null));
+select pg_temp.t('timetable_list เรียกด้วยโทเค็นนักเรียนได้', (select timetable_list((select tok from _gt where no=12)) is not null));
+select pg_temp.t('promo_status เรียกด้วยโทเค็นนักเรียนได้', (select promo_status((select tok from _gt where no=12)) is not null));
+reset role;
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

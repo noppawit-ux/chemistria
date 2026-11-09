@@ -5912,3 +5912,18 @@ revoke execute on function trg_cel_ssr() from public, anon, authenticated;
 insert into news_posts (kind, title, summary, body, image, starts_at, ends_at, sort, active)
 select 'event', 'เปิดตู้ตำนาน! Legendary 0.5% 🔴', 'ของระดับตำนานกรอบสีแดง อุปกรณ์ 2 + ชุด 2 สเตตัสสูง แลกคะแนนจริงได้ 2 คะแนน', E'🔴 เปิดตู้ตำนาน! ไอเทมระดับ LEGENDARY\n\n• โอกาสออกรวม 0.5% ต่อการสุ่ม 1 ครั้ง (กรอบสีแดง)\n• อุปกรณ์ในตำนาน 2 ชิ้น: 🗡️ ดาบผลึกอัคนีโลหิต · 📕 คัมภีร์อะตอมโลหิต\n• ชุดสวมใส่ในตำนาน 2 ชุด: 🐉 ชุดอัศวินมังกรโลหิต · 🔴 ชุดราชันจอมเวทสีชาด\n• เพิ่มสเตตัสสูงกว่าไอเทมทุกระดับ (ปัญญา/ขยัน/พลัง/โชค + โบนัสเหรียญ)\n• ได้ครั้งแรกของแต่ละชิ้น แถมสิทธิ์ "แลกคะแนนจริง +2 คะแนน" ให้กดขอครูในเมนู 🎟️ สิทธิพิเศษ\n• ซ้ำจะคืนเหรียญ 100 🪙\n\nไปสุ่มที่เมนู 🎰 กาชา ได้เลย — ขอให้โชคดี!', 'assets/news/legendary.jpg', today_th(), today_th() + 30, 1, true
  where not exists (select 1 from news_posts where title like 'เปิดตู้ตำนาน!%');
+-- =====================================================================
+-- 47: แก้บั๊ก "หน้าข่าว/ตารางสอน/โปรโมชันไม่ขึ้น" หลังรัน SQL 43
+--  สาเหตุ: SQL 43 ทำให้ _sid() บันทึกจำนวนคำสั่งต่อนาที (UPDATE) แต่ news_list / timetable_list / promo_status
+--  ประกาศเป็น STABLE (ห้ามเขียนข้อมูล) จึงล้มเหลวทุกครั้ง → เปลี่ยนเป็น VOLATILE (รันซ้ำได้)
+-- =====================================================================
+alter function news_list(uuid) volatile;
+alter function timetable_list(uuid) volatile;
+alter function promo_status(uuid) volatile;
+-- กันพลาดในอนาคต: ฟังก์ชันอื่นที่เรียก _sid แต่ยังเป็น STABLE/IMMUTABLE จะถูกแก้ให้ด้วย
+do $$ declare r record; begin
+  for r in select p.oid::regprocedure f from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.provolatile <> 'v' and p.prosrc ~ '_sid\(' and p.proname <> '_sid' loop
+    execute format('alter function %s volatile', r.f);
+  end loop;
+end $$;
