@@ -126,6 +126,61 @@ select pg_temp.t('health_check จับ EXP ติดลบได้', (select 
 select pg_temp.t('game_stats คืนแหล่งรางวัลของควิซ', (select exists (select 1 from json_array_elements(game_stats(30)->'sources') s where s->>'src' like '%ควิซ%')));
 reset role;
 
+
+-- ================= ระบบป้องกันการโจมตี (SQL 42) =================
+reset role;
+select pg_temp.t('anon เรียกฟังก์ชันความปลอดภัยของครูไม่ได้',
+  pg_temp.fails('select security_scan()') and pg_temp.fails('select security_summary()') and pg_temp.fails($q$select admin_lockdown(true)$q$) and pg_temp.fails($q$select admin_sec_ack(null)$q$) and pg_temp.fails($q$select admin_unblock_ip('1.1.1.1')$q$));
+set role anon;
+select pg_temp.t('anon มองไม่เห็นแถวใน security_events', not pg_temp.sees_rows('security_events'));
+select pg_temp.t('anon มองไม่เห็นแถวใน login_attempts', not pg_temp.sees_rows('login_attempts'));
+reset role;
+select pg_temp.t('เพิ่มครูใหม่ถูกบันทึกเป็นเหตุ critical', exists (select 1 from security_events where kind='teachers_changed' and sev='critical'));
+-- จำลองการเดา PIN จาก IP เดียว
+update students set locked_until=null, fail_count=0;
+select set_config('request.headers', '{"x-forwarded-for":"9.9.9.9, 10.0.0.1"}', false);
+update app_settings set value=value where false;
+insert into app_settings(key,value) values ('sec_ip_limit','6'),('sec_sweep_accts','2') on conflict (key) do update set value=excluded.value;
+select student_login('T99',1,'bad'); select student_login('T11',1,'bad'); select student_login('T99',1,'bad');
+select pg_temp.t('เดาหลายบัญชีจาก IP เดียว ถูกบันทึก ip_sweep', exists (select 1 from security_events where kind='ip_sweep' and ip='9.9.9.9'));
+select student_login('T11',1,'bad'); select student_login('T99',2,'x'); select student_login('T99',3,'x');
+select pg_temp.t('IP ที่ผิดเกินเกณฑ์ ถูกบล็อกแม้ PIN ถูก', pg_temp.fails($q$select student_login('T11',1,'5678')$q$));
+select pg_temp.t('การบล็อก IP ถูกบันทึกเป็นเหตุ', exists (select 1 from security_events where kind='ip_blocked'));
+select pg_temp.t('IP อื่นยังล็อกอินได้ตามปกติ', (select set_config('request.headers','{"x-forwarded-for":"8.8.8.8"}',false) is not null) and (select student_login('T11',1,'5678')->>'token') is not null);
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select admin_unblock_ip('9.9.9.9');
+reset role;
+select pg_temp.t('ครูปลดบล็อก IP แล้วล็อกอินได้อีก', (select set_config('request.headers','{"x-forwarded-for":"9.9.9.9"}',false) is not null) and (select student_login('T11',1,'5678')->>'token') is not null);
+-- สแกน
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select pg_temp.t('security_scan ครูเรียกได้', (select (security_scan()->>'found') is not null));
+select pg_temp.t('ระบบปกติ: สแกนไม่พบ rls_off/anon_admin_fn/anon_table', not exists (select 1 from security_events where kind in ('rls_off','anon_admin_fn','anon_table')));
+reset role;
+-- ย้อนช่องโหว่: เปิดให้ anon เรียก admin_adjust แล้วสแกนต้องเจอ
+grant execute on function admin_adjust(uuid,int,int,text) to anon;
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select security_scan();
+reset role;
+select pg_temp.t('สแกนจับฟังก์ชันครูที่ anon เรียกได้', exists (select 1 from security_events where kind='anon_admin_fn'));
+revoke execute on function admin_adjust(uuid,int,int,text) from anon;
+-- EXP พุ่ง
+insert into ledger(student_id, exp, coins, reason, ref_key) select a, 5000, 0, 'ทดสอบพุ่ง', 'spike:t' from _s;
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select security_scan();
+select pg_temp.t('สแกนจับ EXP พุ่งผิดปกติ', exists (select 1 from security_events where kind='exp_spike'));
+select pg_temp.t('security_summary นับเหตุร้ายแรงที่ยังไม่อ่าน', (security_summary()->>'unseen')::int >= 1);
+select admin_sec_ack(null);
+select pg_temp.t('กดรับทราบแล้ว เหตุร้ายแรงที่ยังไม่อ่านเป็น 0', (security_summary()->>'unseen')::int = 0);
+-- lockdown
+select admin_lockdown(true);
+reset role;
+select pg_temp.t('lockdown: เตะเซสชันนักเรียนทั้งหมด', not exists (select 1 from student_sessions where not observer));
+select pg_temp.t('lockdown: ล็อกอินไม่ได้', pg_temp.fails($q$select student_login('T11',1,'5678')$q$));
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select admin_lockdown(false);
+reset role;
+select pg_temp.t('ปิด lockdown แล้วล็อกอินได้', (select student_login('T11',1,'5678')->>'token') is not null);
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
