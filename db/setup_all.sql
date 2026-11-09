@@ -4454,11 +4454,11 @@ begin
   return v;
 end $$;
 -- 37: โปรโมชันเปิดระบบใหม่ (รันซ้ำได้) — ต้องรัน 09_stats.sql ก่อน
---  · ของขวัญเปิดระบบ (รับได้คนละ 1 ครั้ง): เหรียญ + EXP + ตั๋วกาชาฟรี
---  · EXP x2 (ค่าตั้งต้น) จากเช็คชื่อ/ส่งงาน/เควส ระหว่างโปร
---  ตั้งค่าได้ในแอดมิน → ตั้งค่า: promo_on, promo_until, promo_exp_mult, promo_coins, promo_exp, promo_pulls
+--  · ของขวัญเปิดระบบ (รับได้คนละ 1 ครั้ง): เหรียญ 50 + EXP 20 + ตั๋วกาชาฟรี 1 ใบ
+--  · โบนัส EXP +25% (ค่าตั้งต้น) จากเช็คชื่อ/ส่งงาน/เควส ระหว่างโปร
+--  ตั้งค่าได้ในแอดมิน → ตั้งค่า: promo_on, promo_until, promo_exp_pct, promo_coins, promo_exp, promo_pulls
 insert into app_settings (key, value) values
-  ('promo_on', '1'), ('promo_exp_mult', '2'), ('promo_coins', '200'), ('promo_exp', '50'), ('promo_pulls', '3'),
+  ('promo_on', '1'), ('promo_exp_pct', '25'), ('promo_coins', '50'), ('promo_exp', '20'), ('promo_pulls', '1'),
   ('promo_until', to_char(today_th() + 7, 'YYYY-MM-DD'))
 on conflict (key) do nothing;
 
@@ -4467,16 +4467,16 @@ language sql stable security definer set search_path = public as $$
   select case when coalesce((select value from app_settings where key = 'promo_on'), '0') = '1'
               then nullif((select value from app_settings where key = 'promo_until'), '')::date end
 $$;
-create or replace function _promo_mult() returns int
+create or replace function _promo_pct() returns int
 language sql stable security definer set search_path = public as $$
-  select case when _promo_until() >= today_th() then greatest(1, _setting_int('promo_exp_mult', 1)) else 1 end
+  select case when _promo_until() >= today_th() then greatest(0, _setting_int('promo_exp_pct', 0)) else 0 end
 $$;
 revoke execute on function _promo_until() from public, anon, authenticated;
-revoke execute on function _promo_mult() from public, anon, authenticated;
+revoke execute on function _promo_pct() from public, anon, authenticated;
 
 create or replace function award(p_student uuid, p_exp int, p_coins int, p_reason text, p_ref text default null)
 returns boolean language plpgsql security definer set search_path = public as $$
-declare v uuid; pm int; cls text; e int := p_exp; c int := p_coins; rs text := p_reason; dil int; e2 int; cp int; c2 int;
+declare v uuid; pp int; cls text; e int := p_exp; c int := p_coins; rs text := p_reason; dil int; e2 int; cp int; c2 int;
 begin
   -- ความสามารถคลาส: โบนัสเฉพาะรางวัลจากเช็คชื่อ / ส่งงาน / เควส
   if p_ref ~ '^(att|sub|quest):' then
@@ -4489,9 +4489,9 @@ begin
       e2 := round(e * (1 + dil / 100.0))::int;
       if e2 > e then e := e2; rs := rs || ' (ขยัน +' || dil || '%)'; end if;
     end if;
-    -- โปรโมชัน: คูณ EXP (ตั้งใน app_settings: promo_exp_mult / promo_until)
-    pm := _promo_mult();
-    if pm > 1 and e > 0 then e := e * pm; rs := rs || ' (โปรเปิดระบบ x' || pm || ')'; end if;
+    -- โปรโมชัน: โบนัส EXP % (ตั้งใน app_settings: promo_exp_pct / promo_until)
+    pp := _promo_pct();
+    if pp > 0 and e > 0 then e := round(e * (1 + pp / 100.0))::int; rs := rs || ' (โปรเปิดระบบ +' || pp || '%)'; end if;
     -- ความสามารถฉายา/ไอเทม: โบนัสเหรียญ %
     if c > 0 then
       cp := coalesce((_stats(p_student)->'effects'->>'coin_pct')::int, 0);
@@ -4518,7 +4518,7 @@ declare sid uuid := _sid(p_token); u date := _promo_until();
 begin
   if u is null or u < today_th() then return json_build_object('active', false); end if;
   return json_build_object('active', true, 'until', u, 'days_left', u - today_th() + 1,
-    'mult', _promo_mult(),
+    'pct', _promo_pct(),
     'gift', json_build_object('coins', _setting_int('promo_coins', 0), 'exp', _setting_int('promo_exp', 0), 'pulls', _setting_int('promo_pulls', 0)),
     'claimed', exists (select 1 from ledger where student_id = sid and ref_key = 'promo:launch'));
 end $$;
@@ -4557,8 +4557,8 @@ end $$;
 
 -- ประกาศบนสไลด์ข่าว
 insert into news_posts (kind, title, summary, body, image, sort, ends_at)
-select 'event', 'โปรโมชันเปิดระบบใหม่ Chemistria! 🎉', 'รับของขวัญต้อนรับฟรี + EXP x2 จากเช็คชื่อ ส่งงาน และเควส ช่วงเปิดตัว',
- E'ฉลองเปิดระบบ Chemistria ใหม่!\n🎁 ของขวัญต้อนรับ: กดรับที่หน้าหลักได้คนละ 1 ครั้ง (เหรียญ + EXP + ตั๋วสุ่มกาชาฟรี)\n⚡ EXP x2 จากเช็คชื่อ ส่งงาน และเควส ตลอดช่วงโปร\nรีบกดรับก่อนโปรหมดนะ!',
+select 'event', 'โปรโมชันเปิดระบบใหม่ Chemistria! 🎉', 'รับของขวัญต้อนรับฟรี + โบนัส EXP +25% จากเช็คชื่อ ส่งงาน และเควส ช่วงเปิดตัว',
+ E'ฉลองเปิดระบบ Chemistria ใหม่!\n🎁 ของขวัญต้อนรับ: กดรับที่หน้าหลักได้คนละ 1 ครั้ง (เหรียญ + EXP + ตั๋วสุ่มกาชาฟรี)\n⚡ โบนัส EXP +25% จากเช็คชื่อ ส่งงาน และเควส ตลอดช่วงโปร\nรีบกดรับก่อนโปรหมดนะ!',
  'assets/news/promo.jpg', 20, nullif((select value from app_settings where key = 'promo_until'), '')::date
 where not exists (select 1 from news_posts where title = 'โปรโมชันเปิดระบบใหม่ Chemistria! 🎉');
 -- 38: ซ่อนห้องทดสอบ (GM) ออกจากอันดับ "ห้องแข่งห้อง" (รันซ้ำได้) — ต้องรัน 08 และ 15 ก่อน
