@@ -27,7 +27,7 @@ const RUN = (() => {
     const me = new Image(); me.src = spriteSrc(); me.onerror = () => { me.onerror = null; me.src = "assets/chars/" + (D.student.char_class || "novice") + ".png"; };
     const dc = D.student.decor || {}; let pet = null; if (dc.pet && dc.pet.image) { pet = new Image(); pet.src = dc.pet.image; }
     S.g = { me, pet, t0: 0, last: 0, cd: 3, cdT: performance.now(), over: false, x: 0, dist: 0, speed: 300, hp: 100,
-      y: GY, vy: 0, jumps: 0, slide: 0, slideHold: false, inv: 0, boost: 0, shield: false, slow: 0, mag: 0, combo: 0, bestCombo: 0, warnT: 0, coins: 0, tiles: 0, hits: 0, pots: 0, nextX: 700, things: [], fx: [], shake: 0, anim: 0, time: 0 };
+      y: GY, vy: 0, jumps: 0, slide: 0, slideHold: false, inv: 0, boost: 0, shield: false, slow: 0, mag: 0, combo: 0, bestCombo: 0, warnT: 0, coins: 0, tiles: 0, hits: 0, hurt: 0, pots: 0, nextX: 700, things: [], fx: [], shake: 0, anim: 0, time: 0 };
     S.screen = "play"; paint();
     requestAnimationFrame(() => { bind(); S.raf = requestAnimationFrame(loop); });
   }
@@ -109,7 +109,7 @@ const RUN = (() => {
     g.vy += 2500 * dt; g.y += g.vy * dt;
     if (g.y >= GY) { if (g.vy > 400) g.shake = Math.max(g.shake, 2); g.y = GY; g.vy = 0; g.jumps = 0; }
     if (g.slide > 0) { g.slide -= dt; if (g.slideHold) g.slide = Math.max(g.slide, 0.05); if (g.y < GY) g.slide = 0; }
-    if (g.slow > 0) g.slow -= dt; if (g.mag > 0) g.mag -= dt; if (g.inv > 0) g.inv -= dt; if (g.boost > 0) { g.boost -= dt; g.inv = Math.max(g.inv, 0.1); }
+    if (g.slow > 0) g.slow -= dt; if (g.mag > 0) g.mag -= dt; if (g.inv > 0) g.inv -= dt; if (g.hurt > 0) g.hurt = Math.max(0, g.hurt - dt); if (g.boost > 0) { g.boost -= dt; g.inv = Math.max(g.inv, 0.1); }
     if (g.shake > 0) g.shake = Math.max(0, g.shake - 20 * dt);
     g.anim += dt * (8 + sp / 90);
     // สร้างด่านล่วงหน้า
@@ -140,8 +140,8 @@ const RUN = (() => {
       else if (o.k === "tile") { o.dead = true; g.tiles++; pop(g, ox, oy, "+25", "#7ee0b0"); try { SFX.play("ok"); } catch (e) {} }
       else if (o.k === "pot") { o.dead = true; g.pots++; g.hp = Math.min(100, g.hp + 28); pop(g, ox, oy, "+HP", "#ff7a90"); try { SFX.play("levelup"); } catch (e) {} }
       else if (o.k === "star") { o.dead = true; g.boost = 4; pop(g, ox, oy, "บูสต์!", "#fff3a0"); try { SFX.play("rank"); } catch (e) {} }
-      else if (g.inv <= 0 && g.shield) { g.shield = false; g.inv = 1.0; g.shake = 5; pop(g, hb.x, hb.y - 10, "โล่แตก!", "#7dd3fc"); try { SFX.play("pop"); } catch (e) {} }
-      else if (g.inv <= 0) { g.hp -= 18; g.inv = 1.25; g.shake = 9; g.hits++; g.combo = 0; g.speed = Math.max(300, g.speed - 60); g.time = Math.max(0, g.time - 4); pop(g, hb.x, hb.y - 10, "-18", "#ff6b81"); try { SFX.play("bad"); } catch (e) {} if (g.hp <= 0) { g.hp = 0; g.over = true; } }
+      else if (g.inv <= 0 && g.shield) { g.shield = false; g.inv = 1.0; g.shake = 5; g.hurt = 0.5; pop(g, hb.x, hb.y - 10, "โล่แตก!", "#7dd3fc"); try { SFX.play("pop"); } catch (e) {} }
+      else if (g.inv <= 0) { g.hp -= 18; g.inv = 1.25; g.shake = 9; g.hurt = 0.6; g.hits++; g.combo = 0; g.speed = Math.max(300, g.speed - 60); g.time = Math.max(0, g.time - 4); pop(g, hb.x, hb.y - 10, "-18", "#ff6b81"); try { SFX.play("bad"); } catch (e) {} if (g.hp <= 0) { g.hp = 0; g.over = true; } }
     }
     g.things = g.things.filter((o) => !o.dead);
     g.fx = g.fx.filter((f) => (f.t += dt) < 0.8); g.fx.forEach((f) => { f.y -= 50 * dt; });
@@ -227,12 +227,14 @@ const RUN = (() => {
     const im = g.me; if (!im.complete || !im.naturalWidth) return;
     const sl = g.slide > 0 && g.y >= GY - 1, h = 112, w = h * im.naturalWidth / im.naturalHeight;
     if (g.inv > 0 && g.boost <= 0 && Math.floor(now / 90) % 2) ctx.globalAlpha = 0.4;
-    ctx.save(); ctx.translate(PX + 34, g.y);
+    const hp = g.hurt > 0 ? g.hurt / 0.6 : 0, hdy = hp ? -Math.abs(Math.sin((1 - hp) * Math.PI * 2.2)) * 30 * hp : 0, hdx = -16 * hp;     // เด้งถอยหลังตอนโดนชน
+    ctx.save(); ctx.translate(PX + 34 + hdx, g.y + hdy);
+    if (hp && Math.floor(now / 60) % 2) { try { ctx.filter = "brightness(2.6) saturate(.4)"; } catch (e) {} }
     if (g.boost > 0) { ctx.shadowColor = "#ffe27a"; ctx.shadowBlur = 26; }
     if (sl) { ctx.rotate(-1.25); ctx.translate(0, -w * 0.15); ctx.drawImage(im, -w / 2, -h * 0.78, w, h * 0.78); }
     else if (g.y < GY) { ctx.rotate(Math.max(-0.2, Math.min(0.2, g.vy / 5000))); ctx.drawImage(im, -w / 2, -h, w, h); }
     else { const b = Math.abs(Math.sin(g.anim)) * 7; ctx.rotate(Math.sin(g.anim) * 0.05); ctx.drawImage(im, -w / 2, -h - b + 4, w, h); }
-    ctx.restore(); ctx.globalAlpha = 1;
+    ctx.restore(); ctx.globalAlpha = 1; try { ctx.filter = "none"; } catch (e) {}
     if (g.shield) { ctx.save(); ctx.strokeStyle = "rgba(125,211,252,.9)"; ctx.fillStyle = "rgba(125,211,252,.18)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(PX + 34, g.y - 52, 62, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore(); }
     // เงา
     ctx.fillStyle = "rgba(0,0,0,.3)"; const sh = 30 * (1 - Math.min(1, (GY - g.y) / 220) * 0.5); ctx.beginPath(); ctx.ellipse(PX + 34, GY + 3, sh, 6, 0, 0, 7); ctx.fill();

@@ -169,7 +169,7 @@ const BATTLE = (() => {
       const impact = (zx, zy) => {
         const fx = SKFX[sk.key] || SKFX.gen_hit; if (fx.hit) pfx(fx.hit[0], zx, zy, { scale: fx.hit[1] }); if (fx.extra) pfx(fx.extra[0], zx, zy, { scale: fx.extra[1] });
         if (ev.crit) pfx("crit-hit", zx, zy, { scale: 1.9 });
-        pop("shake", MO.querySelector(".bt-mimg,.bt-memo")); flash(ev.crit ? "flashbig" : "flash");
+        pop("hurt", MO.querySelector(".bt-mimg,.bt-memo")); flash(ev.crit ? "flashbig" : "flash");
         num((ev.crit ? "💥 " : "") + "-" + ev.dmg, zx, zy - 50, ev.crit ? "crit" : "dmg");
         if (ev.fast) num("⚡ ตอบไว!", zx, zy - 86, "fast");
         if (killed) later(500, () => { pfx("shatter-death", zx, zy + 20, { scale: 2.2 }); MO.classList.add("dead"); later(350, () => pfx("collect-burst", zx, zy, { scale: 2 })); });
@@ -195,7 +195,7 @@ const BATTLE = (() => {
     S.hpDelay = 520;
     span(".bt-mo", ".bt-pl", "magic-missile", 0.9, (zx, zy) => {
       if (e.taken <= 0) { num("🌀 หลบได้!", zx, zy - 50, "heal"); pfx("shield-block", zx, zy, { scale: 1.4 }); }
-      else { const h = MONFX[key] || ["hit-spark", 1.5]; pfx(h[0], zx, zy, { scale: h[1] }); pop("shake", PL.querySelector(".bt-spr")); flash("flashred"); num("-" + e.taken, zx, zy - 40, "dmg"); }
+      else { const h = MONFX[key] || ["hit-spark", 1.5]; pfx(h[0], zx, zy, { scale: h[1] }); pop("hurt", PL.querySelector(".bt-spr")); flash("flashred"); num("-" + e.taken, zx, zy - 40, "dmg"); }
       if (e.hits > 0 && e.taken > 0) num("🛡️ ลดดาเมจ " + Math.round((80 * e.hits) / e.n) + "%", zx, zy - 74, "fast");
     });
   }

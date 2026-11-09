@@ -487,6 +487,10 @@ h1,h2,h3{text-shadow:0 0 18px #9b6bff66}
 .float{animation:btfloat 2.6s ease-in-out infinite}.shake{animation:btshake .45s}
 @keyframes btfloat{50%{transform:translateY(-6px)}}@keyframes btshake{20%{transform:translateX(-9px) rotate(-3deg)}40%{transform:translateX(9px) rotate(3deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 .bt-hit{filter:brightness(1.6)}
+/* โดนโจมตี: กระพริบ + เด้งถอยหลัง */
+.hurt{animation:bthurt .6s cubic-bezier(.3,.7,.4,1)!important}
+@keyframes bthurt{0%{transform:translate(0,0) scale(1);filter:brightness(3) saturate(0)}12%{transform:translate(-14px,-22px) rotate(-6deg) scale(1.08);opacity:.25;filter:brightness(2.4) drop-shadow(0 0 12px #fff)}24%{transform:translate(-6px,0) rotate(3deg) scale(.95);opacity:1;filter:brightness(1) sepia(1) saturate(6) hue-rotate(-30deg)}38%{transform:translate(-9px,-12px) rotate(-3deg);opacity:.3;filter:brightness(2.2)}52%{transform:translate(4px,0) rotate(2deg);opacity:1}66%{opacity:.35}80%{transform:translate(0,-4px);opacity:1}100%{transform:translate(0,0);opacity:1;filter:none}}
+@media(prefers-reduced-motion:reduce){.hurt{animation:none!important}}
 .bt-skillrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
 .bt-skill{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px;border-radius:12px;border:2px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;font:inherit;cursor:pointer}
 .bt-skill.attack{border-color:#ff7a7a88}.bt-skill.buff{border-color:#ffd86b88}.bt-skill.heal{border-color:#7ee0b088}

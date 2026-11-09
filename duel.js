@@ -93,7 +93,7 @@ const DUEL = (() => {
         if (fx.extra) BATTLE.pfx(fx.extra[0], zx, zy, { scale: fx.extra[1] });
         if (x.crit) BATTLE.pfx("crit-hit", zx, zy, { scale: 1.9 });
         if (x.skill) BATTLE.pfx("small-explosion", zx, zy, { scale: 1.2 });
-        BATTLE.pop("shake", document.querySelector(to + " .bt-spr")); BATTLE.flash(x.crit || x.skill ? "flashbig" : "flash");
+        BATTLE.pop("hurt", document.querySelector(to + " .bt-spr")); BATTLE.flash(x.crit || x.skill ? "flashbig" : "flash");
         BATTLE.num((x.crit ? "💥 " : x.skill ? "🔥 " : "") + "-" + x.dmg, zx, zy - 50, x.crit || x.skill ? "crit" : "dmg");
         if (x.fast) BATTLE.num("⚡ ไว!", zx, zy - 86, "fast");
       };
