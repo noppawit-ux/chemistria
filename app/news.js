@@ -16,6 +16,15 @@ function newsHtml() {
       <span class="newst"><b>${esc(n.title)}</b><small>${esc(n.summary || "")}</small></span></button>`).join("")}</div>
     <div class="newsd" id="newsd">${sl.map((_, i) => `<i class="${i === 0 ? "on" : ""}" onclick="newsTo(${i})"></i>`).join("")}</div></div>`;
 }
+/* ประกาศที่โชว์บนหน้ากาชา: ข่าว/อีเว้นท์ที่ชื่อหรือสรุปมีคำว่า กาชา / ตู้ตำนาน / Legendary */
+const GACHA_RE = /กาชา|ตู้ตำนาน|legendary|rate.?up/i;
+function gachaNotes() {
+  const l = NEWS.map((n, i) => [n, i]).filter(([n]) => GACHA_RE.test(`${n.title} ${n.summary || ""}`));
+  if (!l.length) return "";
+  return `<div class="card gnotes"><div class="newshead">${ic("news")}<b>ประกาศกาชา</b></div>${l.map(([n, i]) => `<button class="gnote" onclick="newsOpen(${i})">
+    ${n.image ? `<img src="${esc(n.image)}" alt="" loading="lazy" draggable="false" onerror="this.style.display='none'">` : ""}
+    <span><b>${esc(n.title)}</b><small>${esc(n.summary || "")}</small></span><i>›</i></button>`).join("")}</div>`;
+}
 function newsTo(i) { const c = document.getElementById("newsc"); if (c) c.scrollTo({ left: c.clientWidth * i, behavior: "smooth" }); }
 function newsInit() {
   clearInterval(NEWS_T); const c = document.getElementById("newsc"); if (!c) return;

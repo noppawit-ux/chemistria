@@ -123,7 +123,7 @@ const VIEWS = {
   gacha() {
     const c = D.settings.gacha_cost, s = D.student, pm = D.settings.pity_max;
     const fr = X.free_pulls || 0, pct = Math.min(100, (s.pity / pm) * 100);
-    return `<div class="card gh center"><div class="ghglow"></div>
+    return gachaNotes() + `<div class="card gh center"><div class="ghglow"></div>
       <img class="ghm" src="assets/gacha-machine.jpg" alt="" draggable="false">
       <h3 class="ghh">🎰 กาชาห้องทดลอง</h3>
       <div class="ghchips"><span class="ghchip">เหรียญของคุณ <span class="coin">🪙 ${s.coins}</span></span><span class="ghchip">ครั้งละ <b>${c}</b> 🪙</span>${fr > 0 ? `<span class="ghchip fr">🎟️ ตั๋วฟรี <b>${fr}</b> ใบ</span>` : ""}</div>

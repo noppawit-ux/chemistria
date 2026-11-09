@@ -1112,3 +1112,9 @@ body.peeking .navwrap{top:34px}
 .ghpity{position:relative;max-width:320px;margin:8px auto 0}
 .ghbtn{min-width:128px;box-shadow:0 4px 0 #8a5a00,0 0 18px #ffd86b66}
 .ghbtn.big{animation:pulse2 2.4s ease-in-out infinite}
+
+.gnotes{padding:10px}
+.gnote{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;padding:6px;border:1px solid #ff5a6866;border-radius:12px;background:linear-gradient(90deg,#3a0c18,#1c1236);color:#fff;text-align:left;cursor:pointer}
+.gnote img{width:84px;height:48px;object-fit:cover;border-radius:8px;flex:none}
+.gnote span{flex:1;min-width:0}.gnote b{display:block}.gnote small{display:block;opacity:.8;font-size:.82em;margin-top:2px}
+.gnote i{font-style:normal;font-size:1.6em;opacity:.7;padding-right:4px}
