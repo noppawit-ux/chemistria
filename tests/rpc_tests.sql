@@ -381,6 +381,21 @@ select pg_temp.t('timetable_list เรียกด้วยโทเค็น�
 select pg_temp.t('promo_status เรียกด้วยโทเค็นนักเรียนได้', (select promo_status((select tok from _gt where no=12)) is not null));
 reset role;
 
+-- ================= ลดอัตราผลสเตตัส (SQL 49) =================
+reset role;
+update students set is_gm = true where class_id=(select id from classes where code='T99') and no=13;
+create temp table _sg as select id from students where class_id=(select id from classes where code='T99') and no=13;
+select pg_temp.t('สเตตัส: ค่าเริ่มต้น 50% → ขยัน 10 แต้ม = +5% EXP', (select (_stats(id)->'effects'->>'exp_pct')::int from _sg) = 5);
+select pg_temp.t('สเตตัส: พลัง 10 แต้ม = +15% ดาเมจ (เดิม 30%)', (select (_stats(id)->'effects'->>'boss_pct')::int from _sg) = 15);
+select pg_temp.t('สเตตัส: โชค 10 แต้ม = +15% (เดิม 30%) · ปัญญา = +2 EXP ควิซ (เดิม 5)', (select (_stats(id)->'effects'->>'rare_pct')::int from _sg) = 15 and (select (_stats(id)->'effects'->>'quiz_exp')::int from _sg) = 2);
+select pg_temp.t('สเตตัส: จำนวนแต้มไม่เปลี่ยน (ขยัน total = 10)', (select (_stats(id)->'dil'->>'total')::int from _sg) = 10);
+update app_settings set value='100' where key='stat_effect_pct';
+select pg_temp.t('สเตตัส: ตั้ง 100% = เท่าเดิม (+10% EXP / +30% ดาเมจ)', (select (_stats(id)->'effects'->>'exp_pct')::int from _sg) = 10 and (select (_stats(id)->'effects'->>'boss_pct')::int from _sg) = 30);
+update app_settings set value='0' where key='stat_effect_pct';
+select pg_temp.t('สเตตัส: ตั้ง 0% = ไม่มีผล', (select (_stats(id)->'effects'->>'exp_pct')::int from _sg) = 0);
+update app_settings set value='50' where key='stat_effect_pct';
+update students set is_gm = false where id in (select id from _sg);
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
