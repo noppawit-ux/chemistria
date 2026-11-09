@@ -335,7 +335,7 @@ reset role;
 -- ================= Legendary (SQL 46) =================
 reset role;
 update students set coins = 100000 where class_id = (select id from classes where code='T99') and no = 12;
-update app_settings set value='0' where key='gacha_leg_rate';
+update app_settings set value='0' where key='gacha_leg_rate'; update app_settings set value='0' where key='gacha_leg_rate_min';
 create temp table _lg(r json);
 grant all on _lg to anon, authenticated;
 set role anon;
@@ -345,7 +345,8 @@ do $$ declare t uuid := (select tok from _gt where no=12); i int; r json; n int 
 end $$;
 select pg_temp.t('เรท LEG = 0 → ไม่ออก LEG (100 ครั้ง)', (select (r->>'n')::int from _lg) = 0);
 reset role;
-update app_settings set value='1' where key='gacha_leg_rate';
+select pg_temp.t('ตัวนับ leg_pulls เพิ่มทุกครั้งที่สุ่ม (100 ครั้ง)', (select leg_pulls from students where class_id=(select id from classes where code='T99') and no=12) = 100);
+update app_settings set value='1' where key='gacha_leg_rate'; update app_settings set value='1' where key='gacha_leg_rate_min';
 set role anon;
 do $$ declare t uuid := (select tok from _gt where no=12); i int; r json; names text[] := '{}'; dup int := 0; e json; begin
   for i in 1..12 loop
@@ -356,6 +357,9 @@ do $$ declare t uuid := (select tok from _gt where no=12); i int; r json; names 
   delete from _lg; insert into _lg values (json_build_object('all', (select count(*) from unnest(names)), 'dup', dup));
 end $$;
 select pg_temp.t('เรท LEG = 100% → ได้ LEG ทุกครั้ง', (select (r->>'all')::int from _lg) = 12);
+reset role;
+select pg_temp.t('ได้ LEG แล้วตัวนับรีเซ็ตเป็น 0', (select leg_pulls from students where class_id=(select id from classes where code='T99') and no=12) = 0);
+set role anon;
 select pg_temp.t('LEG ซ้ำ → คืน 100 เหรียญ', (select (r->>'dup')::int from _lg) >= 8);
 reset role;
 select pg_temp.t('ได้ LEG ครั้งแรก → ได้สิทธิ์แลกคะแนนจริง +2 (≤4 ใบ ไม่ซ้ำตามชิ้น)',
@@ -370,7 +374,18 @@ select pg_temp.t('ตู้กาชามี LEG 4 ชิ้น (อุปก�
   and (select count(*) from gacha_items g join decor_items d on d.id=g.decor_id where g.rarity='LEG' and d.slot='outfit') = 2);
 select pg_temp.t('สเตตัส LEG สูงกว่า SSR (ไม่นับฉายา) แต่ไม่เกิน 8',
   (select max(st_int+st_dil+st_str+st_luk) from decor_items where rarity='LEG') <= 8 and (select min(st_int+st_dil+st_str+st_luk) from decor_items where rarity='LEG') > (select max(st_int+st_dil+st_str+st_luk) from decor_items where rarity='SSR' and slot <> 'title'));
-update app_settings set value='0.005' where key='gacha_leg_rate';
+update app_settings set value='0.005' where key='gacha_leg_rate'; update app_settings set value='0.0001' where key='gacha_leg_rate_min';
+-- เรทไต่ระดับ
+create temp table _lr as select id from students where class_id=(select id from classes where code='T99') and no=14;
+update students set leg_pulls = 0 where id in (select id from _lr);
+select pg_temp.t('เรท LEG ครั้งแรก = 0.01%', (select _leg_rate(id) from _lr) = 0.0001);
+update students set leg_pulls = 50 where id in (select id from _lr);
+select pg_temp.t('เรท LEG กลางทาง (50/99) อยู่ระหว่าง 0.01% ถึง 0.5%', (select _leg_rate(id) from _lr) between 0.002 and 0.003);
+update students set leg_pulls = 99 where id in (select id from _lr);
+select pg_temp.t('เรท LEG ถึงสูงสุด 0.5% ที่ครั้งที่ 100', (select _leg_rate(id) from _lr) = 0.005);
+update students set leg_pulls = 5000 where id in (select id from _lr);
+select pg_temp.t('เรท LEG ไม่เกิน 0.5% แม้สุ่มมาก', (select _leg_rate(id) from _lr) = 0.005);
+update students set leg_pulls = 0 where id in (select id from _lr);
 
 -- ================= ฟังก์ชันที่เรียก _sid ต้องเป็น VOLATILE (SQL 47) =================
 select pg_temp.t('ไม่มีฟังก์ชัน STABLE ที่เรียก _sid (ซึ่ง UPDATE ตัวนับ rate limit)',

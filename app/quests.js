@@ -133,7 +133,7 @@ const VIEWS = {
         <button class="btn gold ghbtn" ${s.coins < c && !(fr > 0) ? "disabled" : ""} onclick="pull(1)">${fr > 0 ? "🎟️ ใช้ตั๋วฟรี ×1" : `สุ่ม ×1 · ${c}🪙`}</button>
         <button class="btn gold ghbtn big" ${s.coins < c * 10 ? "disabled" : ""} onclick="pull(10)">สุ่ม ×10 · ${c * 10}🪙</button></div></div>
       <div class="card"><h3>ของรางวัลที่มีในตู้</h3><div class="row">
-      <p class="muted" style="margin:0 0 8px">🔴 <b style="color:#ff5a68">LEGENDARY</b> โอกาส 0.5% ต่อครั้ง · ได้ครั้งแรก = แลกคะแนนจริง +2 คะแนน</p>${[...D.gacha_pool].sort((a, b) => ["LEG", "SSR", "SR", "R", "N"].indexOf(a.rarity) - ["LEG", "SSR", "SR", "R", "N"].indexOf(b.rarity)).map((g) => `<span class="pill rar-${g.rarity}" style="border-color:var(--c)">${itemImg(g.image, g.emoji)} ${esc(g.name)} <b class="rar">${g.rarity}</b></span>`).join("")}</div></div>`;
+      <p class="muted" style="margin:0 0 8px">🔴 <b style="color:#ff5a68">LEGENDARY</b> เริ่ม 0.01% ยิ่งสุ่มยิ่งเพิ่มสูงสุด 0.5% · ได้ครั้งแรก = แลกคะแนนจริง +2 คะแนน</p>${[...D.gacha_pool].sort((a, b) => ["LEG", "SSR", "SR", "R", "N"].indexOf(a.rarity) - ["LEG", "SSR", "SR", "R", "N"].indexOf(b.rarity)).map((g) => `<span class="pill rar-${g.rarity}" style="border-color:var(--c)">${itemImg(g.image, g.emoji)} ${esc(g.name)} <b class="rar">${g.rarity}</b></span>`).join("")}</div></div>`;
   },
 
   bag() {
