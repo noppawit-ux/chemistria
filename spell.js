@@ -47,6 +47,7 @@ const SPELL = (() => {
 
   async function open() { S.screen = "home"; S.st = null; GAMES.setMode("spell"); paint(); try { S.st = await rpc("spell_status", { p_token: tk() }); } catch (e) {} paint(); }
   function start(level) {
+    GB("spell");
     const L = LV[level]; S.level = level; S.i = 0; S.wrong = 0; S.hints = 0; S.over = false; S.busy = false; S.combo = 0; S.best = 0;
     // ผสมโจทย์สูตรผสมธาตุกับโจทย์โครงสร้างลิวอิส สลับตำแหน่งแบบสุ่ม
     const sp = shuffle(R[level]).slice(0, L.n - L.lw).map((x) => ({ t: "mix", d: x })), lw = shuffle(LW[level]).slice(0, L.lw).map((x) => ({ t: "lew", d: x }));

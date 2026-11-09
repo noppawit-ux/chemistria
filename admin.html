@@ -6,7 +6,7 @@
 <title>Chemistria · แอดมินครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.73">
+<link rel="stylesheet" href="style.css?v=1.74">
 <style>.wrap{max-width:1180px} h4{margin:14px 0 6px} .inbox .item{flex-wrap:wrap}</style>
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
@@ -14,8 +14,8 @@
 <div id="app" class="wrap"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="config.js?v=1.73"></script>
-<script src="lib.js?v=1.73"></script>
+<script src="config.js?v=1.74"></script>
+<script src="lib.js?v=1.74"></script>
 <script>
 const app = $("#app");
 const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
@@ -534,6 +534,8 @@ const TAB = {
       <ul style="margin:0 0 0 18px;line-height:1.7">
         <li>เดา PIN ผิดครบ 5 ครั้ง → ล็อกบัญชี 10 นาที และบันทึกเหตุ</li>
         <li>IP เดียวใส่ PIN ผิดเกิน 60 ครั้งใน 10 นาที → ถูกบล็อก 10 นาที (ปรับได้ที่ตาราง app_settings คีย์ <code>sec_ip_limit</code>); เดาหลายบัญชีจาก IP เดียวเกิน 20 บัญชี → แจ้งเตือนระดับสูง (<code>sec_sweep_accts</code>)</li>
+        <li>ล็อก PIN แบบทวีคูณ: ผิดครบ 5 ครั้งล็อก 10 นาที → 30 นาที → 90 นาที … สูงสุด 24 ชม. (ครูเปลี่ยน PIN ใหม่แล้วปลดล็อกให้อัตโนมัติ) · ส่งคำสั่งเกิน 240 ครั้ง/นาทีต่อเซสชันถูกปฏิเสธและแจ้งเตือน (<code>sec_rpc_per_min</code>)</li>
+        <li>เกมต้องเริ่มที่เซิร์ฟเวอร์ก่อนส่งคะแนน และเวลาจริงต้องสมเหตุสมผล สคริปต์ที่ส่งคะแนนทันทีจะถูกปฏิเสธ (ปิดได้ด้วย <code>sec_game_timing</code> = 0)</li>
         <li>มีการเพิ่ม/ลบ/แก้รายชื่อครู → แจ้งระดับวิกฤตทันที</li>
         <li>สแกนอัตโนมัติทุก 10 นาทีขณะเปิดหน้าแอดมิน: ตารางที่ปิด RLS · ฟังก์ชันครูที่คนทั่วไปเรียกได้ · EXP พุ่งผิดปกติ (<code>sec_exp_spike</code> ค่าเริ่มต้น 600/ชม.) · เซสชันซ้ำมากผิดปกติ · ตัวเลขติดลบ</li>
         <li>แจ้งเตือนผ่านแบนเนอร์สีแดง ตัวเลขบนชื่อแท็บ และการแจ้งเตือนของเบราว์เซอร์ <b>ขณะเปิดหน้าแอดมินค้างไว้</b> (ไม่มีการส่งอีเมล/LINE ถ้าปิดหน้านี้อยู่)</li></ul>

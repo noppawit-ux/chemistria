@@ -120,6 +120,7 @@ const KB = (() => {
   const mcq = (k) => bk(k).filter((x) => (x.wrong || []).length >= 3).map((x) => [x.question, x.answer, x.wrong[0], x.wrong[1], x.wrong[2], x.explain || ""]);
   const draw = (name, src) => { if (!S[name] || !S[name].length) S[name] = shuffle(src); return S[name].pop(); };
   function start() {
+    GB("kb");
     S.types = shuffle(["quiz", "calc", "balance", "pairs", "blitz", "react", "memory", "odd"]); S.r = 0; S.hearts = 3; S.hp = 100; S.cleared = 0; S.over = false; S.lock = false; S.t0 = Date.now(); S.msg = ""; S.say = say("start");
     const jr = S.lv === "jr";
     S.srcQ = jr ? mcq("quiz") : QZ.concat(mcq("quiz")); S.srcC = jr ? mcq("calc") : CL.concat(mcq("calc"));

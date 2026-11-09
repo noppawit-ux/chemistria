@@ -18,6 +18,8 @@ function toast(msg, ms = 2600) {
 const RPC_ONCE = /^(promo_claim|gacha_pull|claim_quest|boss_claim|buy_decor|buy_privilege|request_privilege|equip_decor|set_avatar|set_gender|set_photo|choose_class|change_pin|stat_reset|submit_assignment|duel_invite|duel_respond|board_post|board_delete|begin_upload)$/;
 const _rpcRecent = new Map();
 // เรียก RPC แล้วโยน error เป็นข้อความอ่านง่าย
+/* แจ้งเซิร์ฟเวอร์ว่าเริ่มเล่นเกมแล้ว (ใช้ตรวจว่าเวลาเล่นสมเหตุสมผลตอนส่งคะแนน) — ล้มเหลวได้โดยไม่กระทบการเล่น */
+const GB = (g) => { try { rpc("game_begin", { p_token: tk(), p_game: g }).catch(() => {}); } catch (e) {} };
 async function rpc(name, args = {}) {
   const mut = RPC_ONCE.test(name);
   let key;

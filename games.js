@@ -82,6 +82,7 @@ const GAMES = (() => {
 
   /* ---------- ควิซ ---------- */
   async function startQuiz() {
+    GB("quiz");
     try {
       const r = await rpc("quiz_today", { p_token: tk() });
       if (r.done) { toast("วันนี้ทำควิซไปแล้ว"); st.status = null; return go("game"); }
@@ -124,6 +125,7 @@ const GAMES = (() => {
 
   /* ---------- จับคู่ธาตุ ---------- */
   function startMatch(level) {
+    GB("match");
     const L = LEVELS[level], pool = shuffle(ELEMENTS.slice(0, L.pool)).slice(0, L.n);
     st.mg = { level, n: L.n, left: shuffle(pool), right: shuffle(pool), done: {}, selL: null, selR: null, wrong: 0, t0: Date.now(), bad: null, over: false };
     st.mode = "match"; paint(); clearInterval(st.tm);

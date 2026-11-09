@@ -22,6 +22,7 @@ const RUN = (() => {
 
   /* ---------- เริ่มเกม ---------- */
   function start() {
+    GB("run");
     cancelAnimationFrame(S.raf); need.forEach(img);
     const me = new Image(); me.src = spriteSrc(); me.onerror = () => { me.onerror = null; me.src = "assets/chars/" + (D.student.char_class || "novice") + ".png"; };
     const dc = D.student.decor || {}; let pet = null; if (dc.pet && dc.pet.image) { pet = new Image(); pet.src = dc.pet.image; }

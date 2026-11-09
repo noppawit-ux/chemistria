@@ -10,6 +10,7 @@ exception when others then reset role; return true; end $$;
 
 create or replace function pg_temp.sees_rows(p_table text) returns boolean language plpgsql as $$
 declare n int; begin execute 'select count(*) from ' || p_table into n; return n > 0; exception when insufficient_privilege then return false; end $$;
+create or replace function pg_temp.bd(p_secs int) returns void language sql security definer as $$ update public.game_starts set started_at = now() - make_interval(secs => p_secs) $$;
 -- ================= ข้อมูลตั้งต้น =================
 insert into teachers(email) values ('t@x.th');
 insert into classes(name, code, subject_name) values ('ม.9/9','T99','ทดสอบ') ;
@@ -85,7 +86,9 @@ select pg_temp.t('ห้อง ม.1/1 ได้เฉพาะข้อขอ�
   (select bool_and(q->>'question' like 'ข้อเฉพาะห้อง%') from json_array_elements(quiz_today((select b from _tok))->'questions') q));
 select pg_temp.t('ห้องอื่นไม่เห็นข้อเฉพาะห้อง ม.1/1',
   (select bool_and(q->>'question' not like 'ข้อเฉพาะห้อง%') from json_array_elements(quiz_today((select a from _tok))->'questions') q));
+select game_begin((select a from _tok), 'quiz'); select pg_temp.bd(60);
 select pg_temp.t('quiz_submit สำเร็จครั้งแรก', (select quiz_submit((select a from _tok), '[0,0,0,0,0]'::jsonb) is not null));
+select game_begin((select a from _tok), 'quiz'); select pg_temp.bd(60);
 select pg_temp.t('ส่งควิซซ้ำในวันเดียวกัน → error', pg_temp.fails($q$select quiz_submit((select a from _tok), '[0,0,0,0,0]'::jsonb)$q$));
 select pg_temp.t('หลังทำแล้ว quiz_today บอก done', (select (quiz_today((select a from _tok))->>'done')::boolean));
 reset role;
@@ -180,6 +183,50 @@ set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th
 select admin_lockdown(false);
 reset role;
 select pg_temp.t('ปิด lockdown แล้วล็อกอินได้', (select student_login('T11',1,'5678')->>'token') is not null);
+
+
+-- ================= ป้องกันบอท/สคริปต์ (SQL 43) =================
+reset role;
+delete from app_settings where key in ('sec_ip_limit','sec_sweep_accts'); delete from login_attempts; select set_config('request.headers','{}',false);
+update students set locked_until=null, fail_count=0, lock_level=0;
+create temp table _tok2 as select (student_login('T99',1,'1234')->>'token')::uuid a, (student_login('T11',1,'5678')->>'token')::uuid b;
+grant all on _tok2 to anon, authenticated;
+-- เวลาเล่นเกม
+select pg_temp.t('ส่งคะแนนเกมโดยไม่ได้เริ่มเกม → ถูกปฏิเสธ', pg_temp.fails($q$select match_submit((select b from _tok2), 80, 6, 60)$q$));
+select game_begin((select b from _tok2), 'match');
+select pg_temp.t('ส่งคะแนนทันทีหลังเริ่ม (เร็วเกินจริง) → ถูกปฏิเสธ', pg_temp.fails($q$select match_submit((select b from _tok2), 80, 6, 60)$q$));
+select pg_temp.bd(90);
+select pg_temp.t('เล่นนานพอ ส่งคะแนนผ่าน', (select match_submit((select b from _tok2), 80, 6, 60) is not null));
+select pg_temp.t('ส่งคะแนนซ้ำด้วยการเริ่มเกมเดิม → ถูกปฏิเสธ (ใช้แล้วหมด)', pg_temp.fails($q$select match_submit((select b from _tok2), 80, 6, 60)$q$));
+select game_begin((select b from _tok2), 'run'); select pg_temp.bd(4);
+select pg_temp.t('อ้างว่าเล่น 120 วินาทีแต่จริงๆ 4 วินาที → ถูกปฏิเสธ', pg_temp.fails($q$select run_submit((select b from _tok2), 500, 120)$q$));
+select pg_temp.t('ฟังก์ชันภายใน _match_submit เรียกตรงไม่ได้', pg_temp.fails($q$select _match_submit((select b from _tok2), 100, 6, 60)$q$));
+set role anon;
+select pg_temp.t('anon มองไม่เห็นแถวใน game_starts', not pg_temp.sees_rows('game_starts'));
+reset role;
+-- จำกัดอัตราต่อนาที
+insert into app_settings(key,value) values ('sec_rpc_per_min','6') on conflict (key) do update set value=excluded.value;
+update student_sessions set win_start=null, win_n=0;
+create temp table _rl(n int, hit boolean); grant all on _rl to anon, authenticated;
+do $$ declare i int; begin for i in 1..9 loop begin perform game_status((select b from _tok2)); insert into _rl values (i, false); exception when others then insert into _rl values (i, true); end; end loop; end $$;
+select pg_temp.t('เรียกถี่เกินเกณฑ์ → ถูกปฏิเสธตั้งแต่ครั้งที่ 7', (select min(n) from _rl where hit) = 7);
+select pg_temp.t('เรียกถี่ถึงเกณฑ์ → บันทึก rate_abuse', exists (select 1 from security_events where kind='rate_abuse'));
+delete from app_settings where key='sec_rpc_per_min';
+update student_sessions set win_start=null, win_n=0;
+select pg_temp.t('ปรับเกณฑ์กลับแล้วเรียกได้ปกติ', (select game_status((select b from _tok2)) is not null));
+-- ล็อก PIN ทวีคูณ
+update students set locked_until=null, fail_count=0, lock_level=0 where name='ทดสอบ บี';
+do $$ begin for i in 1..5 loop perform student_login('T11',1,'bad'); end loop; end $$;
+select pg_temp.t('ล็อกรอบแรกประมาณ 10 นาที', (select locked_until between now()+interval '9 minutes' and now()+interval '11 minutes' from students where name='ทดสอบ บี'));
+update students set locked_until=null where name='ทดสอบ บี';
+do $$ begin for i in 1..5 loop perform student_login('T11',1,'bad'); end loop; end $$;
+select pg_temp.t('ล็อกรอบสองนานขึ้นเป็นประมาณ 30 นาที', (select locked_until between now()+interval '29 minutes' and now()+interval '31 minutes' from students where name='ทดสอบ บี'));
+update students set locked_until=null where name='ทดสอบ บี';
+select student_login('T11',1,'5678');
+select pg_temp.t('ใส่ PIN ถูกแล้ว ระดับล็อกกลับเป็น 0', (select lock_level = 0 and fail_count = 0 from students where name='ทดสอบ บี'));
+update students set lock_level=3, locked_until=now()+interval '5 hours', fail_count=2 where name='ทดสอบ บี';
+update students set pin_hash = crypt('9999', gen_salt('bf')) where name='ทดสอบ บี';
+select pg_temp.t('ครูเปลี่ยน PIN → ปลดล็อกและรีเซ็ตระดับอัตโนมัติ', (select lock_level=0 and locked_until is null and fail_count=0 from students where name='ทดสอบ บี'));
 
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
