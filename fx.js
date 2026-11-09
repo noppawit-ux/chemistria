@@ -36,7 +36,7 @@ const FX = (() => {
       const r = { N: () => at(el, "xp-orb", { scale: 2.4 }), R: () => at(el, "mana-burst", { scale: 1.6 }),
         SR: () => { at(el, "feather-burst", { scale: 2 }); at(el, "power-star", { scale: 2.4 }); },
         SSR: () => { at(el, "holy-pillar", { scale: 2.4, foot: true }); at(el, "sunburst", { scale: 3 }); later(300, () => screen("confetti", 0.5, 0.7, { scale: 4 })); later(450, () => screen("firework-burst", 0.3, 0.3, { scale: 2.2 })); later(700, () => screen("firework-burst", 0.72, 0.28, { scale: 2.2 })); } };
-      (r[rar] || r.N)();
+      (r[rar] || (rar === "LEG" ? r.SSR : r.N))();
     },
   };
   return { play, at, screen, later, ...kit };

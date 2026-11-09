@@ -332,6 +332,46 @@ select pg_temp.t('รับรางวัลอันดับสำเร็�
 select pg_temp.t('รับรางวัลอันดับซ้ำไม่ได้', pg_temp.fails($q$select guild_claim_prize((select tok from _gt where no=11))$q$));
 reset role;
 
+-- ================= Legendary (SQL 46) =================
+reset role;
+update students set coins = 100000 where class_id = (select id from classes where code='T99') and no = 12;
+update app_settings set value='0' where key='gacha_leg_rate';
+create temp table _lg(r json);
+grant all on _lg to anon, authenticated;
+set role anon;
+do $$ declare t uuid := (select tok from _gt where no=12); i int; r json; n int := 0; begin
+  for i in 1..10 loop r := gacha_pull(t, 10); n := n + (select count(*) from json_array_elements(r->'items') e where e->>'rarity' = 'LEG'); end loop;
+  insert into _lg values (json_build_object('n', n));
+end $$;
+select pg_temp.t('เรท LEG = 0 → ไม่ออก LEG (100 ครั้ง)', (select (r->>'n')::int from _lg) = 0);
+reset role;
+update app_settings set value='1' where key='gacha_leg_rate';
+set role anon;
+do $$ declare t uuid := (select tok from _gt where no=12); i int; r json; names text[] := '{}'; dup int := 0; e json; begin
+  for i in 1..12 loop
+    r := gacha_pull(t, 1);
+    e := r->'items'->0;
+    if e->>'rarity' = 'LEG' then names := names || (e->>'name'); if (e->>'dup_refund')::int = 100 then dup := dup + 1; end if; end if;
+  end loop;
+  delete from _lg; insert into _lg values (json_build_object('all', (select count(*) from unnest(names)), 'dup', dup));
+end $$;
+select pg_temp.t('เรท LEG = 100% → ได้ LEG ทุกครั้ง', (select (r->>'all')::int from _lg) = 12);
+select pg_temp.t('LEG ซ้ำ → คืน 100 เหรียญ', (select (r->>'dup')::int from _lg) >= 8);
+reset role;
+select pg_temp.t('ได้ LEG ครั้งแรก → ได้สิทธิ์แลกคะแนนจริง +2 (≤4 ใบ ไม่ซ้ำตามชิ้น)',
+  (select count(*) from redemptions r join privileges p on p.id = r.privilege_id where p.name = 'แลกคะแนนจริง +2 คะแนน'
+     and r.student_id = (select id from students where class_id=(select id from classes where code='T99') and no=12)) between 1 and 4);
+select pg_temp.t('มีไอเทม LEG ในคลัง/ชุดตกแต่งของนักเรียน',
+  (select count(*) from student_decor sd join decor_items d on d.id = sd.item_id where d.rarity='LEG'
+     and sd.student_id = (select id from students where class_id=(select id from classes where code='T99') and no=12)) between 1 and 4);
+select pg_temp.t('ประกาศแสดงความยินดี kind=leg ถูกสร้าง', exists (select 1 from celebrations where kind='leg'));
+select pg_temp.t('ตู้กาชามี LEG 4 ชิ้น (อุปกรณ์ 2 + ชุด 2)',
+  (select count(*) from gacha_items g join decor_items d on d.id=g.decor_id where g.rarity='LEG' and d.slot='item') = 2
+  and (select count(*) from gacha_items g join decor_items d on d.id=g.decor_id where g.rarity='LEG' and d.slot='outfit') = 2);
+select pg_temp.t('สเตตัส LEG สูงกว่า SSR ทุกชิ้น',
+  (select min(st_int+st_dil+st_str+st_luk) from decor_items where rarity='LEG') > (select max(st_int+st_dil+st_str+st_luk) from decor_items where rarity='SSR'));
+update app_settings set value='0.005' where key='gacha_leg_rate';
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

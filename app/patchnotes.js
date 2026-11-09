@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.76";
+const APP_VERSION = "1.77";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
@@ -83,7 +83,8 @@ async function celCheck() {
 function celNext() {
   CELQ.splice(0).slice(-4).forEach((x) => {
     const who = x.mine ? "คุณ" : x.name;
-    if (x.kind === "ssr") NOTE.show({ kind: "ssr", icon: x.emoji || "🎁", title: `🎉 ${who} ได้ SSR!`, text: x.title, ms: 4500 });
+    if (x.kind === "leg") NOTE.show({ kind: "leg", icon: x.emoji || "🔴", title: `🔴 ${who} ได้ LEGENDARY!`, text: x.title, ms: 6000 });
+    else if (x.kind === "ssr") NOTE.show({ kind: "ssr", icon: x.emoji || "🎁", title: `🎉 ${who} ได้ SSR!`, text: x.title, ms: 4500 });
     else NOTE.show({ kind: "cel", icon: "🏆", title: `🎉 ${who} เลื่อนแรงค์!`, text: x.title, ms: 4500 });
   });
 }
@@ -91,7 +92,7 @@ function celNext() {
 /* popup แจ้งรางวัล/เลื่อนขั้นที่มุมบนของจอ แล้วหายเอง (แทนเอฟเฟกต์เต็มจอ) */
 const NOTE = (() => {
   let box = null; const MAX = 3;
-  const SND = { level: "levelup", rank: "rank", reward: "coin", ach: "chime", ssr: "chime", cel: "toast" };
+  const SND = { level: "levelup", rank: "rank", reward: "coin", ach: "chime", ssr: "chime", leg: "chime", cel: "toast" };
   function show(o) {                       // o: {kind, icon, title, text, ms}
     if (!box) { box = document.createElement("div"); box.id = "notes"; document.body.appendChild(box); }
     while (box.children.length >= MAX) box.firstChild.remove();
