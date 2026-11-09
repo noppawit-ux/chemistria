@@ -228,6 +228,8 @@ update students set lock_level=3, locked_until=now()+interval '5 hours', fail_co
 update students set pin_hash = crypt('9999', gen_salt('bf')) where name='ทดสอบ บี';
 select pg_temp.t('ครูเปลี่ยน PIN → ปลดล็อกและรีเซ็ตระดับอัตโนมัติ', (select lock_level=0 and locked_until is null and fail_count=0 from students where name='ทดสอบ บี'));
 
+select pg_temp.t('ประกาศ Mini Guild (coming soon) อยู่ในสไลด์ข่าว', exists (select 1 from news_posts where title like 'Mini Guild%' and kind='event' and active));
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

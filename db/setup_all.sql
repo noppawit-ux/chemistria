@@ -5320,3 +5320,9 @@ do $$ declare f text; begin
     execute format('grant execute on function %s to anon, authenticated', f);
   end loop;
 end $$;
+-- 44: ประกาศ "Mini Guild" แบบ Coming soon บนสไลด์ข่าว (ยังไม่มีระบบกิลด์ — เป็นการประกาศล่วงหน้า)
+insert into news_posts (kind, title, summary, body, image, sort)
+select 'event', 'Mini Guild · เร็วๆ นี้! 🏰', 'ตั้งกิลด์ 4–5 คน แข่งเป็นที่ 1 ของทุกห้อง 2 สัปดาห์ ตั้งชื่อกิลด์เองได้',
+ E'🏰 Mini Guild — เร็วๆ นี้!\n\nกิจกรรมใหม่ 2 สัปดาห์ เริ่มชวนเพื่อนไว้ได้เลย\n• รวมกลุ่ม 4–5 คน ตั้งเป็นกิลด์\n• ตั้งชื่อกิลด์เอง ชื่อจะโชว์หน้าชื่อของสมาชิกทุกคน\n• เล่นเกมและทำเควสเก็บแต้มให้กิลด์ แข่งเป็นอันดับ 1 ของทุกห้อง\n• แต้มยิ่งสูง ยิ่งปลดล็อกของรางวัลมากขึ้น\n\nวันเปิดรับสมัครและกติกาละเอียด ครูจะประกาศอีกครั้ง ระหว่างนี้เล่นเกมและทำเควสสะสมความแข็งแกร่งไว้ก่อน!',
+ 'assets/news/challenge.jpg', 30
+where not exists (select 1 from news_posts where title = 'Mini Guild · เร็วๆ นี้! 🏰');
