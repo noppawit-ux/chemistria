@@ -6,7 +6,7 @@
 <title>Chemistria · แอดมินครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.71">
+<link rel="stylesheet" href="style.css?v=1.72">
 <style>.wrap{max-width:1180px} h4{margin:14px 0 6px} .inbox .item{flex-wrap:wrap}</style>
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
@@ -14,8 +14,8 @@
 <div id="app" class="wrap"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="config.js?v=1.71"></script>
-<script src="lib.js?v=1.71"></script>
+<script src="config.js?v=1.72"></script>
+<script src="lib.js?v=1.72"></script>
 <script>
 const app = $("#app");
 const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
@@ -507,6 +507,7 @@ const TAB = {
     const days = lastBk ? Math.floor((Date.now() - new Date(lastBk).getTime()) / 864e5) : null;
     v.innerHTML = `<div class="card"><h3>🩺 ตรวจสุขภาพระบบ</h3><div id="hc" class="muted">กำลังตรวจ…</div>
       <div class="row" style="margin-top:8px"><button class="btn ghost small" id="hcRe">🔄 ตรวจอีกครั้ง</button><button class="btn ghost small" id="hcPurge">🧹 ล้างเซสชันเก่า</button></div></div>
+      <div class="card"><h3>📊 สถิติเกมและรางวัล</h3><div class="row" style="margin-bottom:8px"><button class="btn small" data-d="7">7 วัน</button><button class="btn ghost small" data-d="30">30 วัน</button><button class="btn ghost small" data-d="90">90 วัน</button></div><div id="gst" class="muted">กำลังโหลด…</div></div>
       <div class="card"><h3>💾 สำรองข้อมูล</h3>
       <p class="muted">ข้อมูลทั้งหมดอยู่ที่ Supabase ที่เดียว แนะนำให้ดาวน์โหลดสำรองทุกสัปดาห์ (ไฟล์ .json ไม่มี PIN) เก็บไว้ใน Google Drive ของคุณเอง ห้ามอัปโหลดขึ้น GitHub เพราะมีข้อมูลนักเรียน</p>
       <p>${days === null ? '<span class="pill">ยังไม่เคยสำรองจากเครื่องนี้</span>' : days >= 7 ? `<span class="pill" style="background:#7a1020">⚠️ สำรองล่าสุด ${days} วันที่แล้ว — ถึงเวลาสำรองใหม่</span>` : `<span class="pill">✅ สำรองล่าสุด ${days === 0 ? "วันนี้" : days + " วันที่แล้ว"}</span>`}</p>
@@ -519,6 +520,20 @@ const TAB = {
       $("#hc").insertAdjacentHTML("afterbegin", `<div style="margin-bottom:8px;font-weight:700;color:${bad ? "var(--red)" : warn ? "var(--gold,#f6c453)" : "var(--mint)"}">${bad ? `พบปัญหา ${bad} รายการ` : warn ? `ควรดู ${warn} รายการ` : "ระบบปกติทุกข้อ"}</div>`);
     };
     const check = async () => { $("#hc").textContent = "กำลังตรวจ…"; try { draw(await rpc("health_check")); } catch (e) { $("#hc").innerHTML = `<span style="color:var(--red)">ตรวจไม่สำเร็จ: ${esc(e.message)}<br>ถ้าเพิ่งอัปเดต ให้รัน SQL 39_health.sql ก่อน</span>`; } };
+    const stat = async (d) => {
+      const box = $("#gst"); box.textContent = "กำลังโหลด…";
+      try { const r = await rpc("game_stats", { p_days: d });
+        const tot = r.sources.reduce((p, x) => p + (x.exp || 0), 0);
+        box.innerHTML = `<div style="margin-bottom:6px">ย้อนหลัง ${r.days} วัน · นักเรียน ${r.students} คน · มีรางวัลเข้า ${r.active} คน (${r.students ? Math.round((r.active / r.students) * 100) : 0}%) · EXP แจกรวม <b>${tot}</b> · เหรียญที่ใช้จ่าย ${r.spent_coins} · รับของขวัญโปรแล้ว ${r.promo_claims} คน</div>
+          <div class="scroll"><table><thead><tr><th>แหล่งรางวัล</th><th>ครั้ง</th><th>ผู้เล่น</th><th>EXP รวม</th><th>เฉลี่ย/ครั้ง</th><th>สัดส่วน</th><th>หมายเหตุ</th></tr></thead><tbody>${r.sources.map((x) => {
+            const sh = Number(x.share_exp || 0), pl = r.students ? x.players / r.students : 0, notes = [];
+            if (sh >= 40) notes.push("⚠️ แจกสัดส่วนสูง"); if ((x.avg_exp || 0) >= 40) notes.push("⚠️ รางวัล/ครั้งสูง"); if (pl < 0.1 && x.grants > 0) notes.push("ผู้เล่นน้อย");
+            return `<tr><td>${esc(x.src)}</td><td>${x.grants}</td><td>${x.players}</td><td>${x.exp ?? 0}</td><td>${x.avg_exp ?? "—"}</td><td>${sh}%</td><td>${notes.join(" · ")}</td></tr>`; }).join("")}</tbody></table></div>
+          <div class="muted" style="margin-top:6px">นับเฉพาะครั้งที่ได้รางวัลเข้าบัญชี · เกมที่ไม่ปรากฏในตารางแปลว่าไม่มีใครได้รางวัลในช่วงนี้ (อาจไม่มีคนเล่นหรือเกินเพดานรางวัลรายวัน)<br>5 อันดับ EXP สูงสุด: ${r.top_students.map((t) => esc(t.name) + " (" + esc(t.room || "—") + ") " + t.exp).join(" · ") || "—"}</div>`;
+      } catch (e) { box.innerHTML = `<span style="color:var(--red)">โหลดไม่สำเร็จ: ${esc(e.message)}<br>ถ้าเพิ่งอัปเดต ให้รัน SQL 41_game_stats.sql ก่อน</span>`; }
+    };
+    v.querySelectorAll("[data-d]").forEach((b) => (b.onclick = () => { v.querySelectorAll("[data-d]").forEach((x) => x.classList.add("ghost")); b.classList.remove("ghost"); stat(Number(b.dataset.d)); }));
+    stat(7);
     $("#hcRe").onclick = check;
     $("#hcPurge").onclick = async () => { const n = await run(() => rpc("admin_purge_sessions")); toast("ล้างเซสชันเก่า " + n + " รายการ"); check(); };
     check();
@@ -536,7 +551,14 @@ const TAB = {
       const blob = new Blob([JSON.stringify(out)], { type: "application/json" }), a = document.createElement("a");
       a.href = URL.createObjectURL(blob); a.download = "chemistria_backup_" + todayStr() + ".json"; a.click();
       try { localStorage.setItem("ch_last_backup", new Date().toISOString()); } catch (e) {}
-      msg.textContent = "✅ ดาวน์โหลดแล้ว " + Object.keys(out.tables).length + " ตาราง, " + Object.values(out.tables).reduce((s, r) => s + r.length, 0) + " แถว" + (fail.length ? " · ดึงไม่สำเร็จ: " + fail.join(", ") : "");
+      msg.innerHTML = "✅ ดาวน์โหลดแล้ว " + Object.keys(out.tables).length + " ตาราง, " + Object.values(out.tables).reduce((s, r) => s + r.length, 0) + " แถว" + (fail.length ? " · ดึงไม่สำเร็จ: " + fail.join(", ") : "")
+        + '<div style="margin-top:8px"><button class="btn mint small" id="bkShare">📤 ส่งไปเก็บใน Google Drive (แชร์ไฟล์)</button><div class="muted" style="margin-top:4px">บนมือถือ: กดแล้วเลือก "Drive" · บนคอมพิวเตอร์: อัปโหลดไฟล์ที่ดาวน์โหลดไปที่ drive.google.com เอง</div></div>';
+      const file = new File([blob], a.download, { type: "application/json" });
+      $("#bkShare").onclick = async () => {
+        try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "สำรองข้อมูล Chemistria" }); }
+          else toast("เครื่องนี้แชร์ไฟล์ตรงไม่ได้ — ให้อัปโหลดไฟล์ที่ดาวน์โหลดไปที่ Google Drive เอง"); }
+        catch (e) { if (e.name !== "AbortError") toast("แชร์ไม่สำเร็จ: " + e.message); }
+      };
     };
   },
   async export(v) {
