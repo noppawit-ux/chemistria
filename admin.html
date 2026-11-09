@@ -6,7 +6,7 @@
 <title>Chemistria · แอดมินครูบุ๊ค</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1.68">
+<link rel="stylesheet" href="style.css?v=1.69">
 <style>.wrap{max-width:1180px} h4{margin:14px 0 6px} .inbox .item{flex-wrap:wrap}</style>
 <link rel="icon" type="image/svg+xml" href="assets/icon/icon.svg"><link rel="icon" type="image/png" sizes="32x32" href="assets/icon/favicon-32.png"><link rel="apple-touch-icon" href="assets/icon/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#2a1766">
 </head>
@@ -14,8 +14,8 @@
 <div id="app" class="wrap"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="config.js?v=1.68"></script>
-<script src="lib.js?v=1.68"></script>
+<script src="config.js?v=1.69"></script>
+<script src="lib.js?v=1.69"></script>
 <script>
 const app = $("#app");
 const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
@@ -23,7 +23,7 @@ const TABS = [
   ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
   ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
   ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["teams", "🧪 ทีม"], ["boss", "👹 บอส"],
-  ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["timetable", "🕒 ตารางสอน"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["settings", "⚙️ ตั้งค่า"],
+  ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["timetable", "🕒 ตารางสอน"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["system", "🩺 ระบบ/สำรองข้อมูล"], ["settings", "⚙️ ตั้งค่า"],
 ];
 const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
 const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };
@@ -462,6 +462,44 @@ const TAB = {
     $("#dCopy").onclick = async () => { await navigator.clipboard.writeText(lines.join("\n")); toast("คัดลอกสรุปแล้ว ✅ นำไปวางใน LINE ได้"); };
   },
 
+  async system(v) {
+    const LV = { ok: ["✅", "var(--mint)"], warn: ["⚠️", "var(--gold,#f6c453)"], bad: ["❌", "var(--red)"] };
+    const lastBk = (() => { try { return localStorage.getItem("ch_last_backup") || ""; } catch (e) { return ""; } })();
+    const days = lastBk ? Math.floor((Date.now() - new Date(lastBk).getTime()) / 864e5) : null;
+    v.innerHTML = `<div class="card"><h3>🩺 ตรวจสุขภาพระบบ</h3><div id="hc" class="muted">กำลังตรวจ…</div>
+      <div class="row" style="margin-top:8px"><button class="btn ghost small" id="hcRe">🔄 ตรวจอีกครั้ง</button><button class="btn ghost small" id="hcPurge">🧹 ล้างเซสชันเก่า</button></div></div>
+      <div class="card"><h3>💾 สำรองข้อมูล</h3>
+      <p class="muted">ข้อมูลทั้งหมดอยู่ที่ Supabase ที่เดียว แนะนำให้ดาวน์โหลดสำรองทุกสัปดาห์ (ไฟล์ .json ไม่มี PIN) เก็บไว้ใน Google Drive ของคุณเอง ห้ามอัปโหลดขึ้น GitHub เพราะมีข้อมูลนักเรียน</p>
+      <p>${days === null ? '<span class="pill">ยังไม่เคยสำรองจากเครื่องนี้</span>' : days >= 7 ? `<span class="pill" style="background:#7a1020">⚠️ สำรองล่าสุด ${days} วันที่แล้ว — ถึงเวลาสำรองใหม่</span>` : `<span class="pill">✅ สำรองล่าสุด ${days === 0 ? "วันนี้" : days + " วันที่แล้ว"}</span>`}</p>
+      <button class="btn gold" id="bk">⬇️ ดาวน์โหลดสำรองข้อมูลทั้งระบบ (.json)</button><div id="bkmsg" class="muted" style="margin-top:6px"></div></div>`;
+    const draw = (r) => {
+      $("#hc").innerHTML = `<div class="muted" style="margin-bottom:6px">ตรวจเมื่อ ${new Date(r.checked_at).toLocaleString("th-TH")}</div>` +
+        r.items.map((i) => { const [ic, col] = LV[i.level] || LV.ok;
+          return `<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)"><span>${ic}</span><div class="grow"><div>${esc(i.label)}</div>${i.detail && i.level !== "ok" ? `<small class="muted">${esc(i.detail)}</small>` : ""}</div><b style="color:${col}">${i.count}</b></div>`; }).join("");
+      const bad = r.items.filter((i) => i.level === "bad").length, warn = r.items.filter((i) => i.level === "warn").length;
+      $("#hc").insertAdjacentHTML("afterbegin", `<div style="margin-bottom:8px;font-weight:700;color:${bad ? "var(--red)" : warn ? "var(--gold,#f6c453)" : "var(--mint)"}">${bad ? `พบปัญหา ${bad} รายการ` : warn ? `ควรดู ${warn} รายการ` : "ระบบปกติทุกข้อ"}</div>`);
+    };
+    const check = async () => { $("#hc").textContent = "กำลังตรวจ…"; try { draw(await rpc("health_check")); } catch (e) { $("#hc").innerHTML = `<span style="color:var(--red)">ตรวจไม่สำเร็จ: ${esc(e.message)}<br>ถ้าเพิ่งอัปเดต ให้รัน SQL 39_health.sql ก่อน</span>`; } };
+    $("#hcRe").onclick = check;
+    $("#hcPurge").onclick = async () => { const n = await run(() => rpc("admin_purge_sessions")); toast("ล้างเซสชันเก่า " + n + " รายการ"); check(); };
+    check();
+    const TABLES = [["classes", "*"], ["students", "id,class_id,no,name,avatar,exp,coins,gacha_pity,char_class,class_changes,decor,free_pulls,team_id,gender,is_gm,stat_pts,last_login,created_at"],
+      ["ledger", "*"], ["score_items", "*"], ["scores", "*"], ["ch_attendance", "*"], ["ch_assignments", "*"], ["ch_submissions", "*"],
+      ["quests", "*"], ["quest_claims", "*"], ["redemptions", "*"], ["privileges", "*"], ["inventory", "*"], ["student_achievements", "*"],
+      ["gacha_pulls", "*"], ["game_plays", "*"], ["teams", "*"], ["board_posts", "*"], ["news_posts", "*"], ["timetable", "*"], ["app_settings", "*"], ["events", "*"]];
+    $("#bk").onclick = async () => {
+      const out = { exported_at: new Date().toISOString(), note: "ไม่รวม PIN ของนักเรียน", tables: {} }, msg = $("#bkmsg"); let fail = [];
+      for (const [t, cols] of TABLES) {
+        msg.textContent = "กำลังดึง " + t + "…"; const rows = []; let from = 0;
+        try { for (;;) { const { data, error } = await sb.from(t).select(cols).range(from, from + 999); if (error) throw error; rows.push(...data); if (data.length < 1000) break; from += 1000; } out.tables[t] = rows; }
+        catch (e) { fail.push(t); }
+      }
+      const blob = new Blob([JSON.stringify(out)], { type: "application/json" }), a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "chemistria_backup_" + todayStr() + ".json"; a.click();
+      try { localStorage.setItem("ch_last_backup", new Date().toISOString()); } catch (e) {}
+      msg.textContent = "✅ ดาวน์โหลดแล้ว " + Object.keys(out.tables).length + " ตาราง, " + Object.values(out.tables).reduce((s, r) => s + r.length, 0) + " แถว" + (fail.length ? " · ดึงไม่สำเร็จ: " + fail.join(", ") : "");
+    };
+  },
   async export(v) {
     v.innerHTML = `<div class="card"><h3>📤 ส่งออกเป็น Excel (.xlsx)</h3>
       <p class="muted">ไฟล์ของห้อง <b>${esc(clsName())}</b> มี 5 ชีต: สมุดคะแนนรวม · รายการคะแนน · เช็คชื่อ · งาน · EXP/เหรียญ — ใช้ตัดเกรดหรือส่งฝ่ายวิชาการได้ทันที</p>
