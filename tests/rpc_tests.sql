@@ -368,8 +368,8 @@ select pg_temp.t('ประกาศแสดงความยินดี kind
 select pg_temp.t('ตู้กาชามี LEG 4 ชิ้น (อุปกรณ์ 2 + ชุด 2)',
   (select count(*) from gacha_items g join decor_items d on d.id=g.decor_id where g.rarity='LEG' and d.slot='item') = 2
   and (select count(*) from gacha_items g join decor_items d on d.id=g.decor_id where g.rarity='LEG' and d.slot='outfit') = 2);
-select pg_temp.t('สเตตัส LEG สูงกว่า SSR ทุกชิ้น',
-  (select min(st_int+st_dil+st_str+st_luk) from decor_items where rarity='LEG') > (select max(st_int+st_dil+st_str+st_luk) from decor_items where rarity='SSR'));
+select pg_temp.t('สเตตัส LEG สูงกว่า SSR (ไม่นับฉายา) แต่ไม่เกิน 8',
+  (select max(st_int+st_dil+st_str+st_luk) from decor_items where rarity='LEG') <= 8 and (select min(st_int+st_dil+st_str+st_luk) from decor_items where rarity='LEG') > (select max(st_int+st_dil+st_str+st_luk) from decor_items where rarity='SSR' and slot <> 'title'));
 update app_settings set value='0.005' where key='gacha_leg_rate';
 
 -- ================= ฟังก์ชันที่เรียก _sid ต้องเป็น VOLATILE (SQL 47) =================

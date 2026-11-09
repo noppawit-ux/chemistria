@@ -5766,7 +5766,7 @@ update news_posts set
  where title like 'Mini Guild · เร็วๆ นี้%';
 -- =====================================================================
 -- Chemistria · รอบที่ 79: ไอเทมระดับ Legendary (LEG) — เรทรวม 0.5% กรอบสีแดง (รันซ้ำได้)
---  · อุปกรณ์ถือ 2 ชิ้น + ชุดสวมใส่ 2 ชุด สเตตัสสูง ได้จากกาชาเท่านั้น
+--  · อุปกรณ์ถือ 2 ชิ้น + ชุดสวมใส่ 2 ชุด สเตตัสสูงกว่า SSR เล็กน้อย ได้จากกาชาเท่านั้น
 --  · ได้ครั้งแรกของแต่ละชิ้น → แถมสิทธิ์ "แลกคะแนนจริง +2 คะแนน" (ครูอนุมัติในแท็บสิทธิพิเศษ) · ซ้ำ = คืน 100 เหรียญ
 --  · เรทปรับได้ที่ app_settings.gacha_leg_rate (ค่าเริ่มต้น 0.005 = 0.5%) · ต้องรันหลัง 42–45
 -- =====================================================================
@@ -5794,10 +5794,10 @@ select 'แลกคะแนนจริง +2 คะแนน', 'ได้จ�
 -- ไอเทม LEG 4 ชิ้น (ภาพ: assets/items/leg_*.png · assets/chars/<คลาส>_crimson*.png)
 insert into decor_items (slot, key, name, emoji, rarity, price, sort, image, st_int, st_dil, st_str, st_luk, st_coin, ability)
 select v.* from (values
-  ('item','img','ดาบผลึกอัคนีโลหิต','🗡️','LEG',null::int,90,'assets/items/leg_sword.png',0,2,5,3,5,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน'),
-  ('item','img','คัมภีร์อะตอมโลหิต','📕','LEG',null,91,'assets/items/leg_book.png',5,3,0,3,5,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน'),
-  ('outfit','crimsonknight','ชุดอัศวินมังกรโลหิต','🐉','LEG',null,90,null,2,4,4,2,8,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน'),
-  ('outfit','crimsonmage','ชุดราชันจอมเวทสีชาด','🔴','LEG',null,91,null,4,4,2,2,8,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน')
+  ('item','img','ดาบผลึกอัคนีโลหิต','🗡️','LEG',null::int,90,'assets/items/leg_sword.png',0,1,4,2,2,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน'),
+  ('item','img','คัมภีร์อะตอมโลหิต','📕','LEG',null,91,'assets/items/leg_book.png',4,1,0,2,2,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน'),
+  ('outfit','crimsonknight','ชุดอัศวินมังกรโลหิต','🐉','LEG',null,90,null,1,2,3,1,3,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน'),
+  ('outfit','crimsonmage','ชุดราชันจอมเวทสีชาด','🔴','LEG',null,91,null,3,2,1,1,3,'ตำนานแห่งห้องแล็บ · แลกคะแนนจริง +2 คะแนน')
 ) v(slot,key,name,emoji,rarity,price,sort,image,st_int,st_dil,st_str,st_luk,st_coin,ability)
 where not exists (select 1 from decor_items d where d.slot = v.slot and d.name = v.name);
 
@@ -5910,7 +5910,7 @@ revoke execute on function trg_cel_ssr() from public, anon, authenticated;
 
 -- ประกาศข่าว/อีเว้นท์
 insert into news_posts (kind, title, summary, body, image, starts_at, ends_at, sort, active)
-select 'event', 'เปิดตู้ตำนาน! Legendary 0.5% 🔴', 'ของระดับตำนานกรอบสีแดง อุปกรณ์ 2 + ชุด 2 สเตตัสสูง แลกคะแนนจริงได้ 2 คะแนน', E'🔴 เปิดตู้ตำนาน! ไอเทมระดับ LEGENDARY\n\n• โอกาสออกรวม 0.5% ต่อการสุ่ม 1 ครั้ง (กรอบสีแดง)\n• อุปกรณ์ในตำนาน 2 ชิ้น: 🗡️ ดาบผลึกอัคนีโลหิต · 📕 คัมภีร์อะตอมโลหิต\n• ชุดสวมใส่ในตำนาน 2 ชุด: 🐉 ชุดอัศวินมังกรโลหิต · 🔴 ชุดราชันจอมเวทสีชาด\n• เพิ่มสเตตัสสูงกว่าไอเทมทุกระดับ (ปัญญา/ขยัน/พลัง/โชค + โบนัสเหรียญ)\n• ได้ครั้งแรกของแต่ละชิ้น แถมสิทธิ์ "แลกคะแนนจริง +2 คะแนน" ให้กดขอครูในเมนู 🎟️ สิทธิพิเศษ\n• ซ้ำจะคืนเหรียญ 100 🪙\n\nไปสุ่มที่เมนู 🎰 กาชา ได้เลย — ขอให้โชคดี!', 'assets/news/legendary.jpg', today_th(), today_th() + 30, 1, true
+select 'event', 'เปิดตู้ตำนาน! Legendary 0.5% 🔴', 'ของระดับตำนานกรอบสีแดง อุปกรณ์ 2 + ชุด 2 สเตตัสสูงกว่า SSR เล็กน้อย แลกคะแนนจริงได้ 2 คะแนน', E'🔴 เปิดตู้ตำนาน! ไอเทมระดับ LEGENDARY\n\n• โอกาสออกรวม 0.5% ต่อการสุ่ม 1 ครั้ง (กรอบสีแดง)\n• อุปกรณ์ในตำนาน 2 ชิ้น: 🗡️ ดาบผลึกอัคนีโลหิต · 📕 คัมภีร์อะตอมโลหิต\n• ชุดสวมใส่ในตำนาน 2 ชุด: 🐉 ชุดอัศวินมังกรโลหิต · 🔴 ชุดราชันจอมเวทสีชาด\n• เพิ่มสเตตัสสูงกว่า SSR เล็กน้อยกว่าไอเทมทุกระดับ (ปัญญา/ขยัน/พลัง/โชค + โบนัสเหรียญ)\n• ได้ครั้งแรกของแต่ละชิ้น แถมสิทธิ์ "แลกคะแนนจริง +2 คะแนน" ให้กดขอครูในเมนู 🎟️ สิทธิพิเศษ\n• ซ้ำจะคืนเหรียญ 100 🪙\n\nไปสุ่มที่เมนู 🎰 กาชา ได้เลย — ขอให้โชคดี!', 'assets/news/legendary.jpg', today_th(), today_th() + 30, 1, true
  where not exists (select 1 from news_posts where title like 'เปิดตู้ตำนาน!%');
 -- =====================================================================
 -- 47: แก้บั๊ก "หน้าข่าว/ตารางสอน/โปรโมชันไม่ขึ้น" หลังรัน SQL 43
@@ -5927,3 +5927,9 @@ do $$ declare r record; begin
     execute format('alter function %s volatile', r.f);
   end loop;
 end $$;
+-- 48: ลดสเตตัสไอเทม Legendary ลง (รันซ้ำได้) — สำหรับคนที่รัน 46 รุ่นแรกไปแล้ว
+-- รวมต่อชิ้น = 7 (เดิม 13–18) · สูงกว่า SSR สูงสุดเล็กน้อย · ครูปรับต่อได้ที่แท็บ 🎨 ตกแต่ง
+update decor_items set st_int=0, st_dil=1, st_str=4, st_luk=2, st_coin=2 where rarity='LEG' and name='ดาบผลึกอัคนีโลหิต';
+update decor_items set st_int=4, st_dil=1, st_str=0, st_luk=2, st_coin=2 where rarity='LEG' and name='คัมภีร์อะตอมโลหิต';
+update decor_items set st_int=1, st_dil=2, st_str=3, st_luk=1, st_coin=3 where rarity='LEG' and name='ชุดอัศวินมังกรโลหิต';
+update decor_items set st_int=3, st_dil=2, st_str=1, st_luk=1, st_coin=3 where rarity='LEG' and name='ชุดราชันจอมเวทสีชาด';
