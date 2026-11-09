@@ -17,6 +17,7 @@ const questAct = (q) => q.status ? statusTag(q.status) : autoOf(q) ? `<span clas
 
 const VIEWS = {
   board() { markBoardSeen(); return boardHtml(); },
+  guild() { return guildHtml(); },
   game() { return GAMES.view(); },
   home() {
     const a = D.attendance_summary;
@@ -25,7 +26,7 @@ const VIEWS = {
       <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
         <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
         <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
-    ${promoHtml()}${remindHtml()}${todayLessonsHtml()}${teamChip()}${bossHtml(false)}
+    ${promoHtml()}${remindHtml()}${todayLessonsHtml()}${teamChip()}${guildChip()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
@@ -211,7 +212,7 @@ const VIEWS = {
     <div class="card"><h3>🏆 อันดับห้อง ${esc(D.class.name)} (Top 10)</h3>
       <div class="lb">${D.leaderboard.map((l, i) => `<div class="lbrow ${l.me ? "me" : ""}">
         <span class="lbn n${i + 1}">${i + 1}</span>${frame(l.avatar, l.char_class, l.rank_info, 0, true, l.decor)}
-        <div class="lbm"><b class="lbname">${esc(l.name)}</b>${titleTag(l.decor)}<small class="rk-${l.rank_info.key}" style="color:var(--rc)">${esc(rankName(l.rank_info))}${clsOf(l.char_class) ? " · " + esc(clsOf(l.char_class).name) : ""}</small></div>
+        <div class="lbm"><b class="lbname">${gtag(l.guild)}${esc(l.name)}</b>${titleTag(l.decor)}<small class="rk-${l.rank_info.key}" style="color:var(--rc)">${esc(rankName(l.rank_info))}${clsOf(l.char_class) ? " · " + esc(clsOf(l.char_class).name) : ""}</small></div>
         <div class="lbr"><span class="pill">Lv.${l.level}</span><b>${l.exp}</b><small class="muted">EXP</small></div></div>`).join("")}</div></div>
       ${teamsHtml()}
       <div class="card"><h3>🎖️ บันไดแรงค์</h3><p class="muted">ได้ EXP จากเช็คชื่อ ส่งงาน เควส และ Achievement เพื่อไต่แรงค์ (แต่ละแรงค์มีดิวิชัน IV → I)</p>

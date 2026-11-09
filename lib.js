@@ -15,7 +15,7 @@ function toast(msg, ms = 2600) {
 // กันกดปุ่มรัว: เฉพาะคำสั่ง "ครั้งเดียวจบ" (รับรางวัล ซื้อ กาชา เควส ฯลฯ) ที่ชื่อ+อาร์กิวเมนต์เดียวกัน
 // ถ้าถูกเรียกซ้ำภายใน 1.2 วินาที จะใช้ผลลัพธ์ของครั้งแรกร่วมกัน ไม่ยิงซ้ำไปเซิร์ฟเวอร์
 // (ไม่รวมคำสั่งในเกมที่ต้องส่งทีละข้อ เช่น battle_answer / duel_answer / *_submit ที่ผู้เล่นอาจกดค่าเดิมต่อเนื่องได้จริง)
-const RPC_ONCE = /^(promo_claim|gacha_pull|claim_quest|boss_claim|buy_decor|buy_privilege|request_privilege|equip_decor|set_avatar|set_gender|set_photo|choose_class|change_pin|stat_reset|submit_assignment|duel_invite|duel_respond|board_post|board_delete|begin_upload)$/;
+const RPC_ONCE = /^(promo_claim|gacha_pull|claim_quest|boss_claim|buy_decor|buy_privilege|request_privilege|equip_decor|set_avatar|set_gender|set_photo|choose_class|change_pin|stat_reset|submit_assignment|duel_invite|duel_respond|guild_create|guild_join|guild_leave|guild_rename|guild_claim_tier|guild_claim_prize|board_post|board_delete|begin_upload)$/;
 const _rpcRecent = new Map();
 // เรียก RPC แล้วโยน error เป็นข้อความอ่านง่าย
 /* แจ้งเซิร์ฟเวอร์ว่าเริ่มเล่นเกมแล้ว (ใช้ตรวจว่าเวลาเล่นสมเหตุสมผลตอนส่งคะแนน) — ล้มเหลวได้โดยไม่กระทบการเล่น */

@@ -33,7 +33,7 @@ function hallHtml() {
   const r = (HOF || [])[0]; if (!r) return "";
   const pod = (x, place) => !x ? '<div class="pod empty"></div>' : `<div class="pod p${place}">
       ${place === 1 ? '<div class="crown">👑</div>' : ""}${stage(x.char_class, x.rank_info, x.decor, place === 1 ? "md" : "sm")}
-      <div class="pn ${x.me ? "me" : ""}">${esc(x.name)}</div>${titleTag(x.decor)}
+      <div class="pn ${x.me ? "me" : ""}">${gtag(x.guild)}${esc(x.name)}</div>${titleTag(x.decor)}
       <div class="muted" style="color:var(--rc)" ><span class="rk-${x.rank_info.key}">${esc(rankName(x.rank_info))}</span></div>
       <div class="muted">Lv.${x.level} · ${x.exp} EXP</div><div class="base">${place}</div></div>`;
   return `<div class="card hof"><h3>🏆 หอเกียรติยศ ${esc(r.name)}</h3>

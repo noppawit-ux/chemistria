@@ -54,7 +54,7 @@ function render() {
         <label class="camb" title="อัปโหลด/ครอปรูปโปรไฟล์ของฉัน">📷<input type="file" accept="image/*" hidden onchange="photoOpen(this)"></label>
         ${(s.avatar || "").startsWith("data:image/") ? '<button class="camb rst" title="กลับไปใช้รูปเดิม" onclick="photoReset()">↺</button>' : ""}</div>
       <div class="grow">
-        <h2 style="margin:0">${esc(s.name)} <span class="muted">เลขที่ ${s.no} · ${esc(D.class.name)}</span></h2>
+        <h2 style="margin:0">${gtag(s.guild)}${esc(s.name)} <span class="muted">เลขที่ ${s.no} · ${esc(D.class.name)}</span></h2>
         ${titleTag(s.decor)}
         <div class="row" style="margin:6px 0">
           ${cls ? `<span class="pill" style="color:var(--gold2);cursor:pointer" onclick="go('class')">${esc(cls.emoji)} ${esc(cls.name)}</span>`

@@ -5,7 +5,7 @@ const TABS = [
   ["all", "🏫 ทุกห้อง"], ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
   ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
   ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["teams", "🧪 ทีม"], ["boss", "👹 บอส"],
-  ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["timetable", "🕒 ตารางสอน"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["security", "🛡️ ความปลอดภัย"], ["system", "🩺 ระบบ/สำรองข้อมูล"], ["settings", "⚙️ ตั้งค่า"],
+  ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["timetable", "🕒 ตารางสอน"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["guild", "🏰 กิลด์"], ["security", "🛡️ ความปลอดภัย"], ["system", "🩺 ระบบ/สำรองข้อมูล"], ["settings", "⚙️ ตั้งค่า"],
 ];
 const clsName = () => S.classes.find((c) => c.id === S.cls)?.name || "";
 const run = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast(e.message); throw e; } };

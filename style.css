@@ -1087,3 +1087,7 @@ body.peeking .navwrap{top:34px}
 .run-info h4{margin:0 0 4px;font-size:.95rem;color:var(--gold,#f6c453)}
 .run-info ul{margin:0;padding-left:1.2em;font-size:.88rem;line-height:1.55;color:var(--muted,#cbbfe8)}
 .run-info b{color:#fff}
+
+/* Mini Guild */
+.gtag{color:var(--gold2,#ffd75a);font-weight:700;font-size:.85em;letter-spacing:.2px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 12px}

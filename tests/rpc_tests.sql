@@ -103,7 +103,7 @@ reset role;
 -- ================= โหมดส่อง (peek) =================
 insert into student_sessions(token, student_id, expires_at, observer) values ('11111111-1111-1111-1111-111111111111', (select a from _s), now()+interval '1 hour', true);
 do $$
-declare r record; allowed text[] := array['student_dashboard','student_extras','hall_of_fame','board_list','celebrations_feed','game_status','spell_status','kb_status','news_list','run_status','timetable_list','promo_status'];
+declare r record; allowed text[] := array['student_dashboard','student_extras','hall_of_fame','board_list','celebrations_feed','game_status','spell_status','kb_status','news_list','run_status','timetable_list','promo_status','guild_status','guild_board'];
         bad text := ''; n int := 0;
 begin
   for r in select p.proname from pg_proc p where p.pronamespace='public'::regnamespace and p.prosrc ilike '%_sid(%' and p.proname <> all(allowed)
@@ -229,6 +229,108 @@ update students set pin_hash = crypt('9999', gen_salt('bf')) where name='ทด�
 select pg_temp.t('ครูเปลี่ยน PIN → ปลดล็อกและรีเซ็ตระดับอัตโนมัติ', (select lock_level=0 and locked_until is null and fail_count=0 from students where name='ทดสอบ บี'));
 
 select pg_temp.t('ประกาศ Mini Guild (coming soon) อยู่ในสไลด์ข่าว', exists (select 1 from news_posts where title like 'Mini Guild%' and kind='event' and active));
+
+
+-- ================= Mini Guild (SQL 45) =================
+reset role;
+update app_settings set value=(current_date - 1)::text where key='guild_reg_from';
+update app_settings set value=current_date::text where key='guild_start';
+update app_settings set value=(current_date + 14)::text where key='guild_end';
+update app_settings set value=(current_date + 3)::text where key='guild_join_until';
+update app_settings set value='10' where key='guild_min_personal_gp';
+insert into students(class_id, no, name, pin_hash) select c.id, n, 'กิลด์ทดสอบ '||n, crypt('1234', gen_salt('bf')) from classes c, generate_series(11,19) n where c.code='T99';
+insert into students(class_id, no, name, pin_hash) select c.id, 11, 'อีกห้อง', crypt('1234', gen_salt('bf')) from classes c where c.code='T11';
+create temp table _gt as select n as no, (student_login('T99', n, '1234')->>'token')::uuid tok from generate_series(11,19) n;
+create temp table _go as select (student_login('T11', 11, '1234')->>'token')::uuid tok;
+grant all on _gt, _go to anon, authenticated;
+set role anon;
+select pg_temp.t('anon เรียกฟังก์ชันกิลด์ของครู/ภายในไม่ได้',
+  pg_temp.fails('select admin_guild_list()') and pg_temp.fails('select admin_guild_random(null)') and pg_temp.fails('select _guild_ranks()') and pg_temp.fails('select _guild_member_gp()') and pg_temp.fails($q$select admin_guild_disband('00000000-0000-0000-0000-000000000000')$q$));
+select pg_temp.t('สร้างกิลด์สำเร็จ', (select guild_create((select tok from _gt where no=11), 'ทีมอัลฟา')->>'id') is not null);
+select pg_temp.t('สร้างกิลด์ซ้ำคนเดียว → ปฏิเสธ', pg_temp.fails($q$select guild_create((select tok from _gt where no=11), 'อื่นๆ')$q$));
+select pg_temp.t('ชื่อซ้ำ (ไม่สนตัวพิมพ์) → ปฏิเสธ', pg_temp.fails($q$select guild_create((select tok from _gt where no=12), 'ทีมอัลฟา')$q$));
+select pg_temp.t('ชื่อไม่เหมาะสม → ปฏิเสธ', pg_temp.fails($q$select guild_create((select tok from _gt where no=12), 'fuck team')$q$));
+select pg_temp.t('ชื่อสั้นเกิน/ยาวเกิน → ปฏิเสธ', pg_temp.fails($q$select guild_create((select tok from _gt where no=12), 'ก')$q$) and pg_temp.fails($q$select guild_create((select tok from _gt where no=12), 'ยาวเกินสิบหกตัวอักษรแน่นอนเลยนะ')$q$));
+reset role;
+create temp table _gid as select id from guilds where name='ทีมอัลฟา'; grant all on _gid to anon, authenticated;
+set role anon;
+select pg_temp.t('เข้ากิลด์ห้องเดียวกันได้', (select guild_join((select tok from _gt where no=12), (select id from _gid))->>'name') = 'ทีมอัลฟา');
+select pg_temp.t('เข้ากิลด์ของห้องอื่นไม่ได้', pg_temp.fails($q$select guild_join((select tok from _go), (select id from _gid))$q$));
+select guild_join((select tok from _gt where no=13), (select id from _gid)); select guild_join((select tok from _gt where no=14), (select id from _gid)); select guild_join((select tok from _gt where no=15), (select id from _gid));
+select pg_temp.t('กิลด์เต็ม 5 คน คนที่ 6 เข้าไม่ได้', pg_temp.fails($q$select guild_join((select tok from _gt where no=16), (select id from _gid))$q$));
+select pg_temp.t('ไม่มีกิลด์ ออกกิลด์ไม่ได้', pg_temp.fails($q$select guild_leave((select tok from _gt where no=16))$q$));
+reset role;
+delete from ledger where student_id in (select id from students where name like 'กิลด์ทดสอบ%');
+-- แต้มกิลด์: ledger ปกติ นับ · ครูปรับให้ ไม่นับ · เพดานต่อวัน
+insert into ledger(student_id, exp, coins, reason, ref_key) select id, 30, 0, 'เควส: ทดสอบ', 'g:1' from students where name='กิลด์ทดสอบ 11';
+insert into ledger(student_id, exp, coins, reason, ref_key) select id, 500, 0, 'ครูปรับให้: ทดสอบ', 'g:2' from students where name='กิลด์ทดสอบ 12';
+insert into ledger(student_id, exp, coins, reason, ref_key) select id, 300, 0, 'ส่งงาน: ทดสอบ', 'g:3' from students where name='กิลด์ทดสอบ 13';
+insert into ledger(student_id, exp, coins, reason, ref_key) select id, 100, 0, 'โบนัสพิเศษจากครู (ข้อความเอง)', 'g:4' from students where name='กิลด์ทดสอบ 14';
+select pg_temp.t('GP: ครูปรับด้วยข้อความเอง (เหตุผลไม่รู้จัก) ไม่นับ', (select gp = 0 from _guild_member_gp() where student_id=(select id from students where name='กิลด์ทดสอบ 14')));
+select pg_temp.t('GP: เควสนับเต็ม', (select gp = 30 from _guild_member_gp() where student_id=(select id from students where name='กิลด์ทดสอบ 11')));
+select pg_temp.t('GP: ครูปรับให้ไม่นับ', (select gp = 0 from _guild_member_gp() where student_id=(select id from students where name='กิลด์ทดสอบ 12')));
+select pg_temp.t('GP: เพดานต่อวัน (300 → 60)', (select gp = 60 from _guild_member_gp() where student_id=(select id from students where name='กิลด์ทดสอบ 13')));
+select pg_temp.t('อันดับ: เฉลี่ยต่อคน = 90/5 = 18', (select avg = 18 and size = 5 and ranked and rank = 1 from _guild_ranks() where name='ทีมอัลฟา'));
+set role anon;
+select pg_temp.t('guild_status: สมาชิกครบ และเห็นแต้มตนเอง', (select (s->'my'->>'size')::int = 5 and (s->'my'->>'personal_gp')::numeric = 30 from (select guild_status((select tok from _gt where no=11))::jsonb s) x));
+select pg_temp.t('guild_board: มีกิลด์ติดอันดับ', (select jsonb_array_length((guild_board((select tok from _go)))::jsonb->'rows') >= 1));
+select pg_temp.t('ชื่อกิลด์แสดงใน student_dashboard', (select student_dashboard((select tok from _gt where no=11))::jsonb->'student'->>'guild') = 'ทีมอัลฟา');
+select pg_temp.t('ชื่อกิลด์แสดงใน leaderboard ของ dashboard', exists (select 1 from jsonb_array_elements(student_dashboard((select tok from _gt where no=11))::jsonb->'leaderboard') e where e->>'guild' = 'ทีมอัลฟา'));
+select pg_temp.t('hall_of_fame ยังทำงานและไม่ error', (select hall_of_fame((select tok from _gt where no=11)) is not null));
+-- รางวัลขั้น
+select pg_temp.t('ขั้นที่ 1 ยังไม่ถึง (เฉลี่ย 18 < 150) รับไม่ได้', pg_temp.fails($q$select guild_claim_tier((select tok from _gt where no=11), 1)$q$));
+reset role;
+update guild_tiers set min_avg = 10 where tier = 2;
+create temp table _c0 as select coins, free_pulls from students where name='กิลด์ทดสอบ 11'; grant all on _c0 to anon;
+set role anon;
+select pg_temp.t('รับรางวัลขั้นที่ 2 สำเร็จ (ได้เหรียญ+ตั๋วกาชา)', (select guild_claim_tier((select tok from _gt where no=11), 2)->>'pulls') = '1');
+reset role;
+select pg_temp.t('เหรียญและตั๋วเพิ่มตามรางวัล', (select s.coins - c.coins = 30 and s.free_pulls - c.free_pulls = 1 from students s, _c0 c where s.name='กิลด์ทดสอบ 11'));
+set role anon;
+select pg_temp.t('รับขั้นเดิมซ้ำไม่ได้', pg_temp.fails($q$select guild_claim_tier((select tok from _gt where no=11), 2)$q$));
+select pg_temp.t('สมาชิกที่แต้มส่วนตัวไม่ถึงเกณฑ์ (0 < 10) รับไม่ได้', pg_temp.fails($q$select guild_claim_tier((select tok from _gt where no=12), 2)$q$));
+-- หัวหน้าเปลี่ยนชื่อ 1 ครั้ง
+select pg_temp.t('หัวหน้าเปลี่ยนชื่อกิลด์ได้', (select guild_rename((select tok from _gt where no=11), 'ทีมเบตา')->>'name') = 'ทีมเบตา');
+select pg_temp.t('เปลี่ยนชื่อครั้งที่สองไม่ได้', pg_temp.fails($q$select guild_rename((select tok from _gt where no=11), 'ทีมแกมมา')$q$));
+select pg_temp.t('สมาชิกทั่วไปเปลี่ยนชื่อไม่ได้', pg_temp.fails($q$select guild_rename((select tok from _gt where no=12), 'ทีมแกมมา')$q$));
+-- โหมดส่อง: ดูกิลด์ได้ แต่สร้าง/เข้าไม่ได้
+reset role;
+insert into student_sessions(student_id, observer, expires_at) select id, true, now()+interval '1 hour' from students where name='กิลด์ทดสอบ 16';
+create temp table _ob as select token from student_sessions where observer and student_id=(select id from students where name='กิลด์ทดสอบ 16') limit 1; grant all on _ob to anon;
+select set_config('request.path','/rpc/guild_status',false);
+set role anon;
+select pg_temp.t('โหมดส่องเรียก guild_status ได้', (select guild_status((select token from _ob)) is not null));
+reset role; select set_config('request.path','/rpc/guild_create',false); set role anon;
+select pg_temp.t('โหมดส่องสร้างกิลด์ไม่ได้', pg_temp.fails($q$select guild_create((select token from _ob), 'แอบส่อง')$q$));
+reset role; select set_config('request.path','',false);
+-- สุ่มจัดคนที่ยังไม่มีกิลด์ (ครู)
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select admin_guild_random((select id from classes where code='T99'));
+reset role;
+select pg_temp.t('สุ่มจัด: นักเรียนทุกคนในห้องมีกิลด์', not exists (select 1 from students s where s.class_id=(select id from classes where code='T99') and not s.is_gm and not exists (select 1 from guild_members m where m.student_id=s.id)));
+select pg_temp.t('สุ่มจัด: ทุกกิลด์ 3–5 คน', not exists (select 1 from (select g.id, count(m.student_id) n from guilds g left join guild_members m on m.guild_id=g.id where g.class_id=(select id from classes where code='T99') group by g.id) x where n < 3 or n > 5));
+select pg_temp.t('สุ่มจัด: ไม่มีใครอยู่สองกิลด์ (คีย์หลัก)', (select count(*) = count(distinct student_id) from guild_members));
+select pg_temp.t('สุ่มจัด: ห้องอื่นไม่ถูกแตะ', not exists (select 1 from guild_members m join students s on s.id=m.student_id join classes c on c.id=s.class_id where c.code='T11'));
+-- ล็อกสมาชิกหลังหมดเวลารับสมัคร
+update app_settings set value=(current_date - 1)::text where key='guild_join_until';
+set role anon;
+select pg_temp.t('หลังล็อก: ออกกิลด์ไม่ได้', pg_temp.fails($q$select guild_leave((select tok from _gt where no=12))$q$));
+select pg_temp.t('หลังล็อก: สร้างกิลด์ไม่ได้', pg_temp.fails($q$select guild_create((select tok from _go), 'กิลด์สาย')$q$));
+-- ซ่อนอันดับวันสุดท้าย
+reset role; update app_settings set value=current_date::text where key='guild_end'; set role anon;
+select pg_temp.t('วันสุดท้าย: board ถูกซ่อน', (select (guild_board((select tok from _gt where no=11))::jsonb->>'hidden') = 'true'));
+select pg_temp.t('วันสุดท้าย: status ไม่เผยอันดับ/แต้มเฉลี่ย', (select (s->'my'->'rank') = 'null'::jsonb and (s->'my'->'avg') = 'null'::jsonb from (select guild_status((select tok from _gt where no=11))::jsonb s) x));
+-- จบกิจกรรม: รางวัลอันดับ
+reset role; update app_settings set value=(current_date - 1)::text where key='guild_end'; update app_settings set value=(current_date - 5)::text where key='guild_start';
+update ledger set created_at = now() - interval '2 days' where ref_key in ('g:1','g:3','g:4');
+set role anon;
+select pg_temp.t('จบกิจกรรม: อันดับกลับมาแสดง', (select (guild_board((select tok from _gt where no=11))::jsonb->>'hidden') = 'false'));
+reset role;
+create temp table _p0 as select coins from students where name='กิลด์ทดสอบ 11';
+set role anon;
+select pg_temp.t('รับรางวัลอันดับสำเร็จ (กิลด์ทดสอบอยู่อันดับต้นๆ)', (select guild_claim_prize((select tok from _gt where no=11)) is not null));
+select pg_temp.t('รับรางวัลอันดับซ้ำไม่ได้', pg_temp.fails($q$select guild_claim_prize((select tok from _gt where no=11))$q$));
+reset role;
 
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
