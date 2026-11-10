@@ -415,7 +415,7 @@ update students set is_gm = false where id in (select id from _sg);
 reset role;
 create temp table _gf as select (select id from students where class_id=(select id from classes where code='T99') and no=11) a,
   (select id from students where class_id=(select id from classes where code='T99') and no=12) b,
-  (select id from decor_items order by id limit 1) d, (select id from privileges order by id limit 1) p;
+  (select id from decor_items d where not exists (select 1 from student_decor sd where sd.item_id=d.id and sd.student_id in (select id from students where class_id=(select id from classes where code='T99') and no in (11,12))) order by id limit 1) d, (select id from privileges order by id limit 1) p;
 grant all on _gf to anon, authenticated;
 select pg_temp.t('ของขวัญ: anon เรียก admin_gift ไม่ได้', pg_temp.fails($q$select admin_gift(array[(select a from _gf)], 5)$q$, 'anon'));
 select pg_temp.t('ของขวัญ: ผู้ไม่ใช่ครูเรียก admin_gift ไม่ได้', pg_temp.fails($q$select set_config('request.jwt.claims','{"email":"stranger@x.th"}',true); select admin_gift(array[(select a from _gf)], 5)$q$, 'authenticated'));
@@ -445,6 +445,39 @@ select gift_ack((select tok from _gt where no=11));
 select pg_temp.t('ของขวัญ: gift_ack แล้ว inbox ว่าง', json_array_length(gift_inbox((select tok from _gt where no=11))) = 0);
 select pg_temp.t('ของขวัญ: นักเรียนอ่านตาราง gifts ตรงๆ ไม่ได้', pg_temp.fails($q$select * from gifts$q$, 'anon'));
 reset role;
+
+-- ================= ตรวจงานด้วย QR (SQL 52) =================
+reset role;
+insert into ch_assignments (class_id, title, max_score, exp_reward, coin_reward) select id, 'งานทดสอบ QR', 10, 20, 5 from classes where code='T99';
+create temp table _qa as select (select id from ch_assignments where title='งานทดสอบ QR') a,
+  (select id from students where class_id=(select id from classes where code='T99') and no=14) s,
+  (select id from students where class_id=(select id from classes where code='T11') and no=1) o;
+grant all on _qa to anon, authenticated;
+set role anon;
+create temp table _qc as select (my_qr((select tok from _gt where no=14))->>'code') c;
+grant all on _qc to anon, authenticated;
+select pg_temp.t('QR: นักเรียนขอ QR ได้ (รูปแบบ KB1.id.window.sig)', (select c from _qc) ~ '^KB1\.[0-9a-f-]{36}\.[0-9]+\.[0-9a-f]{20}$');
+select pg_temp.t('QR: โทเค็นผิดขอ QR ไม่ได้', pg_temp.fails($q$select my_qr('00000000-0000-0000-0000-000000000009')$q$, 'anon'));
+select pg_temp.t('QR: anon สแกนบันทึกงานไม่ได้', pg_temp.fails($q$select admin_scan_submit((select a from _qa), (select c from _qc))$q$, 'anon'));
+reset role;
+select pg_temp.t('QR: ตาราง app_secrets อ่านตรงๆ ไม่ได้', pg_temp.fails($q$select * from app_secrets$q$, 'anon') and pg_temp.fails($q$select * from app_secrets$q$, 'authenticated'));
+create temp table _qx as select coalesce((select exp from students where id=(select s from _qa)),0) e0;
+grant all on _qx to anon, authenticated;
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select pg_temp.t('QR: คะแนนเกินเต็มถูกปฏิเสธ', pg_temp.fails($q$select admin_scan_submit((select a from _qa), (select c from _qc), 11)$q$, 'authenticated'));
+select pg_temp.t('QR: โค้ดที่ถูกแก้ไขถูกปฏิเสธ', pg_temp.fails($q$select admin_scan_submit((select a from _qa), replace((select c from _qc), 'KB1.', 'KB1.0'))$q$, 'authenticated') and pg_temp.fails($q$select admin_scan_submit((select a from _qa), 'KB1.'||(select s from _qa)||'.1.abc')$q$, 'authenticated'));
+create temp table _qr1 as select admin_scan_submit((select a from _qa), (select c from _qc), 8, 'submitted') r;
+create temp table _qr2 as select admin_scan_submit((select a from _qa), (select c from _qc), 3, 'submitted') r;
+grant all on _qr1, _qr2 to anon, authenticated;
+reset role;
+select pg_temp.t('QR: สแกนครั้งแรกบันทึกส่งงาน + คะแนน', (select (r->>'dup')::boolean from _qr1) = false and (select score from ch_submissions where assignment_id=(select a from _qa) and student_id=(select s from _qa)) = 8);
+select pg_temp.t('QR: ได้ EXP ตามงาน (ledger อ้าง sub:)', (select exp from students where id=(select s from _qa)) > (select e0 from _qx) and exists (select 1 from ledger where student_id=(select s from _qa) and ref_key like 'sub:%' and reason like '%งานทดสอบ QR%'));
+select pg_temp.t('QR: สแกนซ้ำ = dup ไม่เขียนทับคะแนน ไม่ให้ซ้ำ', (select (r->>'dup')::boolean from _qr2) = true and (select score from ch_submissions where assignment_id=(select a from _qa) and student_id=(select s from _qa)) = 8
+  and (select count(*) from ledger where student_id=(select s from _qa) and ref_key like 'sub:%' and reason like '%งานทดสอบ QR%') = 1);
+select pg_temp.t('QR: QR หมดอายุ (เก่าเกิน ~2 นาที) ถูกปฏิเสธ', (select pg_temp.fails(format($q$select set_config('request.jwt.claims','{"email":"t@x.th"}',true); select admin_scan_submit(%L, %L)$q$, (select a from _qa),
+  'KB1.'||(select s from _qa)||'.'||(floor(extract(epoch from now())/30)-10)||'.'||_qr_sig((select s from _qa), (floor(extract(epoch from now())/30)-10)::bigint)), 'authenticated')));
+select pg_temp.t('QR: นักเรียนห้องอื่นสแกนกับงานห้องนี้ไม่ได้', (select pg_temp.fails(format($q$select set_config('request.jwt.claims','{"email":"t@x.th"}',true); select admin_scan_submit(%L, %L)$q$, (select a from _qa),
+  'KB1.'||(select o from _qa)||'.'||floor(extract(epoch from now())/30)||'.'||_qr_sig((select o from _qa), floor(extract(epoch from now())/30)::bigint)), 'authenticated')));
 
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

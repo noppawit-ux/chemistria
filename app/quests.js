@@ -54,7 +54,7 @@ const VIEWS = {
         ${subInfo(a.id).note && (!a.status || a.status === "missing") ? `<div class="muted" style="padding:0 0 8px;color:var(--gold2)">↩️ ครูส่งคืน: ${esc(subInfo(a.id).note)} — แก้ไขแล้วส่งใหม่ได้</div>` : ""}`;
     };
     return `${remindHtml()}
-    <div class="card"><h3>📝 งาน</h3>${todo.map(row).join("")}${done.map(row).join("") || ""}
+    <div class="card"><h3>📝 งาน</h3><button class="btn mint small" onclick="qrOpen()">📱 QR ของฉัน (ให้ครูสแกนตรวจงาน)</button>${todo.map(row).join("")}${done.map(row).join("") || ""}
       ${D.assignments.length ? "" : '<p class="muted">ยังไม่มีงาน</p>'}</div>
     <div class="card"><h3>📋 ประวัติการเข้าเรียน</h3>
       <div class="row">${D.attendance.map((a) => `<span class="pill">${fmtDate(a.date)} ${statusTag(a.status)}</span>`).join("") || '<span class="muted">ยังไม่มีข้อมูล</span>'}</div></div>`;
