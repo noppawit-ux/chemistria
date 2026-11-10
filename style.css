@@ -1122,3 +1122,11 @@ body.peeking .navwrap{top:34px}
 .gnote img{width:84px;height:48px;object-fit:cover;border-radius:8px;flex:none}
 .gnote span{flex:1;min-width:0}.gnote b{display:block}.gnote small{display:block;opacity:.8;font-size:.82em;margin-top:2px}
 .gnote i{font-style:normal;font-size:1.6em;opacity:.7;padding-right:4px}
+
+/* ป๊อปอัปของขวัญ */
+.giftov{position:fixed;inset:0;z-index:9500;background:#000b;display:grid;place-items:center;padding:16px;overflow:auto}
+.giftbox{max-width:380px;width:100%;text-align:center;background:radial-gradient(120% 90% at 50% 0%,#5a2f9a,#1d1140);border:2px solid #ffd86b;border-radius:20px;padding:18px;box-shadow:0 0 40px #ffd86b66}
+.giftbig{font-size:64px;animation:float 2.6s ease-in-out infinite}
+.giftitem{margin:10px 0;padding:10px;border-radius:12px;background:#ffffff12}
+.giftmsg{margin:0 0 8px;font-style:italic}
+.giftchips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}

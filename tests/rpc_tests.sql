@@ -411,6 +411,41 @@ select pg_temp.t('สเตตัส: ตั้ง 0% = ไม่มีผล', 
 update app_settings set value='50' where key='stat_effect_pct';
 update students set is_gm = false where id in (select id from _sg);
 
+-- ================= แจกของขวัญ (SQL 51) =================
+reset role;
+create temp table _gf as select (select id from students where class_id=(select id from classes where code='T99') and no=11) a,
+  (select id from students where class_id=(select id from classes where code='T99') and no=12) b,
+  (select id from decor_items order by id limit 1) d, (select id from privileges order by id limit 1) p;
+grant all on _gf to anon, authenticated;
+select pg_temp.t('ของขวัญ: anon เรียก admin_gift ไม่ได้', pg_temp.fails($q$select admin_gift(array[(select a from _gf)], 5)$q$, 'anon'));
+select pg_temp.t('ของขวัญ: ผู้ไม่ใช่ครูเรียก admin_gift ไม่ได้', pg_temp.fails($q$select set_config('request.jwt.claims','{"email":"stranger@x.th"}',true); select admin_gift(array[(select a from _gf)], 5)$q$, 'authenticated'));
+create temp table _gb as select (select coins from students where id=(select a from _gf)) c0, (select exp from students where id=(select a from _gf)) e0,
+  (select free_pulls from students where id=(select a from _gf)) p0, (select count(*) from redemptions) r0;
+grant all on _gb to anon, authenticated;
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select pg_temp.t('ของขวัญ: ว่างเปล่า/ไม่เลือกคน ถูกปฏิเสธ', pg_temp.fails($q$select admin_gift(array[(select a from _gf)])$q$, 'authenticated') and pg_temp.fails($q$select admin_gift('{}'::uuid[], 5)$q$, 'authenticated'));
+select pg_temp.t('ของขวัญ: ติดลบ/เกินเพดาน ถูกปฏิเสธ', pg_temp.fails($q$select admin_gift(array[(select a from _gf)], -5)$q$, 'authenticated') and pg_temp.fails($q$select admin_gift(array[(select a from _gf)], 0, 10001)$q$, 'authenticated') and pg_temp.fails($q$select admin_gift(array[(select a from _gf)], 0, 0, 51)$q$, 'authenticated'));
+create temp table _gr as select admin_gift(array[(select a from _gf),(select b from _gf),(select a from _gf)], 40, 25, 3, (select d from _gf), (select p from _gf), 'ขอบคุณนะ') r;
+grant all on _gr to anon, authenticated;
+reset role;
+select pg_temp.t('ของขวัญ: ให้ 2 คน (ซ้ำนับครั้งเดียว)', (select (r->>'given')::int from _gr) = 2);
+select pg_temp.t('ของขวัญ: เหรียญ/EXP/ตั๋วเพิ่มถูกต้อง', (select coins from students where id=(select a from _gf)) = (select c0 from _gb)+25 and (select exp from students where id=(select a from _gf)) >= (select e0 from _gb)+40 and (select free_pulls from students where id=(select a from _gf)) = (select p0 from _gb)+3);
+select pg_temp.t('ของขวัญ: ได้ไอเทมตกแต่ง (source teacher) และสิทธิพิเศษ', exists (select 1 from student_decor where student_id=(select b from _gf) and item_id=(select d from _gf) and source='teacher') and (select count(*) from redemptions) = (select r0 from _gb)+2);
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+create temp table _gr2 as select admin_gift(array[(select a from _gf)], 0, 0, 0, (select d from _gf)) r;
+grant all on _gr2 to anon, authenticated;
+reset role;
+select pg_temp.t('ของขวัญ: ส่งซ้ำ ไอเทมที่มีแล้วถูกนับว่าซ้ำ ไม่ error', (select (r->>'decor_already_owned')::int from _gr2) = 1);
+set role anon;
+create temp table _gi as select gift_inbox((select tok from _gt where no=11)) j;
+grant all on _gi to anon, authenticated;
+select pg_temp.t('ของขวัญ: นักเรียนเห็น inbox 2 ชุด พร้อมข้อความ', json_array_length((select j from _gi)) = 2 and (select j::text from _gi) like '%ขอบคุณนะ%');
+select pg_temp.t('ของขวัญ: ไม่เห็นของขวัญของคนอื่น', json_array_length(gift_inbox((select tok from _gt where no=13))) = 0);
+select gift_ack((select tok from _gt where no=11));
+select pg_temp.t('ของขวัญ: gift_ack แล้ว inbox ว่าง', json_array_length(gift_inbox((select tok from _gt where no=11))) = 0);
+select pg_temp.t('ของขวัญ: นักเรียนอ่านตาราง gifts ตรงๆ ไม่ได้', pg_temp.fails($q$select * from gifts$q$, 'anon'));
+reset role;
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

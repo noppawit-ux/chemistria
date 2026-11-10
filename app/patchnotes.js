@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.82";
+const APP_VERSION = "1.83";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
@@ -25,7 +25,7 @@ function patchShow(force) {
   ov.addEventListener("click", (e) => { if (e.target === ov) patchClose(); });
   document.body.appendChild(ov);
 }
-function patchClose() { try { localStorage.setItem(PATCH_KEY, PATCH.id); } catch (e) {} document.getElementById("patchov")?.remove(); }
+function patchClose() { try { localStorage.setItem(PATCH_KEY, PATCH.id); } catch (e) {} document.getElementById("patchov")?.remove(); if (typeof giftShow === "function") giftShow(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") patchClose(); });
 function peekBar() {
   let b = document.getElementById("peekbar"); if (!b) { b = document.createElement("div"); b.id = "peekbar"; document.body.appendChild(b); document.body.classList.add("peeking"); }
@@ -45,7 +45,7 @@ async function load() {
   try {
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
-    const [dash, hof, ext, brd, nws, ttl, prm, gld] = await Promise.all([
+    const [dash, hof, ext, brd, nws, ttl, prm, gld, gft] = await Promise.all([
       rpc("student_dashboard", { p_token: tk() }),
       rpc("hall_of_fame", { p_token: tk() }).catch(() => []),
       rpc("student_extras", { p_token: tk() }).catch(() => ({})),
@@ -54,12 +54,13 @@ async function load() {
       rpc("timetable_list", { p_token: tk() }).catch(() => []),
       rpc("promo_status", { p_token: tk() }).catch(() => ({ active: false })),
       rpc("guild_status", { p_token: tk() }).catch(() => null),
+      PEEK ? Promise.resolve([]) : rpc("gift_inbox", { p_token: tk() }).catch(() => []),
     ]);
-    GLD = gld;
+    GLD = gld; GIFTS = gft || [];
     NEWS = nws || []; TT = ttl || []; PROMO = prm || { active: false };
     D = dash; HOF = hof || []; X = ext || {}; B = brd || { posts: [], unread: 0 };
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
-    render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
+    render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); giftShow(); }
   } catch (e) {
     if (!PEEK && /เซสชัน|หมดอายุ|JWT/.test(e.message || "")) localStorage.removeItem(TOKEN_KEY);   // ไม่ล้างล็อกอินเมื่อแค่เน็ตหลุด
     showLogin(e.message);
