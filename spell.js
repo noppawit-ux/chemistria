@@ -122,7 +122,7 @@ const SPELL = (() => {
     const score = Math.max(10, Math.min(100, Math.round(100 - S.wrong * 8 - S.hints * 6 - Math.max(0, secs - n * 18))));
     try {
       const r = await rpc("spell_submit", { p_token: tk(), p_score: score, p_spells: n, p_seconds: secs });
-      S.res = { ...r, secs, wrong: S.wrong, hints: S.hints, level: S.level, combo: S.best }; S.screen = "res"; await load();
+      S.res = { ...r, secs, wrong: S.wrong, hints: S.hints, level: S.level, combo: S.best }; S.res.gs = await gsRecord("spell", { score, secs, combo: S.best, wrong: S.wrong, hints: S.hints }); S.screen = "res"; await load();
       setTimeout(() => { if (score >= 90) { FX.victory(); SFX.play("win"); } else FX.victory(); }, 300);
     } catch (e) { toast(e.message); S.screen = "home"; }
     S.busy = false; go("game");
@@ -186,7 +186,7 @@ const SPELL = (() => {
     return `<div class="card center gm-res ${r.score >= 90 ? "perfect" : ""}"><div style="font-size:54px">${r.score >= 90 ? "🧙‍♂️" : r.score >= 60 ? "🎉" : "💪"}</div>
       <h2>คะแนน ${r.score}/100</h2><p class="muted">ใช้เวลา ${r.secs} วินาที · ผิด ${r.wrong} ครั้ง · ขอใบ้ ${r.hints} ครั้ง${r.combo >= 2 ? ` · คอมโบสูงสุด ×${r.combo} 🔥` : ""}</p>
       <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (เล่นฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>
-      ${r.capped && !r.no_reward ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}
+      ${r.capped && !r.no_reward ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}${gsCard(r.gs)}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="SPELL.start('${r.level}')">เล่นอีกครั้ง</button><button class="btn ghost" onclick="SPELL.open()">เมนูเวทย์</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
   return { open, view, start, add, remove, clear, hint, cast, quit, bond: lwBond, atom: lwAtom };

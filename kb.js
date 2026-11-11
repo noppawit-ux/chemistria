@@ -235,7 +235,7 @@ const KB = (() => {
     S.say = say(won ? "win" : "lose");
     try {
       const r = await rpc("kb_submit", { p_token: tk(), p_cleared: S.cleared, p_won: won, p_seconds: sec });
-      S.res = { ...r, secs: sec }; S.screen = "res"; await load(); if (won) FX.victory();
+      S.res = { ...r, secs: sec }; S.res.gs = await gsRecord("kb", { cleared: S.cleared, secs: won ? sec : undefined, wins: won ? 1 : 0 }); S.screen = "res"; await load(); if (won) FX.victory();
     } catch (e) { toast(e.message); S.screen = "home"; }
     go("game");
   }
@@ -290,7 +290,7 @@ const KB = (() => {
     const r = S.res;
     return `<div class="card center gm-res ${r.won ? "perfect" : ""}"><div class="kb-hero">${KIMG}</div><h2>${r.won ? "🏆 คุณชนะครูบุ๊ค!" : "💔 พ่ายแพ้ให้ครูบุ๊ค"}</h2><p class="kb-say">💬 ${S.say}</p>
       <p class="muted">ผ่าน ${r.cleared}/8 รอบ · ใช้เวลา ${r.secs} วินาที</p>
-      <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (ฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>
+      <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (ฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>${gsCard(r.gs)}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าอีกครั้ง</button><button class="btn ghost" onclick="KB.open()">เมนู</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
   return { open, view, start, quit, pick: pickOpt, tap, mem, bal, balCheck, pn: pairName, ps: pairSym, tf: (v) => blitzAns(v), go: advance };

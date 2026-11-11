@@ -1130,3 +1130,12 @@ body.peeking .navwrap{top:34px}
 .giftitem{margin:10px 0;padding:10px;border-radius:12px;background:#ffffff12}
 .giftmsg{margin:0 0 8px;font-style:italic}
 .giftchips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+/* สถิติท้ายเกม */
+.gscard{margin:12px auto 4px;max-width:360px;text-align:left;background:#ffffff10;border:1px solid #ffffff22;border-radius:12px;padding:10px 12px}
+.gshead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:700;margin-bottom:4px}
+.gsnew{margin-left:auto;background:linear-gradient(90deg,#ffb300,#ff6d00);color:#fff;border-radius:999px;padding:2px 10px;font-size:.8em;animation:gspop .6s ease-out}
+.gscard table{width:100%;border-collapse:collapse;font-size:.92em}.gscard th{font-weight:600;opacity:.7;text-align:right;padding:2px 6px}.gscard th:first-child,.gscard td:first-child{text-align:left}
+.gscard td{padding:3px 6px;text-align:right;border-top:1px solid #ffffff14}.gsup td{color:#ffd54f}
+.gsbest{margin:4px 0 8px;font-size:.88em;color:var(--gold2,#ffd54f)}
+@keyframes gspop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}

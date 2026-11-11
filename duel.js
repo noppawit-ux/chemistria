@@ -40,7 +40,7 @@ const DUEL = (() => {
     if (v.round !== S.round) { S.round = v.round; S.picked = null; S.skillOn = false; qTimer(v.elapsed || 0); }
     const reveal = (v.phase === "reveal" || v.status === "done") && v.last && S.revFor !== v.round;
     if (reveal) { S.revFor = v.round; S.hpDelay = 0; S.shown = old ? { me: old.me_hp, opp: old.opp_hp } : S.shown; paint(); setTimeout(() => playReveal(v), 40); }
-    if (v.status === "done" && !S.fin) { S.fin = true; S.finAt = Date.now() + 3600; setTimeout(() => { S.screen = "result"; paint(); if (v.result && v.result.win) FX.victory(); else if (v.result && !v.result.draw) FX.screen("curse", 0.5, 0.45, { scale: 3 }); setTimeout(() => { try { load(); } catch (e) {} }, 300); }, 3600); }
+    if (v.status === "done" && !S.fin) { S.fin = true; { const rs = v.result || {}, did = v.id; gsRecord("duel", { hp_left: rs.win ? v.me_hp : undefined, rounds: rs.win ? v.round : undefined, wins: rs.win ? 1 : 0 }).then((r) => { if (r) { r.did = did; S.gs = r; if (S.screen === "result") paint(); } }); } S.finAt = Date.now() + 3600; setTimeout(() => { S.screen = "result"; paint(); if (v.result && v.result.win) FX.victory(); else if (v.result && !v.result.draw) FX.screen("curse", 0.5, 0.45, { scale: 3 }); setTimeout(() => { try { load(); } catch (e) {} }, 300); }, 3600); }
     if (v.status === "cancelled" || v.status === "expired") { toast("การดวลถูกยกเลิก (ไม่มีการตอบ)"); toLobby(); return; }
     sigPaint(["F", v.status, v.phase, v.round, v.answered, v.opp_answered, S.picked, S.skillOn, reveal].join("|"));
   }
@@ -170,7 +170,7 @@ const DUEL = (() => {
     const d = S.d, r = d.result || {}, win = r.win, draw = r.draw;
     return `<div class="card center gm-res ${win ? "perfect" : ""}"><div style="font-size:54px">${win ? "🏆" : draw ? "🤝" : "💀"}</div>
       <h2>${win ? `ชนะ ${esc(d.opp.name)}!` : draw ? `เสมอกับ ${esc(d.opp.name)}` : `แพ้ให้ ${esc(d.opp.name)}`}</h2>
-      <p>HP คุณ ${d.me_hp} · ${esc(d.opp.name)} ${d.opp_hp}</p>
+      <p>HP คุณ ${d.me_hp} · ${esc(d.opp.name)} ${d.opp_hp}</p>${S.gs && S.gs.did === d.id ? gsCard(S.gs) : ""}
       <p>${r.exp || r.coins ? `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}` : '<span class="pill">ไม่ได้รางวัล (โควตาหมด/เล่นน้อยกว่า 3 รอบ/ดวลคู่เดิมซ้ำ)</span>'}</p>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="DUEL.lobby()">🤝 กลับห้องท้าดวล</button><button class="btn ghost" onclick="DUEL.exit()">ออก</button></div></div>`;
   }

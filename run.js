@@ -267,7 +267,7 @@ const RUN = (() => {
     try {
       if (secs < 5) throw new Error("เล่นสั้นเกินไป ไม่นับรางวัล");
       const r = await rpc("run_submit", { p_token: tk(), p_score: sc, p_seconds: secs });
-      S.res = { ...S.res, exp: r.exp, award: r.coins, capped: r.capped, no_reward: r.no_reward, busy: false }; await load();
+      S.res = { ...S.res, exp: r.exp, award: r.coins, capped: r.capped, no_reward: r.no_reward, busy: false }; S.res.gs = await gsRecord("run", { score: sc, dist: S.res.dist, secs, combo: g.bestCombo, coins: g.coins }); await load();
       try { SFX.play(r.exp > 0 ? "levelup" : "click"); } catch (e) {}
     } catch (e) { S.res = { ...S.res, busy: false, err: e.message }; }
     if (GAMES.mode() === "run") { S.screen = "res"; paint(); }
@@ -303,7 +303,7 @@ const RUN = (() => {
     return `<div class="card center gm-res ${r.score >= (S.st ? S.st.target : 2500) ? "perfect" : ""}"><div style="font-size:54px">${r.score >= 2500 ? "🏅" : r.score >= 1000 ? "🎉" : "💪"}</div>
       <h2>${r.score} คะแนน</h2><p class="muted">วิ่งได้ ${r.dist} เมตร · เหรียญ ${r.coins} · แผ่นธาตุ ${r.tiles} · ชนอุปสรรค ${r.hits} ครั้ง · คอมโบสูงสุด ${r.combo || 0} · ${r.secs} วินาที</p>
       ${r.busy ? '<p class="muted">กำลังบันทึกผล...</p>' : r.err ? `<p class="tag no" style="display:inline-block">${esc(r.err)}</p>` : `<p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (เล่นฝึกได้ไม่จำกัด)</span>' : `ได้ <b style="color:var(--gold2)">+${r.exp} EXP</b>${r.award > 0 ? ` · +${r.award} 🪙` : ""}`}</p>
-      ${r.capped && !r.no_reward ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}`}
+      ${r.capped && !r.no_reward ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}${gsCard(r.gs)}`}
       <div class="row" style="justify-content:center"><button class="btn gold" ${r.busy ? "disabled" : ""} onclick="RUN.again()">วิ่งอีกครั้ง</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
   async function again() { try { S.st = await rpc("run_status", { p_token: tk() }); } catch (e) {} start(); }

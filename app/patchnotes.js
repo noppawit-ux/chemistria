@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.84";
+const APP_VERSION = "1.85";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
@@ -45,7 +45,7 @@ async function load() {
   try {
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
-    const [dash, hof, ext, brd, nws, ttl, prm, gld, gft] = await Promise.all([
+    const [dash, hof, ext, brd, nws, ttl, prm, gld, gft, gbs] = await Promise.all([
       rpc("student_dashboard", { p_token: tk() }),
       rpc("hall_of_fame", { p_token: tk() }).catch(() => []),
       rpc("student_extras", { p_token: tk() }).catch(() => ({})),
@@ -55,8 +55,9 @@ async function load() {
       rpc("promo_status", { p_token: tk() }).catch(() => ({ active: false })),
       rpc("guild_status", { p_token: tk() }).catch(() => null),
       PEEK ? Promise.resolve([]) : rpc("gift_inbox", { p_token: tk() }).catch(() => []),
+      PEEK ? Promise.resolve({}) : rpc("game_bests_all", { p_token: tk() }).catch(() => null),
     ]);
-    GLD = gld; GIFTS = gft || [];
+    GLD = gld; GIFTS = gft || []; if (gbs) GBEST = gbs;
     NEWS = nws || []; TT = ttl || []; PROMO = prm || { active: false };
     D = dash; HOF = hof || []; X = ext || {}; B = brd || { posts: [], unread: 0 };
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);

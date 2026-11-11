@@ -46,37 +46,38 @@ const GAMES = (() => {
         <p class="muted">${s.quiz_total} ข้อ · ถูกข้อละ +${s.per_correct} EXP${s.perfect_bonus ? ` · ถูกหมดโบนัส +${s.perfect_bonus}` : ""} · วันละ 1 ครั้ง</p>
         ${s.quiz_done ? `<div class="tag ok" style="display:inline-block">ทำแล้ววันนี้ ✔ ${s.quiz_score}/${s.quiz_total} ข้อ (+${s.quiz_exp} EXP)</div>`
           : `<button class="btn gold" onclick="GAMES.startQuiz()">เริ่มควิซ</button>`}
+        ${gsBest("quiz")}
       </div>
       <div class="card gm-card">
         <div class="gm-ico">⚗️</div><h3>จับคู่ธาตุ</h3>
         <p class="muted">จับคู่สัญลักษณ์กับชื่อธาตุให้เร็วและผิดน้อย · สูงสุด +${s.match_max_exp} EXP/รอบ · ได้รางวัล ${s.match_max_plays} รอบ/วัน
           (เล่นแล้ว ${Math.min(s.match_plays, s.match_max_plays)}/${s.match_max_plays}${s.match_best != null ? ` · ดีที่สุด ${s.match_best}` : ""})</p>
-        <div class="row" style="justify-content:center">${Object.entries(LEVELS).map(([k, l]) => `<button class="btn small ${k === "mid" ? "gold" : "ghost"}" onclick="GAMES.startMatch('${k}')">${l.label} (${l.n} คู่)</button>`).join("")}</div>
+        ${gsBest("match")}<div class="row" style="justify-content:center">${Object.entries(LEVELS).map(([k, l]) => `<button class="btn small ${k === "mid" ? "gold" : "ghost"}" onclick="GAMES.startMatch('${k}')">${l.label} (${l.n} คู่)</button>`).join("")}</div>
       </div>
       <div class="card gm-card">
         <div class="gm-ico">🔮</div><h3>ห้องฝึกเวทย์ผสมธาตุ</h3>
         <p class="muted">ร่ายคาถาด้วยการผสมอะตอมในหม้อต้มให้ตรงสูตรสาร (น้ำ เกลือ กรด ฯลฯ) · 3 ระดับ · ผสมเร็ว ผิดน้อย ได้คะแนนสูง · ได้ EXP/เหรียญ</p>
-        <button class="btn gold" onclick="SPELL.open()">🔮 เข้าห้องเวทย์</button>
+        ${gsBest("spell")}<button class="btn gold" onclick="SPELL.open()">🔮 เข้าห้องเวทย์</button>
       </div>
       <div class="card gm-card kb-card">
         <div class="gm-ico">🏆</div><h3>ประลองครูบุ๊ค <span class="pill" style="background:#7a1020">EXTREMELY HARD</span></h3>
         <p class="muted">8 รอบ มินิเกมโหดหลายแบบ ควิซยากขึ้น เวลาลดเร็วทุกรอบ · หัวใจ 3 ดวง · ชนะครูบุ๊คได้รางวัลก้อนโต</p>
-        <button class="btn gold" onclick="KB.open()">🏆 ท้าครูบุ๊ค</button>
+        ${gsBest("kb")}<button class="btn gold" onclick="KB.open()">🏆 ท้าครูบุ๊ค</button>
       </div>
       <div class="card gm-card">
         <div class="gm-ico">🏃</div><h3>เคมีรัน</h3>
         <p class="muted">วิ่งเก็บเหรียญ กระโดดหลบอุปสรรคแล็บ สไลด์ใต้เมฆพิษ เก็บยาเติมพลังและดาวบูสต์ · ยิ่งไกลยิ่งได้ EXP</p>
-        <button class="btn gold" onclick="RUN.open()">🏃 ไปวิ่งกัน</button>
+        ${gsBest("run")}<button class="btn gold" onclick="RUN.open()">🏃 ไปวิ่งกัน</button>
       </div>
       <div class="card gm-card">
         <div class="gm-ico">⚔️</div><h3>ล่ามอนสเตอร์เคมี</h3>
         <p class="muted">เลือกสกิลตามคลาส ตอบคำถามเพื่อโจมตี บัพ และฮีล · มอนสเตอร์โต้กลับ กดลูกศรลดดาเมจ · ชนะได้ EXP เหรียญ และดรอปไอเทม</p>
-        <button class="btn gold" onclick="BATTLE.open()">⚔️ เข้าต่อสู้</button>
+        ${gsBest("battle")}<button class="btn gold" onclick="BATTLE.open()">⚔️ เข้าต่อสู้</button>
       </div>
       <div class="card gm-card">
         <div class="gm-ico">🤝</div><h3>ท้าดวลเพื่อน (เรียลไทม์)</h3>
         <p class="muted">ท้าเพื่อนในห้องที่ออนไลน์ ตอบคำถามพร้อมกันทุกรอบ ตอบถูก/ไวกว่า = ทำดาเมจใส่อีกฝ่าย · มีท่าไม้ตายประจำคลาส · ชนะได้ EXP + เหรียญ</p>
-        <button class="btn gold" onclick="DUEL.open()">🤝 เข้าห้องท้าดวล</button>
+        ${gsBest("duel")}<button class="btn gold" onclick="DUEL.open()">🤝 เข้าห้องท้าดวล</button>
       </div></div>`;
   }
 
@@ -86,7 +87,7 @@ const GAMES = (() => {
     try {
       const r = await rpc("quiz_today", { p_token: tk() });
       if (r.done) { toast("วันนี้ทำควิซไปแล้ว"); st.status = null; return go("game"); }
-      st.qs = r.questions; st.idx = 0; st.picks = []; st.mode = "quiz"; paint();
+      st.qs = r.questions; st.idx = 0; st.picks = []; st.qt0 = Date.now(); st.mode = "quiz"; paint();
     } catch (e) { toast(e.message); }
   }
   function quizView() {
@@ -104,6 +105,7 @@ const GAMES = (() => {
     st.busy = true; paint();
     try {
       st.res = await rpc("quiz_submit", { p_token: tk(), p_answers: st.picks });
+      st.res.gs = await gsRecord("quiz", { correct: st.res.correct, exp: st.res.exp, secs: Math.round((Date.now() - (st.qt0 || Date.now())) / 1000) });
       st.mode = "quizres"; st.status = null; await load();
       if (st.res.correct === st.res.total) setTimeout(() => FX.victory(), 300); else if (st.res.correct >= st.res.total / 2) setTimeout(() => FX.victory(), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
@@ -115,7 +117,7 @@ const GAMES = (() => {
       <div style="font-size:54px">${perfect ? "🏆" : r.correct >= r.total / 2 ? "🎉" : "💪"}</div>
       <h2>ตอบถูก ${r.correct}/${r.total} ข้อ</h2>
       <p><span class="pill">+${r.exp} EXP</span> <span class="pill">+${r.coins} 🪙</span> ${r.streak > 1 ? `<span class="pill">🔥 ติดต่อกัน ${r.streak} วัน</span>` : ""}</p>
-      ${r.capped ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}</div>
+      ${r.capped ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}${gsCard(r.gs)}</div>
       <div class="card"><h3>เฉลย</h3>${st.qs.map((q, i) => { const x = r.results[i];
         return `<div class="item" style="align-items:flex-start"><span style="font-size:20px">${x.ok ? "✅" : "❌"}</span><div class="grow">
           <b>${esc(q.question)}</b><div class="muted">คำตอบที่ถูก: <span style="color:var(--mint)">${"กขคง"[x.answer]}. ${esc(q.choices[x.answer])}</span>
@@ -158,7 +160,7 @@ const GAMES = (() => {
     const score = Math.max(10, Math.min(100, Math.round(100 - g.wrong * 8 - Math.max(0, secs - g.n * 4))));
     try {
       const r = await rpc("match_submit", { p_token: tk(), p_score: score, p_pairs: g.n, p_seconds: secs });
-      st.mres = { ...r, secs, wrong: g.wrong, level: g.level }; st.mode = "matchres"; st.status = null; await load();
+      st.mres = { ...r, secs, wrong: g.wrong, level: g.level }; st.mres.gs = await gsRecord("match", { score, secs, wrong: g.wrong }); st.mode = "matchres"; st.status = null; await load();
       setTimeout(() => (score >= 90 ? FX.victory() : FX.victory()), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
     go("game");
@@ -169,7 +171,7 @@ const GAMES = (() => {
       <h2>คะแนน ${r.score}/100</h2><p class="muted">ใช้เวลา ${r.secs} วินาที · ผิด ${r.wrong} ครั้ง</p>
       <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (เล่นฝึกได้ไม่จำกัด)</span>'
         : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>
-      ${r.capped && !r.no_reward ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}
+      ${r.capped && !r.no_reward ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}${gsCard(r.gs)}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="GAMES.startMatch('${r.level}')">เล่นอีกครั้ง</button>
       <button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }

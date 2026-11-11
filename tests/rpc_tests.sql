@@ -479,6 +479,26 @@ select pg_temp.t('QR: QR หมดอายุ (เก่าเกิน ~2 น�
 select pg_temp.t('QR: นักเรียนห้องอื่นสแกนกับงานห้องนี้ไม่ได้', (select pg_temp.fails(format($q$select set_config('request.jwt.claims','{"email":"t@x.th"}',true); select admin_scan_submit(%L, %L)$q$, (select a from _qa),
   'KB1.'||(select o from _qa)||'.'||floor(extract(epoch from now())/30)||'.'||_qr_sig((select o from _qa), floor(extract(epoch from now())/30)::bigint)), 'authenticated')));
 
+-- ================= สถิติท้ายเกม (SQL 53) =================
+reset role;
+set role anon;
+create temp table _gb1 as select game_record((select tok from _gt where no=15), 'match', '{"score":70,"secs":50,"wrong":3}') r;
+create temp table _gb2 as select game_record((select tok from _gt where no=15), 'match', '{"score":90,"secs":60,"wrong":1}') r;
+create temp table _gb3 as select game_record((select tok from _gt where no=15), 'match', '{"score":80,"secs":40,"wrong":2}') r;
+grant all on _gb1, _gb2, _gb3 to anon, authenticated;
+select pg_temp.t('สถิติ: รอบแรก = first และบันทึกทุกตัวชี้วัด', ((select r from _gb1)->>'first')::boolean and (select r::jsonb->'best'->>'score' from _gb1) = '70');
+select pg_temp.t('สถิติ: รอบสองทำลายสถิติคะแนนและผิดน้อยลง แต่เวลาไม่ดีกว่า', (select r::jsonb->'newbest' from _gb2) @> '["score","wrong"]'::jsonb and not ((select r::jsonb->'newbest' from _gb2) ? 'secs') and (select r::jsonb->'best'->>'secs' from _gb2) = '50');
+select pg_temp.t('สถิติ: รอบสาม best คงเดิม (คะแนน 90) แต่เวลา 40 ใหม่', (select r::jsonb->'best'->>'score' from _gb3) = '90' and (select r::jsonb->'newbest' from _gb3) @> '["secs"]'::jsonb and (select (r->>'plays')::int from _gb3) = 3);
+select pg_temp.t('สถิติ: game_bests_all คืนค่าสถิติของตัวเองเท่านั้น', (game_bests_all((select tok from _gt where no=15))::jsonb->'match'->>'score') = '90' and game_bests_all((select tok from _gt where no=16))::jsonb = '{}'::jsonb);
+select pg_temp.t('สถิติ: เกมที่ไม่รู้จัก/ข้อมูลผิดรูปแบบถูกปฏิเสธ', pg_temp.fails($q$select game_record((select tok from _gt where no=15), 'nope', '{}')$q$, 'anon') and pg_temp.fails($q$select game_record((select tok from _gt where no=15), 'match', '[1]')$q$, 'anon'));
+create temp table _gb4 as select game_record((select tok from _gt where no=15), 'duel', '{"wins":1,"hp_left":999999999,"rounds":5,"evil":9}') r;
+create temp table _gb5 as select game_record((select tok from _gt where no=15), 'duel', '{"wins":1}') r;
+grant all on _gb4, _gb5 to anon, authenticated;
+select pg_temp.t('สถิติ: ค่าเกินถูกจำกัด · คีย์แปลกถูกเมิน · wins สะสม', (select (r::jsonb->'best'->>'hp_left')::numeric from _gb4) = 100000 and not ((select r::jsonb->'cur' from _gb4) ? 'evil') and (select (r::jsonb->'best'->>'wins')::int from _gb5) = 2);
+select pg_temp.t('สถิติ: โทเค็นผิดบันทึกไม่ได้', pg_temp.fails($q$select game_record('00000000-0000-0000-0000-000000000009', 'match', '{"score":1}')$q$, 'anon'));
+select pg_temp.t('สถิติ: นักเรียนอ่านตาราง game_bests ตรงๆ ไม่ได้', pg_temp.fails($q$select * from game_bests$q$, 'anon'));
+reset role;
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

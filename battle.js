@@ -98,7 +98,11 @@ const BATTLE = (() => {
   });
   const tapArrow = (k) => judge(k);
 
-  function finishLoad() { setTimeout(async () => { try { await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
+  function recBattle() {
+    const b = S.bat; if (!b || (b.status !== "won" && b.status !== "lost") || S.recFor === b.id) return; S.recFor = b.id; const win = b.status === "won";
+    gsRecord("battle", { correct: b.correct, hp_left: win ? b.p_hp : undefined, turns: win ? b.turn : undefined, wins: win ? 1 : 0 }).then((r) => { if (r) { r.bid = b.id; S.gs = r; if (S.screen === "result") paint(); } });
+  }
+  function finishLoad() { recBattle(); setTimeout(async () => { try { await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
   async function flee() {
     if (!confirm("หนีจากการต่อสู้? จะนับเป็น 1 รอบของวันนี้และไม่ได้รางวัล")) return;
     clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null;
@@ -295,6 +299,7 @@ const BATTLE = (() => {
       <h2>${win ? `ปราบ ${esc(m.name)} สำเร็จ!` : `พ่ายแพ้ให้ ${esc(m.name)}`}</h2>
       <p>${b.rewarded ? (b.exp || b.coins ? `<span class="pill">+${b.exp} EXP</span> ${b.coins ? `<span class="pill">+${b.coins} 🪙</span>` : ""}` : '<span class="pill">ไม่มีรางวัลรอบนี้</span>')
         : '<span class="pill">โหมดฝึก — ไม่ได้รางวัล</span>'}</p>
+      ${S.gs && S.gs.bid === b.id ? gsCard(S.gs) : ""}
       ${dr ? `<div class="bt-drop ${dr.rarity}">${dr.image ? `<img src="${esc(dr.image)}" alt="" onerror="this.remove()">` : ""}<div>🎁 ดรอป! <b>${esc(dr.emoji || "")} ${esc(dr.name)}</b> <span class="tag">${dr.rarity}</span></div></div>`
         : win && b.rewarded ? '<p class="muted">รอบนี้ไม่มีไอเทมดรอป — ลองใหม่นะ</p>' : ""}
       ${!win && b.rewarded && b.exp ? '<p class="muted">รับ EXP ให้กำลังใจจากข้อที่ตอบถูก</p>' : ""}
