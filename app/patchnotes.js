@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.85";
+const APP_VERSION = "1.86";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
@@ -25,7 +25,7 @@ function patchShow(force) {
   ov.addEventListener("click", (e) => { if (e.target === ov) patchClose(); });
   document.body.appendChild(ov);
 }
-function patchClose() { try { localStorage.setItem(PATCH_KEY, PATCH.id); } catch (e) {} document.getElementById("patchov")?.remove(); if (typeof giftShow === "function") giftShow(); }
+function patchClose() { try { localStorage.setItem(PATCH_KEY, PATCH.id); } catch (e) {} document.getElementById("patchov")?.remove(); if (typeof giftShow === "function") giftShow(); if (typeof alertsAuto === "function") alertsAuto(); }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") patchClose(); });
 function peekBar() {
   let b = document.getElementById("peekbar"); if (!b) { b = document.createElement("div"); b.id = "peekbar"; document.body.appendChild(b); document.body.classList.add("peeking"); }

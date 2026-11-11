@@ -42,7 +42,7 @@ const rankName = (ri) => ri.name + (ri.division ? " " + ri.division : "");
 
 /* ---------------- วาดหน้า ---------------- */
 function render() {
-  document.body.dataset.tab = tab;
+  document.body.dataset.tab = tab; setTimeout(() => { try { alertsAuto(); } catch (e) {} }, 0);
   const s = D.student, ri = D.rank_info, cls = clsOf(s.char_class);
   const span = s.exp_next_level - s.exp_this_level;
   const pct = Math.min(100, Math.round(((s.exp - s.exp_this_level) / span) * 100));

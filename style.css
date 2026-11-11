@@ -1139,3 +1139,8 @@ body.peeking .navwrap{top:34px}
 .gscard td{padding:3px 6px;text-align:right;border-top:1px solid #ffffff14}.gsup td{color:#ffd54f}
 .gsbest{margin:4px 0 8px;font-size:.88em;color:var(--gold2,#ffd54f)}
 @keyframes gspop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+
+/* ป๊อปอัปแจ้งเตือนหน้าหลัก (ด้านบนของตัวละคร) */
+.alertpop{position:fixed;inset:0;z-index:58;display:flex;align-items:flex-start;justify-content:center}
+.alertpop .np-bg{background:#0007}.ap-box{margin-top:84px;width:min(620px,100%);max-height:calc(100vh - 110px);animation:gspop .35s ease-out}
+.ap-box .notice,.ap-box .card{margin:8px 0 0}
