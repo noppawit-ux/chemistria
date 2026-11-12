@@ -235,7 +235,7 @@ const KB = (() => {
     S.say = say(won ? "win" : "lose");
     try {
       const r = await rpc("kb_submit", { p_token: tk(), p_cleared: S.cleared, p_won: won, p_seconds: sec });
-      S.res = { ...r, secs: sec }; S.res.gs = await gsRecord("kb", { cleared: S.cleared, secs: won ? sec : undefined, wins: won ? 1 : 0 }); S.screen = "res"; await load(); if (won) FX.victory();
+      S.res = { ...r, secs: sec }; S.res.gs = await gsRecord("kb", { cleared: S.cleared, secs: won ? sec : undefined, wins: won ? 1 : 0 }); cardAfter("kb"); S.screen = "res"; await load(); if (won) FX.victory();
     } catch (e) { toast(e.message); S.screen = "home"; }
     go("game");
   }

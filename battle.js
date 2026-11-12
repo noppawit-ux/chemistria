@@ -100,7 +100,7 @@ const BATTLE = (() => {
 
   function recBattle() {
     const b = S.bat; if (!b || (b.status !== "won" && b.status !== "lost") || S.recFor === b.id) return; S.recFor = b.id; const win = b.status === "won";
-    gsRecord("battle", { correct: b.correct, hp_left: win ? b.p_hp : undefined, turns: win ? b.turn : undefined, wins: win ? 1 : 0 }).then((r) => { if (r) { r.bid = b.id; S.gs = r; if (S.screen === "result") paint(); } });
+    gsRecord("battle", { correct: b.correct, hp_left: win ? b.p_hp : undefined, turns: win ? b.turn : undefined, wins: win ? 1 : 0 }).then((r) => { if (r) { r.bid = b.id; S.gs = r; if (S.screen === "result") paint(); } if (win) cardAfter("battle"); });
   }
   function finishLoad() { recBattle(); setTimeout(async () => { try { await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
   async function flee() {

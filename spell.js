@@ -122,7 +122,7 @@ const SPELL = (() => {
     const score = Math.max(10, Math.min(100, Math.round(100 - S.wrong * 8 - S.hints * 6 - Math.max(0, secs - n * 18))));
     try {
       const r = await rpc("spell_submit", { p_token: tk(), p_score: score, p_spells: n, p_seconds: secs });
-      S.res = { ...r, secs, wrong: S.wrong, hints: S.hints, level: S.level, combo: S.best }; S.res.gs = await gsRecord("spell", { score, secs, combo: S.best, wrong: S.wrong, hints: S.hints }); S.screen = "res"; await load();
+      S.res = { ...r, secs, wrong: S.wrong, hints: S.hints, level: S.level, combo: S.best }; S.res.gs = await gsRecord("spell", { score, secs, combo: S.best, wrong: S.wrong, hints: S.hints }); cardAfter("spell"); S.screen = "res"; await load();
       setTimeout(() => { if (score >= 90) { FX.victory(); SFX.play("win"); } else FX.victory(); }, 300);
     } catch (e) { toast(e.message); S.screen = "home"; }
     S.busy = false; go("game");

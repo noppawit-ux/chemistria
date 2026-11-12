@@ -267,7 +267,7 @@ const RUN = (() => {
     try {
       if (secs < 5) throw new Error("เล่นสั้นเกินไป ไม่นับรางวัล");
       const r = await rpc("run_submit", { p_token: tk(), p_score: sc, p_seconds: secs });
-      S.res = { ...S.res, exp: r.exp, award: r.coins, capped: r.capped, no_reward: r.no_reward, busy: false }; S.res.gs = await gsRecord("run", { score: sc, dist: S.res.dist, secs, combo: g.bestCombo, coins: g.coins }); await load();
+      S.res = { ...S.res, exp: r.exp, award: r.coins, capped: r.capped, no_reward: r.no_reward, busy: false }; S.res.gs = await gsRecord("run", { score: sc, dist: S.res.dist, secs, combo: g.bestCombo, coins: g.coins }); cardAfter("run"); await load();
       try { SFX.play(r.exp > 0 ? "levelup" : "click"); } catch (e) {}
     } catch (e) { S.res = { ...S.res, busy: false, err: e.message }; }
     if (GAMES.mode() === "run") { S.screen = "res"; paint(); }

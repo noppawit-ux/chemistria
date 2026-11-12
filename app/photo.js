@@ -53,10 +53,12 @@ async function pull(n) {
     ov.innerHTML = `<h2>✨ ผลการสุ่ม</h2><div id="cards">${r.items.map((it, i) => `
       <div class="gcard rar-${it.rarity}" id="gc${i}"><div class="in"><div class="b"></div>
       <div class="f"><div><div class="e">${itemImg(it.image, it.emoji, "gi")}</div><div class="rar">${it.rarity}</div><div class="n">${esc(it.name)}</div>${it.kind === "decor" ? `<div class="n muted">${it.dup_refund ? "ซ้ำ! คืน +" + it.dup_refund + "🪙" : "🎨 ไอเทมตกแต่งใหม่!"}</div>` : ""}</div></div></div></div>`).join("")}</div>
+      ${(r.cards || []).length ? `<p class="gnote">🃏 ได้การ์ดสะสมเพิ่ม ${r.cards.length} ใบ! กดรับของเพื่อเปิดดู</p>` : ""}
       <p><button class="btn gold" onclick="closeOv()">รับของ</button></p>`;
+    if ((r.cards || []).length) CARDQ.push(...r.cards);
     ov.classList.add("on");
     r.items.forEach((it, i) => { setTimeout(() => $("#gc" + i)?.classList.add("flip"), 350 + i * 330); setTimeout(() => FX.gacha("#gc" + i, it.rarity), 600 + i * 330); });
     await load();
   } catch (e) { toast(e.message); }
 }
-function closeOv() { $("#overlay").classList.remove("on"); }
+function closeOv() { $("#overlay").classList.remove("on"); setTimeout(cardQueueShow, 250); }

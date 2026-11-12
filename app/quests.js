@@ -18,6 +18,7 @@ const questAct = (q) => q.status ? statusTag(q.status) : autoOf(q) ? `<span clas
 const VIEWS = {
   board() { markBoardSeen(); return boardHtml(); },
   guild() { return guildHtml(); },
+  cards() { cardAlbumLoad(); return albumHtml(); },
   game() { return GAMES.view(); },
   home() {
     const a = D.attendance_summary;

@@ -499,6 +499,108 @@ select pg_temp.t('สถิติ: โทเค็นผิดบันทึก
 select pg_temp.t('สถิติ: นักเรียนอ่านตาราง game_bests ตรงๆ ไม่ได้', pg_temp.fails($q$select * from game_bests$q$, 'anon'));
 reset role;
 
+-- ================= การ์ดสะสม (SQL 54) =================
+reset role;
+create temp table _ks as select
+  (select id from students where class_id=(select id from classes where code='T99') and no=17) a,
+  (select id from students where class_id=(select id from classes where code='T99') and no=18) b,
+  (select id from students where class_id=(select id from classes where code='T99') and no=19) c;
+grant all on _ks to anon, authenticated;
+select pg_temp.t('การ์ด: ตารางการ์ดอ่านตรงๆ ไม่ได้', pg_temp.fails($q$select * from cards$q$, 'anon') and pg_temp.fails($q$select * from student_cards$q$, 'anon') and pg_temp.fails($q$select * from card_drops$q$, 'anon'));
+select pg_temp.t('การ์ด: ข้อมูลตั้งต้น 3 ชุด 36+12+12 ใบ มีข้อเท็จจริงทุกใบ', (select count(*) from card_sets) = 3
+  and (select count(*) from cards c join card_sets s on s.id=c.set_id where s.code='elements') = 36
+  and (select count(*) from cards c join card_sets s on s.id=c.set_id where s.code='chemists') = 12
+  and (select count(*) from cards c join card_sets s on s.id=c.set_id where s.code='lab') = 12
+  and not exists (select 1 from cards where btrim(fact) = '' or btrim(name) = ''));
+update app_settings set value='100' where key='card_drop_pct';
+set role anon;
+create temp table _k0 as select card_roll((select tok from _gt where no=17), 'quiz') r;
+grant all on _k0 to anon, authenticated;
+select pg_temp.t('การ์ด: ยังไม่ได้เล่นเกม → ไม่ดรอป', (select r->>'reason' from _k0) = 'no_play');
+select pg_temp.t('การ์ด: เกมที่ไม่รู้จักถูกปฏิเสธ', pg_temp.fails($q$select card_roll((select tok from _gt where no=17), 'nope')$q$, 'anon'));
+reset role;
+insert into game_plays (student_id, game, score, correct, exp) values ((select a from _ks), 'quiz', 0, 4, 10);
+set role anon;
+create temp table _k1 as select card_roll((select tok from _gt where no=17), 'quiz') r;
+create temp table _k2 as select card_roll((select tok from _gt where no=17), 'quiz') r;
+grant all on _k1, _k2 to anon, authenticated;
+reset role;
+select pg_temp.t('การ์ด: เล่นแล้วได้การ์ด (ใบแรกได้แน่นอน เป็นใบใหม่)', ((select r from _k1)->>'drop')::boolean and (select r::jsonb->'card'->>'is_new' from _k1) = 'true');
+select pg_temp.t('การ์ด: รอบเล่นเดียวสุ่มได้ครั้งเดียว', (select r->>'reason' from _k2) = 'no_play' and (select count(*) from card_drops where student_id=(select a from _ks) and source='game') = 1);
+-- เพดานต่อวัน
+update app_settings set value='1' where key='card_daily_cap';
+insert into game_plays (student_id, game, score, correct, exp) values ((select a from _ks), 'match', 50, null, 5);
+set role anon;
+create temp table _k3 as select card_roll((select tok from _gt where no=17), 'match') r;
+grant all on _k3 to anon, authenticated;
+reset role;
+select pg_temp.t('การ์ด: ถึงเพดานต่อวัน → ไม่ดรอป (cap)', (select r->>'reason' from _k3) = 'cap');
+update app_settings set value='5' where key='card_daily_cap';
+-- ซ้ำ → เศษธาตุ
+create temp table _ksh as select shards s0 from students where id=(select a from _ks);
+select _card_grant((select a from _ks), (select card_id from student_cards where student_id=(select a from _ks) limit 1), 'gift');
+select pg_temp.t('การ์ด: ซ้ำได้เศษธาตุตามระดับ + qty เพิ่ม', (select shards from students where id=(select a from _ks)) > (select s0 from _ksh)
+  and (select qty from student_cards where student_id=(select a from _ks) limit 1) = 2);
+-- pity: ซ้ำติดกัน 3 ครั้ง (เกณฑ์ 4) → ใบถัดไปเป็นใบใหม่
+update students set card_pity = 3 where id=(select b from _ks);
+select _card_grant((select b from _ks), (select id from cards order by no, id limit 1), 'gift');
+update students set card_pity = 3 where id=(select b from _ks);
+insert into game_plays (student_id, game, score, correct, exp) values ((select b from _ks), 'match', 50, null, 5);
+set role anon;
+create temp table _k4 as select card_roll((select tok from _gt where no=18), 'match') r;
+grant all on _k4 to anon, authenticated;
+reset role;
+select pg_temp.t('การ์ด: pity — ซ้ำครบเกณฑ์แล้วใบต่อไปเป็นใบใหม่แน่นอน', (select r::jsonb->'card'->>'is_new' from _k4) = 'true' and (select card_pity from students where id=(select b from _ks)) = 0);
+-- ครบชุด
+create temp table _kb as select coins c0, free_pulls p0 from students where id=(select c from _ks);
+select _card_grant((select c from _ks), c.id, 'gift') from cards c join card_sets s on s.id=c.set_id where s.code='lab';
+select pg_temp.t('การ์ด: สะสมครบชุด → ได้เหรียญ + ตั๋ว + บันทึกการรับ', (select coins from students where id=(select c from _ks)) = (select c0 from _kb)+150
+  and (select free_pulls from students where id=(select c from _ks)) = (select p0 from _kb)+2 and (select count(*) from student_set_claims where student_id=(select c from _ks)) = 1);
+select _card_grant((select c from _ks), c.id, 'gift') from cards c join card_sets s on s.id=c.set_id where s.code='lab' and c.no=1;
+select pg_temp.t('การ์ด: ได้ซ้ำหลังครบชุด ไม่แจกรางวัลซ้ำ', (select coins from students where id=(select c from _ks)) = (select c0 from _kb)+150 and (select count(*) from student_set_claims where student_id=(select c from _ks)) = 1);
+-- สมุดสะสม
+set role anon;
+create temp table _kal as select card_album((select tok from _gt where no=19)) j;
+grant all on _kal to anon, authenticated;
+reset role;
+select pg_temp.t('การ์ด: สมุดสะสมแสดงชื่อเฉพาะใบที่มี · ใบที่ยังไม่มีซ่อนชื่อและข้อเท็จจริง', 
+  (select count(*) from jsonb_array_elements((select j::jsonb from _kal)->'sets') st, jsonb_array_elements(st->'cards') cd where cd->>'name' is not null) = 12
+  and (select count(*) from jsonb_array_elements((select j::jsonb from _kal)->'sets') st, jsonb_array_elements(st->'cards') cd where cd->>'name' is null and cd->>'fact' is not null) = 0);
+-- ของขวัญ: การ์ด
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select admin_gift(array[(select a from _ks)], 0, 0, 0, null, null, 'การ์ดให้', (select id from cards where symbol='Au'), 2);
+reset role;
+select pg_temp.t('การ์ด: ครูแจกการ์ดให้นักเรียน (qty และกล่องของขวัญ)', (select qty from student_cards where student_id=(select a from _ks) and card_id=(select id from cards where symbol='Au')) = 2
+  and (select card_n from gifts where student_id=(select a from _ks) and card_id=(select id from cards where symbol='Au')) = 2);
+set role anon;
+select pg_temp.t('การ์ด: กล่องของขวัญแสดงชื่อการ์ด', gift_inbox((select tok from _gt where no=17))::text like '%ทองคำ%');
+reset role;
+-- กาชา: ห่อแล้วยังคืนผลเดิม + แถมการ์ด
+update app_settings set value='100' where key='card_gacha_pct';
+update students set coins = coins + 500 where id=(select b from _ks);
+set role anon;
+create temp table _kgc as select gacha_pull((select tok from _gt where no=18), 10) r;
+grant all on _kgc to anon, authenticated;
+reset role;
+select pg_temp.t('การ์ด: กาชา 10 ครั้ง ได้ผลเดิมครบ + การ์ดอย่างน้อย 1 ใบ', json_array_length((select r->'items' from _kgc)) = 10 and jsonb_array_length((select r::jsonb->'cards' from _kgc)) >= 1);
+-- รบบอส
+insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max) select (select b from _ks), id, 'won', 10, 10, 0, 10 from monsters limit 1;
+set role anon;
+create temp table _k5 as select card_roll((select tok from _gt where no=18), 'battle') r;
+grant all on _k5 to anon, authenticated;
+reset role;
+select pg_temp.t('การ์ด: ชนะบอสแล้วสุ่มการ์ดได้ (ต้องมีรอบชนะจริง)', (select r->>'reason' from _k5) is distinct from 'no_play');
+-- ทำสถิติใหม่ → ทำเครื่องหมาย best_hit
+insert into game_plays (student_id, game, score, correct, exp) values ((select c from _ks), 'quiz', 0, 5, 10);
+set role anon;
+select game_record((select tok from _gt where no=19), 'quiz', '{"correct":1}');
+select game_record((select tok from _gt where no=19), 'quiz', '{"correct":5}');
+reset role;
+select pg_temp.t('การ์ด: ทำสถิติใหม่แล้วรอบเล่นถูกทำเครื่องหมาย (โอกาสการ์ดเพิ่ม)', (select best_hit from game_plays where student_id=(select c from _ks) and game='quiz'));
+update app_settings set value='30' where key='card_drop_pct';
+update app_settings set value='40' where key='card_gacha_pct';
+select pg_temp.t('การ์ด: นักเรียนเรียกฟังก์ชันภายในตรงๆ ไม่ได้', pg_temp.fails($q$select _card_grant((select a from _ks), (select id from cards limit 1), 'gift')$q$, 'anon') and pg_temp.fails($q$select _gacha_pull('00000000-0000-0000-0000-000000000001', 1)$q$, 'anon'));
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
