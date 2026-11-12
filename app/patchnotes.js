@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "1.88";
+const APP_VERSION = "1.89";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [

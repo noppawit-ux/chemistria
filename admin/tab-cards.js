@@ -1,8 +1,8 @@
 /* แท็บ: cards — ชุดการ์ดสะสม · การ์ด · ตั้งค่าอัตราดรอป */
 TAB.cards = async function (v) {
   const set = Object.fromEntries(must(await sb.from("app_settings").select("*").like("key", "card\\_%")).map((x) => [x.key, x.value]));
-  const f = [["card_drop_pct", "โอกาสได้การ์ดหลังจบเกม (%)", 30], ["card_best_bonus", "โอกาสเพิ่มเมื่อทำสถิติใหม่ (+%)", 25], ["card_daily_cap", "เพดานการ์ดจากเกมต่อคนต่อวัน", 5],
-    ["card_pity", "pity: ซ้ำติดกันครบ (ครั้ง−1) → ใบถัดไปเป็นใบใหม่", 4], ["card_gacha_pct", "โอกาสได้การ์ดแถมต่อการสุ่มกาชา (%) · สุ่ม 10 ครั้งได้ 1 ใบแน่นอน", 40],
+  const f = [["card_drop_pct", "โอกาสได้การ์ดเมื่อชนะมอนสเตอร์ (%)", 30], ["card_best_bonus", "(ไม่ใช้แล้ว)", 25], ["card_daily_cap", "โควต้าการ์ดจากมอนสเตอร์ต่อคนต่อวัน", 5],
+    ["card_pity", "pity: ซ้ำติดกันครบ (ครั้ง−1) → ใบถัดไปเป็นใบใหม่", 4], ["card_gacha_pct", "(ไม่ใช้แล้ว — กาชาไม่แถมการ์ด)", 40],
     ["card_w_n", "น้ำหนักสุ่ม N", 60], ["card_w_r", "น้ำหนักสุ่ม R", 28], ["card_w_sr", "น้ำหนักสุ่ม SR", 10], ["card_w_ssr", "น้ำหนักสุ่ม SSR", 2]];
   const st = holder(v, "🃏 ตั้งค่าการ์ดสะสม", "ใบซ้ำ → เศษธาตุ (N=1 · R=3 · SR=10 · SSR=30) · ใบแรกของนักเรียนแต่ละคนได้แน่นอน · การ์ดที่ปิดใช้งานจะไม่ถูกสุ่ม");
   st.innerHTML = `<div class="row">${f.map(([k, l, d]) => `<div style="width:250px"><label>${l}</label><input type="number" min="0" data-set="${k}" value="${esc(set[k] ?? d)}"></div>`).join("")}</div>`;

@@ -1,4 +1,4 @@
-/* การ์ดสะสม 📖 — สมุดสะสม · เปิดการ์ด (พลิกการ์ด) · สุ่มการ์ดหลังจบเกม */
+/* การ์ดสะสม 📖 — สมุดสะสม · เปิดการ์ด (พลิกการ์ด) · สุ่มการ์ดหลังชนะมอนสเตอร์ */
 let ALBUM = null, ALBUM_BUSY = false, CARDQ = [];
 const RAR_TH = { N: "ธรรมดา", R: "หายาก", SR: "หายากมาก", SSR: "ตำนาน" };
 async function cardAlbumLoad() {
@@ -20,8 +20,8 @@ function albumHtml() {
   if (A.error) return `<div class="card"><p class="muted center" style="padding:30px 0">${esc(A.error)}</p></div>`;
   const tot = A.sets.reduce((a, s) => a + s.cards.length, 0), own = A.sets.reduce((a, s) => a + s.cards.filter((c) => c.own).length, 0);
   return `<div class="card"><h3 style="margin:0 0 4px">📖 สมุดสะสมการ์ด</h3>
-    <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill">🃏 สะสมแล้ว ${own}/${tot}</span><span class="pill">✨ เศษธาตุ ${A.shards}</span><span class="pill">🎁 ได้จากเกมวันนี้ ${A.used}/${A.cap}</span></div>
-    <p class="muted" style="margin:8px 0 0">เล่นเกมจบแล้วมีโอกาสได้การ์ด (ทำสถิติใหม่โอกาสเพิ่ม) · สุ่มกาชาก็มีโอกาสได้ · ใบซ้ำกลายเป็นเศษธาตุ · ซ้ำติดกัน ${A.pity_max - 1} ครั้ง ใบถัดไปได้ใบใหม่แน่นอน</p></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill">🃏 สะสมแล้ว ${own}/${tot}</span><span class="pill">✨ เศษธาตุ ${A.shards}</span><span class="pill">🐲 ได้จากมอนสเตอร์วันนี้ ${A.used}/${A.cap}</span></div>
+    <p class="muted" style="margin:8px 0 0">ชนะมอนสเตอร์มีโอกาสได้การ์ด (จำกัดวันละ ${A.cap} ใบ) · ใบซ้ำกลายเป็นเศษธาตุ · ซ้ำติดกัน ${A.pity_max - 1} ครั้ง ใบถัดไปได้ใบใหม่แน่นอน</p></div>
     ${A.sets.map((s, si) => { const n = s.cards.filter((c) => c.own).length, pc = s.cards.length ? Math.round((n / s.cards.length) * 100) : 0;
       return `<div class="card cset" style="--sc:${esc(s.color)}"><div class="row"><h3 class="grow" style="margin:0">${esc(s.emoji)} ${esc(s.title)}</h3>
         ${s.claimed ? '<span class="tag ok">✅ ครบชุดแล้ว</span>' : `<span class="muted">${n}/${s.cards.length}</span>`}</div>
@@ -44,7 +44,7 @@ function cardQueueShow() {
   if (document.getElementById("cardov") || !CARDQ.length) return;
   const c = CARDQ.shift(), el = document.createElement("div"); el.id = "cardov"; el.className = "cardov";
   el.innerHTML = `<div class="np-bg"></div><div class="cbox"><h3 style="margin:0 0 8px">🃏 ได้การ์ดสะสม!</h3>
-    <div class="flipc"><div class="flipin"><div class="cback">🃏</div><div class="cfront">${cardFace(c, true)}</div></div></div>
+    <div class="flipc"><div class="flipin"><div class="cback"></div><div class="cfront">${cardFace(c, true)}</div></div></div>
     <div class="cmeta"><b>${esc(c.name)}</b> ${c.is_new ? '<span class="tag ok">🆕 ใหม่!</span>' : `<span class="tag wait">ซ้ำ → +${c.shards} ✨ เศษธาตุ</span>`}
       <div class="muted">${esc(c.set_emoji || "")} ${esc(c.set)} · ${RAR_TH[c.rarity]}</div><p class="cfact">💡 ${esc(c.fact)}</p>
       ${c.set_done ? `<div class="notice gold" style="cursor:default">🎉 สะสมครบชุด “${esc(c.set_done.title)}” รับ 🪙 ${c.set_done.coins}${c.set_done.pulls ? ` + 🎟️ ×${c.set_done.pulls}` : ""}</div>` : ""}</div>

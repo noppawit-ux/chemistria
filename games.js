@@ -105,7 +105,7 @@ const GAMES = (() => {
     st.busy = true; paint();
     try {
       st.res = await rpc("quiz_submit", { p_token: tk(), p_answers: st.picks });
-      st.res.gs = await gsRecord("quiz", { correct: st.res.correct, exp: st.res.exp, secs: Math.round((Date.now() - (st.qt0 || Date.now())) / 1000) }); cardAfter("quiz");
+      st.res.gs = await gsRecord("quiz", { correct: st.res.correct, exp: st.res.exp, secs: Math.round((Date.now() - (st.qt0 || Date.now())) / 1000) });
       st.mode = "quizres"; st.status = null; await load();
       if (st.res.correct === st.res.total) setTimeout(() => FX.victory(), 300); else if (st.res.correct >= st.res.total / 2) setTimeout(() => FX.victory(), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
@@ -160,7 +160,7 @@ const GAMES = (() => {
     const score = Math.max(10, Math.min(100, Math.round(100 - g.wrong * 8 - Math.max(0, secs - g.n * 4))));
     try {
       const r = await rpc("match_submit", { p_token: tk(), p_score: score, p_pairs: g.n, p_seconds: secs });
-      st.mres = { ...r, secs, wrong: g.wrong, level: g.level }; st.mres.gs = await gsRecord("match", { score, secs, wrong: g.wrong }); cardAfter("match"); st.mode = "matchres"; st.status = null; await load();
+      st.mres = { ...r, secs, wrong: g.wrong, level: g.level }; st.mres.gs = await gsRecord("match", { score, secs, wrong: g.wrong }); st.mode = "matchres"; st.status = null; await load();
       setTimeout(() => (score >= 90 ? FX.victory() : FX.victory()), 300);
     } catch (e) { toast(e.message); st.mode = "home"; }
     go("game");

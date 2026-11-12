@@ -514,24 +514,27 @@ select pg_temp.t('การ์ด: ข้อมูลตั้งต้น 3 ช
   and not exists (select 1 from cards where btrim(fact) = '' or btrim(name) = ''));
 update app_settings set value='100' where key='card_drop_pct';
 set role anon;
-create temp table _k0 as select card_roll((select tok from _gt where no=17), 'quiz') r;
+create temp table _k0 as select card_roll((select tok from _gt where no=17), 'battle') r;
+create temp table _k0b as select card_roll((select tok from _gt where no=17), 'quiz') r;
+grant all on _k0b to anon, authenticated;
 grant all on _k0 to anon, authenticated;
-select pg_temp.t('การ์ด: ยังไม่ได้เล่นเกม → ไม่ดรอป', (select r->>'reason' from _k0) = 'no_play');
+select pg_temp.t('การ์ด: ยังไม่ได้ชนะมอนสเตอร์ → ไม่ดรอป', (select r->>'reason' from _k0) = 'no_play');
+select pg_temp.t('การ์ด: เกมอื่น (ควิซ) ไม่ดรอปการ์ดอีกแล้ว', (select r->>'reason' from _k0b) = 'monster_only');
 select pg_temp.t('การ์ด: เกมที่ไม่รู้จักถูกปฏิเสธ', pg_temp.fails($q$select card_roll((select tok from _gt where no=17), 'nope')$q$, 'anon'));
 reset role;
-insert into game_plays (student_id, game, score, correct, exp) values ((select a from _ks), 'quiz', 0, 4, 10);
+insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max) select (select a from _ks), id, 'won', 10, 10, 0, 10 from monsters limit 1;
 set role anon;
-create temp table _k1 as select card_roll((select tok from _gt where no=17), 'quiz') r;
-create temp table _k2 as select card_roll((select tok from _gt where no=17), 'quiz') r;
+create temp table _k1 as select card_roll((select tok from _gt where no=17), 'battle') r;
+create temp table _k2 as select card_roll((select tok from _gt where no=17), 'battle') r;
 grant all on _k1, _k2 to anon, authenticated;
 reset role;
 select pg_temp.t('การ์ด: เล่นแล้วได้การ์ด (ใบแรกได้แน่นอน เป็นใบใหม่)', ((select r from _k1)->>'drop')::boolean and (select r::jsonb->'card'->>'is_new' from _k1) = 'true');
 select pg_temp.t('การ์ด: รอบเล่นเดียวสุ่มได้ครั้งเดียว', (select r->>'reason' from _k2) = 'no_play' and (select count(*) from card_drops where student_id=(select a from _ks) and source='game') = 1);
 -- เพดานต่อวัน
 update app_settings set value='1' where key='card_daily_cap';
-insert into game_plays (student_id, game, score, correct, exp) values ((select a from _ks), 'match', 50, null, 5);
+insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max) select (select a from _ks), id, 'won', 10, 10, 0, 10 from monsters limit 1;
 set role anon;
-create temp table _k3 as select card_roll((select tok from _gt where no=17), 'match') r;
+create temp table _k3 as select card_roll((select tok from _gt where no=17), 'battle') r;
 grant all on _k3 to anon, authenticated;
 reset role;
 select pg_temp.t('การ์ด: ถึงเพดานต่อวัน → ไม่ดรอป (cap)', (select r->>'reason' from _k3) = 'cap');
@@ -545,9 +548,9 @@ select pg_temp.t('การ์ด: ซ้ำได้เศษธาตุตา
 update students set card_pity = 3 where id=(select b from _ks);
 select _card_grant((select b from _ks), (select id from cards order by no, id limit 1), 'gift');
 update students set card_pity = 3 where id=(select b from _ks);
-insert into game_plays (student_id, game, score, correct, exp) values ((select b from _ks), 'match', 50, null, 5);
+insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max) select (select b from _ks), id, 'won', 10, 10, 0, 10 from monsters limit 1;
 set role anon;
-create temp table _k4 as select card_roll((select tok from _gt where no=18), 'match') r;
+create temp table _k4 as select card_roll((select tok from _gt where no=18), 'battle') r;
 grant all on _k4 to anon, authenticated;
 reset role;
 select pg_temp.t('การ์ด: pity — ซ้ำครบเกณฑ์แล้วใบต่อไปเป็นใบใหม่แน่นอน', (select r::jsonb->'card'->>'is_new' from _k4) = 'true' and (select card_pity from students where id=(select b from _ks)) = 0);
@@ -575,14 +578,13 @@ select pg_temp.t('การ์ด: ครูแจกการ์ดให้น
 set role anon;
 select pg_temp.t('การ์ด: กล่องของขวัญแสดงชื่อการ์ด', gift_inbox((select tok from _gt where no=17))::text like '%ทองคำ%');
 reset role;
--- กาชา: ห่อแล้วยังคืนผลเดิม + แถมการ์ด
-update app_settings set value='100' where key='card_gacha_pct';
+-- กาชา: ห่อแล้วยังคืนผลเดิม แต่ไม่แถมการ์ดแล้ว
 update students set coins = coins + 500 where id=(select b from _ks);
 set role anon;
 create temp table _kgc as select gacha_pull((select tok from _gt where no=18), 10) r;
 grant all on _kgc to anon, authenticated;
 reset role;
-select pg_temp.t('การ์ด: กาชา 10 ครั้ง ได้ผลเดิมครบ + การ์ดอย่างน้อย 1 ใบ', json_array_length((select r->'items' from _kgc)) = 10 and jsonb_array_length((select r::jsonb->'cards' from _kgc)) >= 1);
+select pg_temp.t('การ์ด: กาชา 10 ครั้ง ได้ผลเดิมครบ และไม่แถมการ์ด', json_array_length((select r->'items' from _kgc)) = 10 and jsonb_array_length((select r::jsonb->'cards' from _kgc)) = 0);
 -- รบบอส
 insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max) select (select b from _ks), id, 'won', 10, 10, 0, 10 from monsters limit 1;
 set role anon;
@@ -598,7 +600,6 @@ select game_record((select tok from _gt where no=19), 'quiz', '{"correct":5}');
 reset role;
 select pg_temp.t('การ์ด: ทำสถิติใหม่แล้วรอบเล่นถูกทำเครื่องหมาย (โอกาสการ์ดเพิ่ม)', (select best_hit from game_plays where student_id=(select c from _ks) and game='quiz'));
 update app_settings set value='30' where key='card_drop_pct';
-update app_settings set value='40' where key='card_gacha_pct';
 select pg_temp.t('การ์ด: นักเรียนเรียกฟังก์ชันภายในตรงๆ ไม่ได้', pg_temp.fails($q$select _card_grant((select a from _ks), (select id from cards limit 1), 'gift')$q$, 'anon') and pg_temp.fails($q$select _gacha_pull('00000000-0000-0000-0000-000000000001', 1)$q$, 'anon'));
 
 -- ================= สรุป =================

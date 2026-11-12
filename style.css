@@ -1161,7 +1161,7 @@ body.peeking .navwrap{top:34px}
 .flipc{perspective:800px;width:170px;height:226px;margin:6px auto}
 .flipin{position:relative;width:100%;height:100%;transition:transform .8s;transform-style:preserve-3d}.flipin.flip{transform:rotateY(180deg)}
 .cback,.cfront{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.cback{border-radius:12px;border:2px solid #7c4dff;background:repeating-linear-gradient(45deg,#3a2a78,#3a2a78 8px,#2a1d58 8px,#2a1d58 16px);display:grid;place-items:center;font-size:56px}
+.cback{background:#2a1850 url(assets/cards/back.jpg) center/cover no-repeat;border-radius:12px;border:2px solid #d9b45a;box-shadow:0 4px 14px #0006}
 .cfront{transform:rotateY(180deg)}.cfront .cf{width:100%;margin:0;height:100%}
 .cset{border-top:3px solid var(--sc,#7c4dff)}
 
