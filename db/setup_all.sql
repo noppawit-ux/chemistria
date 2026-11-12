@@ -6642,3 +6642,11 @@ select 'event', 'สมุดการ์ดสะสมเปิดแล้ว
  E'📖 สมุดการ์ดสะสม — เปิดแล้ว!\n\nการ์ด 60 ใบใน 3 ชุด: ⚛️ ธาตุรอบตัว · 👩‍🔬 นักเคมีดัง · 🧪 อุปกรณ์แล็บ\nทุกใบมีข้อเท็จจริงเคมี 1 บรรทัด เล่นไปก็ได้ความรู้ไปด้วย\nความหายาก N · R · SR · SSR (ใบ SSR มีภาพวาดแนวแฟนตาซีเคมี)\n\n🎁 ได้การ์ดจากไหน\n• จบเกม (ควิซ จับคู่ สเปลล์ ประลองครูบุ๊ค เคมีรัน ล่ามอนสเตอร์) — ทำสถิติใหม่โอกาสเพิ่ม · วันละไม่เกิน 5 ใบ\n• สุ่มกาชา — หมุน 10 ครั้งได้การ์ด 1 ใบแน่นอน\n• ครูแจกเป็นของขวัญ\n\n✨ ได้ใบซ้ำไม่เสียเปล่า\nแปลงเป็น "เศษธาตุ" เก็บไว้อัปเลเวลอุปกรณ์ในอัปเดตถัดไป\nได้ใบใหม่ไม่ออกสักที? ซ้ำติดกัน 3 ครั้ง ใบต่อไปได้ใบใหม่แน่นอน!\n\n🏆 สะสมครบชุดรับ เหรียญ + ตั๋วกาชา\nเปิดดูที่แท็บ 📖 สมุดสะสม ได้เลย',
  'assets/news/items.jpg', 40
 where not exists (select 1 from news_posts where title = 'สมุดการ์ดสะสมเปิดแล้ว! 📖🃏');
+-- 56: ผูกภาพการ์ด SR (ภาพวางที่ assets/cards/ — ถ้าไฟล์ยังไม่มี จะใช้หน้าการ์ด CSS แทนอัตโนมัติ)
+update cards c set image_url = 'assets/cards/' || v.f
+from (values ('elements', 30, 'sr-tungsten.jpg'), ('elements', 31, 'sr-platinum.jpg'),
+             ('elements', 32, 'sr-gold.jpg'), ('elements', 33, 'sr-mercury.jpg'),
+             ('chemists', 9, 'sr-mendeleev.jpg'), ('chemists', 10, 'sr-nobel.jpg'),
+             ('chemists', 11, 'sr-pauling.jpg'), ('lab', 11, 'sr-centrifuge.jpg')) v(code, no, f)
+join card_sets s on s.code = v.code
+where c.set_id = s.id and c.no = v.no and c.image_url is null;
