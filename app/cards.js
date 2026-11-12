@@ -10,7 +10,8 @@ async function cardAlbumLoad() {
 }
 const cardFace = (c, own = true) => {
   const sym = own ? esc(c.symbol || c.emoji) : "?", big = own && (c.symbol || "").length <= 2;
-  return `<div class="cf rar-${c.rarity} ${own ? "" : "locked"}"><div class="ce">${own ? esc(c.emoji) : esc(c.emoji)}</div><div class="cs ${big ? "big" : ""}">${sym}</div>
+  const im = own && c.image ? `<img class="cimg" src="${esc(c.image)}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('has-img');this.remove()">` : "";
+  return `<div class="cf rar-${c.rarity} ${own ? "" : "locked"} ${im ? "has-img" : ""}">${im}<div class="ce">${own ? esc(c.emoji) : esc(c.emoji)}</div><div class="cs ${big ? "big" : ""}">${sym}</div>
     <div class="cn">${own ? esc(c.name) : "???"}</div><div class="cr">${c.rarity}</div></div>`;
 };
 function albumHtml() {
