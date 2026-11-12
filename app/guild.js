@@ -3,6 +3,10 @@ let GLD = null, GLDB = null;   // GLD = guild_status (โหลดพร้อ�
 const gtag = (n) => n ? `<span class="gtag">[${esc(n)}]</span> ` : "";
 const gDate = (iso) => iso ? new Date(String(iso).slice(0, 10) + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short" }) : "";
 
+const gmedal = (rk, cls = "") => rk >= 1 && rk <= 3 ? `<img class="gmedal ${cls}" src="assets/medals/rank${rk}.png" alt="อันดับ ${rk}">` : `<span class="lbn">${rk}</span>`;
+const gem = (e) => ({ "🥇": 1, "🥈": 2, "🥉": 3 }[e] ? gmedal({ "🥇": 1, "🥈": 2, "🥉": 3 }[e], "sm") : esc(e || ""));
+const gStrip = (ms, showGp) => `<div class="gstrip">${(ms || []).map((x) => `<div class="gmem ${x.me ? "me" : ""}">${x.leader ? '<i class="gcrown">👑</i>' : ""}${stage(x.char_class, x.rank_info, x.decor, "sm")}<b>${esc(x.name)}</b>${showGp && x.gp != null ? `<small>${x.gp} แต้ม</small>` : ""}</div>`).join("")}</div>`;
+
 function guildChip() {
   if (!GLD || !GLD.cfg) return "";
   const c = GLD.cfg, m = GLD.my;
@@ -47,21 +51,21 @@ function guildHtml() {
     mine = `<div class="card"><h3>${gtag(m.name)}${esc(m.name)} ${m.leader ? '<span class="pill">👑 หัวหน้า</span>' : ""}</h3>
       <div class="row" style="gap:8px;flex-wrap:wrap;margin:6px 0">${c.hidden ? '<span class="pill">🔒 อันดับถูกซ่อน</span>' : `<span class="pill">อันดับรวม ${m.rank ?? "—"}</span><span class="pill">ในห้อง ${m.room_rank ?? "—"}</span><span class="pill">เฉลี่ย ${m.avg ?? 0} แต้ม/คน</span><span class="pill">แต้มฉัน ${m.personal_gp ?? 0}</span>`}</div>
       ${!m.ranked ? `<p class="muted" style="font-size:.85em">กิลด์ต้องมีอย่างน้อย ${c.min_members} คนถึงติดอันดับ (ตอนนี้ ${m.size})</p>` : ""}
-      ${c.hidden ? "" : `<div class="lvgauge" style="margin:8px 0"><i style="width:${pct}%"></i></div><div class="muted" style="font-size:.85em">${nxt ? `ขั้นถัดไป ${nxt.emoji} ${esc(nxt.label)} ที่ ${nxt.min_avg} แต้ม/คน (ตอนนี้ ${avg})` : "ปลดล็อกครบทุกขั้นแล้ว 🎉"}</div>`}
-      <div style="margin-top:10px">${(m.members || []).map((x) => `<div class="row" style="justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line)"><span>${x.leader ? "👑 " : ""}<b class="${x.me ? "me" : ""}">${esc(x.name)}</b> <small class="muted">เลขที่ ${x.no}</small></span><span class="muted">${x.gp == null ? "🔒" : x.gp + " แต้ม"}</span></div>`).join("")}</div>
+      ${c.hidden ? "" : `<div class="lvgauge" style="margin:8px 0"><i style="width:${pct}%"></i></div><div class="muted" style="font-size:.85em">${nxt ? `ขั้นถัดไป ${gem(nxt.emoji)} ${esc(nxt.label)} ที่ ${nxt.min_avg} แต้ม/คน (ตอนนี้ ${avg})` : "ปลดล็อกครบทุกขั้นแล้ว 🎉"}</div>`}
+      ${gStrip(m.members, true)}
       ${peek ? "" : `<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${m.can_rename ? '<button class="btn small ghost" onclick="guildRename()">✏️ เปลี่ยนชื่อ (1 ครั้ง)</button>' : ""}${c.can_edit ? '<button class="btn small ghost" onclick="guildLeave()">ออกจากกิลด์</button>' : ""}</div>`}</div>
       <div class="card"><h3>🎁 รางวัลปลดล็อกของกิลด์</h3>${tiers.map((t) => `<div class="row" style="justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);opacity:${t.reached ? 1 : .6}">
-        <span>${t.emoji} <b>${esc(t.label)}</b> <small class="muted">เฉลี่ย ≥ ${t.min_avg}</small><br><small class="muted">${t.coins ? t.coins + " เหรียญ " : ""}${t.pulls ? "· ตั๋วกาชา " + t.pulls + " " : ""}${t.exp ? "· " + t.exp + " EXP" : ""}</small></span>
+        <span>${gem(t.emoji)} <b>${esc(t.label)}</b> <small class="muted">เฉลี่ย ≥ ${t.min_avg}</small><br><small class="muted">${t.coins ? t.coins + " เหรียญ " : ""}${t.pulls ? "· ตั๋วกาชา " + t.pulls + " " : ""}${t.exp ? "· " + t.exp + " EXP" : ""}</small></span>
         ${t.claimed ? '<span class="pill">✅ รับแล้ว</span>' : t.claimable && !peek ? `<button class="btn small gold" onclick="guildClaimTier(${t.tier})">รับรางวัล</button>` : t.reached ? '<span class="muted" style="font-size:.8em">แต้มส่วนตัวยังไม่ถึงเกณฑ์</span>' : '<span class="muted">🔒</span>'}</div>`).join("")}</div>`;
     const p = GLD.prize;
-    if (p) mine += `<div class="card"><h3>🏆 ผลสุดท้าย</h3><p>กิลด์ของคุณได้อันดับ <b>${p.rank}</b> ของทุกห้อง · อันดับ ${p.room_rank} ในห้อง</p>
-      ${p.prize ? `<p>${esc(p.prize.label)}: ${p.prize.coins} เหรียญ${p.prize.pulls ? " · ตั๋วกาชา " + p.prize.pulls : ""}${p.prize.exp ? " · " + p.prize.exp + " EXP" : ""}</p>` : ""}${p.room_bonus ? `<p>🥇 โบนัสกิลด์อันดับ 1 ของห้อง: ${p.room_bonus} เหรียญ</p>` : ""}
+    if (p) mine += `<div class="card"><h3>ผลสุดท้าย</h3><div class="row" style="align-items:center;gap:10px">${gmedal(p.rank, "big")}<p style="margin:0">กิลด์ของคุณได้อันดับ <b>${p.rank}</b> ของทุกห้อง · อันดับ ${p.room_rank} ในห้อง</p></div>
+      ${p.prize ? `<p>${esc(p.prize.label)}: ${p.prize.coins} เหรียญ${p.prize.pulls ? " · ตั๋วกาชา " + p.prize.pulls : ""}${p.prize.exp ? " · " + p.prize.exp + " EXP" : ""}</p>` : ""}${p.room_bonus ? `<p>${gmedal(1, "sm")} โบนัสกิลด์อันดับ 1 ของห้อง: ${p.room_bonus} เหรียญ</p>` : ""}
       ${(p.prize && !p.claimed_rank) || (p.room_bonus && !p.claimed_room) ? (p.eligible && !peek ? '<button class="btn gold" onclick="guildClaimPrize()">รับรางวัลอันดับ</button>' : '<p class="muted">แต้มส่วนตัวไม่ถึงเกณฑ์ หรือหมดเวลารับรางวัลแล้ว</p>') : '<span class="pill">✅ รับรางวัลอันดับแล้ว</span>'}</div>`;
   }
   let board = "";
-  if (GLDB && GLDB.loading) board = `<div class="card"><h3>🏆 อันดับกิลด์ทุกห้อง</h3><p class="muted">กำลังโหลด…</p></div>`;
-  else if (GLDB && GLDB.hidden) board = `<div class="card"><h3>🏆 อันดับกิลด์ทุกห้อง</h3><p class="muted">🔒 วันสุดท้ายซ่อนอันดับเพื่อความลุ้น — ประกาศผลหลังจบกิจกรรม</p></div>`;
-  else if (GLDB) board = `<div class="card"><h3>🏆 อันดับกิลด์ทุกห้อง</h3>${(GLDB.rows || []).length ? (GLDB.rows || []).map((r) => `<div class="lbrow ${r.mine ? "me" : ""}"><span class="lbn n${r.rank}">${r.rank}</span><div class="lbm"><b class="lbname">${esc(r.name)}</b><small class="muted">ห้อง ${esc(r.class_name)} · ${r.size} คน</small></div><div class="lbr"><b>${r.avg}</b><small class="muted">แต้ม/คน</small></div></div>`).join("") : '<p class="muted">ยังไม่มีกิลด์ติดอันดับ (ต้องมีสมาชิก ≥ ' + c.min_members + ' คน)</p>'}${GLDB.unranked ? `<p class="muted" style="font-size:.85em">มี ${GLDB.unranked} กิลด์ที่สมาชิกยังไม่ครบ ${c.min_members} คน จึงยังไม่ติดอันดับ</p>` : ""}</div>`;
+  if (GLDB && GLDB.loading) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">กำลังโหลด…</p></div>`;
+  else if (GLDB && GLDB.hidden) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">🔒 วันสุดท้ายซ่อนอันดับเพื่อความลุ้น — ประกาศผลหลังจบกิจกรรม</p></div>`;
+  else if (GLDB) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3>${(GLDB.rows || []).length ? (GLDB.rows || []).map((r) => `<div class="gbrow ${r.mine ? "me" : ""}"><div class="lbrow gb">${gmedal(r.rank)}<div class="lbm"><b class="lbname">${esc(r.name)}</b><small class="muted">ห้อง ${esc(r.class_name)} · ${r.size} คน</small></div><div class="lbr"><b>${r.avg}</b><small class="muted">แต้ม/คน</small></div></div>${gStrip(r.members, false)}</div>`).join("") : '<p class="muted">ยังไม่มีกิลด์ติดอันดับ (ต้องมีสมาชิก ≥ ' + c.min_members + ' คน)</p>'}${GLDB.unranked ? `<p class="muted" style="font-size:.85em">มี ${GLDB.unranked} กิลด์ที่สมาชิกยังไม่ครบ ${c.min_members} คน จึงยังไม่ติดอันดับ</p>` : ""}</div>`;
   return head + mine + board;
 }
 

@@ -273,6 +273,9 @@ select pg_temp.t('GP: เพดานต่อวัน (300 → 60)', (select g
 select pg_temp.t('อันดับ: เฉลี่ยต่อคน = 90/5 = 18', (select avg = 18 and size = 5 and ranked and rank = 1 from _guild_ranks() where name='ทีมอัลฟา'));
 set role anon;
 select pg_temp.t('guild_status: สมาชิกครบ และเห็นแต้มตนเอง', (select (s->'my'->>'size')::int = 5 and (s->'my'->>'personal_gp')::numeric = 30 from (select guild_status((select tok from _gt where no=11))::jsonb s) x));
+select pg_temp.t('guild_status: สมาชิกมีข้อมูลตัวละคร (คลาส · แรงก์ · ตกแต่ง)', (select bool_and(m ? 'char_class' and m ? 'rank_info' and m ? 'decor' and m ? 'name') and count(*) = 5 and count(*) filter (where (m->>'me')::boolean) = 1 from (select jsonb_array_elements(guild_status((select tok from _gt where no=11))::jsonb->'my'->'members') m) x));
+select pg_temp.t('guild_board: แต่ละกิลด์แสดงสมาชิกพร้อมตัวละคร แต่ไม่เผยแต้มรายคน', (select bool_and(jsonb_array_length(r->'members') >= 1 and not exists (select 1 from jsonb_array_elements(r->'members') mm where mm->'gp' <> 'null'::jsonb))
+  from jsonb_array_elements(guild_board((select tok from _go))::jsonb->'rows') r));
 select pg_temp.t('guild_board: มีกิลด์ติดอันดับ', (select jsonb_array_length((guild_board((select tok from _go)))::jsonb->'rows') >= 1));
 select pg_temp.t('ชื่อกิลด์แสดงใน student_dashboard', (select student_dashboard((select tok from _gt where no=11))::jsonb->'student'->>'guild') = 'ทีมอัลฟา');
 select pg_temp.t('ชื่อกิลด์แสดงใน leaderboard ของ dashboard', exists (select 1 from jsonb_array_elements(student_dashboard((select tok from _gt where no=11))::jsonb->'leaderboard') e where e->>'guild' = 'ทีมอัลฟา'));

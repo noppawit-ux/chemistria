@@ -1171,3 +1171,16 @@ body.peeking .navwrap{top:34px}
 .cf.has-img .ce,.cf.has-img .cs{display:none}
 .cf.has-img .cn,.cf.has-img .cr{position:relative;z-index:1}
 .cf.has-img .cn{position:absolute;left:0;right:0;bottom:0;padding:14px 4px 5px;background:linear-gradient(transparent,rgba(8,4,20,.85));color:#fff;text-shadow:0 1px 3px #000}
+
+/* v1.92 Mini Guild: ตัวละครสมาชิก + เหรียญอันดับ */
+.gmedal{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 3px #0008);vertical-align:middle}.gmedal.sm{width:22px;height:22px}.gmedal.big{width:64px;height:64px}
+.gstrip{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;margin:8px 0 2px;overflow-x:auto;padding-bottom:4px}
+.gmem{position:relative;flex:1 1 0;min-width:0;max-width:96px;text-align:center}
+.gmem .avf.stg{--s:min(17vw,78px);margin:0 auto}
+.gmem b{display:block;font-size:.72rem;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gmem small{display:block;font-size:.66rem;color:var(--muted)}.gmem.me b{color:var(--gold2,#ffd75a)}
+.gmem.me .avf.stg{box-shadow:0 0 0 2px var(--gold2,#ffd75a)}
+.gcrown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:6;font-style:normal;font-size:16px;filter:drop-shadow(0 1px 2px #000)}
+.gbrow{border-bottom:1px solid #ffffff14;padding-bottom:6px}.gbrow:last-child{border-bottom:0}.gbrow.me{background:#3a2a6b55;border-radius:12px}
+.lbrow.gb{border-bottom:0;grid-template-columns:38px minmax(0,1fr) auto}
+.gbrow .gmem .avf.stg{--s:min(13vw,58px)}.gbrow .gmem b{font-size:.66rem}.gbrow .gcrown{font-size:12px;top:-6px}
