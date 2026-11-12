@@ -6650,3 +6650,57 @@ from (values ('elements', 30, 'sr-tungsten.jpg'), ('elements', 31, 'sr-platinum.
              ('chemists', 11, 'sr-pauling.jpg'), ('lab', 11, 'sr-centrifuge.jpg')) v(code, no, f)
 join card_sets s on s.code = v.code
 where c.set_id = s.id and c.no = v.no and c.image_url is null;
+-- 57: ผูกภาพการ์ด R (22) และ N (26) — ไฟล์ภาพวางที่ assets/cards/ (ไฟล์ไหนยังไม่มี จะใช้หน้าการ์ด CSS แทนอัตโนมัติ)
+update cards c set image_url = 'assets/cards/' || v.f
+from (values
+ ('elements', 3, 'r-elements-03-lithium.jpg'),
+ ('elements', 7, 'r-elements-07-fluorine.jpg'),
+ ('elements', 8, 'r-elements-08-neon.jpg'),
+ ('elements', 12, 'r-elements-12-silicon.jpg'),
+ ('elements', 13, 'r-elements-13-phosphorus.jpg'),
+ ('elements', 16, 'r-elements-16-argon.jpg'),
+ ('elements', 19, 'r-elements-19-titanium.jpg'),
+ ('elements', 20, 'r-elements-20-chromium.jpg'),
+ ('elements', 22, 'r-elements-22-cobalt.jpg'),
+ ('elements', 25, 'r-elements-25-zinc.jpg'),
+ ('elements', 26, 'r-elements-26-bromine.jpg'),
+ ('elements', 27, 'r-elements-27-silver.jpg'),
+ ('elements', 29, 'r-elements-29-iodine.jpg'),
+ ('elements', 34, 'r-elements-34-lead.jpg'),
+ ('chemists', 5, 'r-chemists-05-lavoisier.jpg'),
+ ('chemists', 6, 'r-chemists-06-rutherford.jpg'),
+ ('chemists', 7, 'r-chemists-07-bohr.jpg'),
+ ('chemists', 8, 'r-chemists-08-hodgkin.jpg'),
+ ('lab', 7, 'r-lab-07-pipette.jpg'),
+ ('lab', 8, 'r-lab-08-burette.jpg'),
+ ('lab', 9, 'r-lab-09-balance.jpg'),
+ ('lab', 10, 'r-lab-10-hood.jpg'),
+ ('elements', 1, 'n-elements-01-hydrogen.jpg'),
+ ('elements', 2, 'n-elements-02-helium.jpg'),
+ ('elements', 4, 'n-elements-04-carbon.jpg'),
+ ('elements', 5, 'n-elements-05-nitrogen.jpg'),
+ ('elements', 6, 'n-elements-06-oxygen.jpg'),
+ ('elements', 9, 'n-elements-09-sodium.jpg'),
+ ('elements', 10, 'n-elements-10-magnesium.jpg'),
+ ('elements', 11, 'n-elements-11-aluminium.jpg'),
+ ('elements', 14, 'n-elements-14-sulfur.jpg'),
+ ('elements', 15, 'n-elements-15-chlorine.jpg'),
+ ('elements', 17, 'n-elements-17-potassium.jpg'),
+ ('elements', 18, 'n-elements-18-calcium.jpg'),
+ ('elements', 21, 'n-elements-21-iron.jpg'),
+ ('elements', 23, 'n-elements-23-nickel.jpg'),
+ ('elements', 24, 'n-elements-24-copper.jpg'),
+ ('elements', 28, 'n-elements-28-tin.jpg'),
+ ('chemists', 1, 'n-chemists-01-boyle.jpg'),
+ ('chemists', 2, 'n-chemists-02-pasteur.jpg'),
+ ('chemists', 3, 'n-chemists-03-avogadro.jpg'),
+ ('chemists', 4, 'n-chemists-04-dalton.jpg'),
+ ('lab', 1, 'n-lab-01-beaker.jpg'),
+ ('lab', 2, 'n-lab-02-flask.jpg'),
+ ('lab', 3, 'n-lab-03-cylinder.jpg'),
+ ('lab', 4, 'n-lab-04-tube.jpg'),
+ ('lab', 5, 'n-lab-05-lamp.jpg'),
+ ('lab', 6, 'n-lab-06-goggles.jpg')
+) v(code, no, f)
+join card_sets s on s.code = v.code
+where c.set_id = s.id and c.no = v.no and c.image_url is null;
