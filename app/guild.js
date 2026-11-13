@@ -3,8 +3,15 @@ let GLD = null, GLDB = null;   // GLD = guild_status (โหลดพร้อ�
 const gtag = (n) => n ? `<span class="gtag">[${esc(n)}]</span> ` : "";
 const gDate = (iso) => iso ? new Date(String(iso).slice(0, 10) + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short" }) : "";
 
-const gmedal = (rk, cls = "") => rk >= 1 && rk <= 3 ? `<img class="gmedal ${cls}" src="assets/medals/rank${rk}.png" alt="อันดับ ${rk}">` : `<span class="lbn">${rk}</span>`;
-const gem = (e) => ({ "🥇": 1, "🥈": 2, "🥉": 3 }[e] ? gmedal({ "🥇": 1, "🥈": 2, "🥉": 3 }[e], "sm") : esc(e || ""));
+const gcoin = (rk, cls = "") => `<img class="gmedal ${cls}" src="assets/medals/rank${rk}.png" alt="${rk}">`;
+const gmedal = (rk, cls = "") => rk >= 1 && rk <= 6 ? `<img class="gbadge ${cls}" src="assets/badges/rank${rk}.png" alt="อันดับ ${rk}">` : `<span class="lbn">${rk}</span>`;
+/* ชื่อกิลด์ใส่กรอบ + สัญลักษณ์ */
+const gnameF = (name, emb, cls = "") => `<span class="gnamef ${cls}">${emb ? `<img class="gemb" src="assets/emblems/e${emb}.png" alt="">` : ""}<b>${esc(name)}</b></span>`;
+let GEMB_OPEN = false;
+const guildEmbToggle = () => { GEMB_OPEN = !GEMB_OPEN; const v = $("#view"); if (v && tab === "guild") v.innerHTML = guildHtml(); };
+const guildEmblem = (i) => { GEMB_OPEN = false; GLDB = null; return act(() => rpc("guild_set_emblem", { p_token: tk(), p_emblem: i }), "เปลี่ยนสัญลักษณ์กิลด์แล้ว 🛡️"); };
+const gEmbPicker = (cur) => `<div class="gembpick">${Array.from({ length: 12 }, (_, k) => k + 1).map((i) => `<button class="${i === cur ? "on" : ""}" onclick="guildEmblem(${i})"><img src="assets/emblems/e${i}.png" alt="สัญลักษณ์ ${i}"></button>`).join("")}</div>`;
+const gem = (e) => ({ "🥇": 1, "🥈": 2, "🥉": 3 }[e] ? gcoin({ "🥇": 1, "🥈": 2, "🥉": 3 }[e], "sm") : esc(e || ""));
 const gShort = (n) => { const t = String(n || "").replace(/^(นางสาว|เด็กชาย|เด็กหญิง|นาย|นาง|ด\.ช\.|ด\.ญ\.|น\.ส\.)\s*/, "").trim(); return t.split(/\s+/)[0] || n; };
 const gChar = (x) => { const dc = x.decor || {}, o = dc.outfit, base = "assets/chars/" + (x.char_class || "novice") + (altGender(x.char_class, dc.gender) ? "_alt" : ""); return `<img class="gch" loading="lazy" decoding="async" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">`; };
 /* ยืนเรียงแบบวงบอยแบนด์: หัวหน้ากลาง · ฉากหลังนิ่ง ไม่มีแอนิเมชัน/เอฟเฟกต์ เพื่อไม่ให้หน้าหน่วง */
@@ -20,8 +27,8 @@ function guildTopHtml() {
   if (!rows.length || GLDB.hidden) return hold();
   const top = rows.slice(0, 3), mine = rows.find((r) => r.mine), list = top.slice(); if (mine && !top.includes(mine)) list.push(mine);
   const r1 = list[0];
-  const big = `<div class="gtop1"><div class="row" style="align-items:center;gap:8px">${gmedal(1, "big")}<div class="grow"><b style="font-size:1.05rem">${esc(r1.name)}</b><div class="muted" style="font-size:.78rem">ห้อง ${esc(r1.class_name)} · ${r1.size} คน</div></div><div style="text-align:right"><b class="gtopavg">${r1.avg}</b><small class="muted" style="display:block">แต้ม/คน</small></div></div>${gStrip(r1.members, false, 1)}</div>`;
-  const small = list.slice(1).map((r) => `<div class="gtopn ${r.mine ? "me" : ""}">${gmedal(r.rank, "sm")}<div class="grow"><b>${esc(r.name)}</b><small class="muted"> ${esc(r.class_name)}</small><div class="gdots">${(r.members || []).map((x) => gChar(x)).join("")}</div></div><div style="text-align:right"><b>${r.avg}</b><small class="muted" style="display:block">แต้ม/คน</small></div></div>`).join("");
+  const big = `<div class="gtop1"><div class="row" style="align-items:center;gap:8px">${gmedal(1, "big")}<div class="grow">${gnameF(r1.name, r1.emblem, "lg")}<div class="muted" style="font-size:.78rem">ห้อง ${esc(r1.class_name)} · ${r1.size} คน</div></div><div style="text-align:right"><b class="gtopavg">${r1.avg}</b><small class="muted" style="display:block">แต้ม/คน</small></div></div>${gStrip(r1.members, false, 1)}</div>`;
+  const small = list.slice(1).map((r) => `<div class="gtopn ${r.mine ? "me" : ""}">${gmedal(r.rank, "sm")}<div class="grow">${gnameF(r.name, r.emblem)}<small class="muted"> ${esc(r.class_name)}</small><div class="gdots">${(r.members || []).map((x) => gChar(x)).join("")}</div></div><div style="text-align:right"><b>${r.avg}</b><small class="muted" style="display:block">แต้ม/คน</small></div></div>`).join("");
   return hold(`<div class="card gtopcard" onclick="go('guild')"><h3 style="margin:0 0 8px">🏰 อันดับกิลด์ <small class="muted" style="font-weight:400">แตะดูทั้งหมด</small></h3>${big}${small}</div>`);
 }
 
@@ -60,13 +67,13 @@ function guildHtml() {
         <div class="row"><input id="gname" maxlength="16" placeholder="ชื่อกิลด์ 2–16 ตัวอักษร" style="flex:1"><button class="btn gold" onclick="guildCreate()">ตั้งกิลด์</button></div>
         <p class="muted" style="font-size:.85em;margin:6px 0 0">ชื่อกิลด์จะแสดงหน้าชื่อของสมาชิกทุกคน · เปลี่ยนชื่อได้ 1 ครั้ง</p></div>
         <div class="card"><h3>เข้าร่วมกิลด์ในห้อง ${esc(GLD.class_name || "")}</h3>${(GLD.open || []).length
-          ? (GLD.open || []).map((g) => `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span><b>${esc(g.name)}</b> <small class="muted">${g.size}/${c.max_members} คน</small></span><button class="btn small" onclick="guildJoin('${g.id}')">เข้าร่วม</button></div>`).join("")
+          ? (GLD.open || []).map((g) => `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${gnameF(g.name, g.emblem)} <small class="muted">${g.size}/${c.max_members} คน</small></span><button class="btn small" onclick="guildJoin('${g.id}')">เข้าร่วม</button></div>`).join("")
           : '<p class="muted">ยังไม่มีกิลด์ที่ว่างอยู่ — ตั้งกิลด์ใหม่ชวนเพื่อนได้เลย</p>'}</div>`;
     } else mine = `<div class="card"><p class="muted" style="margin:0">${c.phase === "soon" ? "ยังไม่เปิดรับสมัครกิลด์" : "คุณยังไม่มีกิลด์ — ครูจะสุ่มจัดให้ รอดูในหน้านี้"}</p></div>`;
   } else {
     const tiers = GLD.tiers || [], nxt = tiers.find((t) => !t.reached), avg = Number(m.avg || 0);
     const pct = m.avg == null ? 0 : nxt ? Math.min(100, Math.round((avg / nxt.min_avg) * 100)) : 100;
-    mine = `<div class="card"><h3>${gtag(m.name)}${esc(m.name)} ${m.leader ? '<span class="pill">👑 หัวหน้า</span>' : ""}</h3>
+    mine = `<div class="card"><h3 class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${gnameF(m.name, m.emblem, "lg")} ${m.leader ? '<span class="pill">👑 หัวหน้า</span>' : ""}</h3>${m.leader ? `<button class="btn small" style="margin:2px 0 6px" onclick="guildEmbToggle()">🛡️ เลือกสัญลักษณ์กิลด์ ${GEMB_OPEN ? "▴" : "▾"}</button>${GEMB_OPEN ? gEmbPicker(m.emblem) : ""}` : ""}
       <div class="row" style="gap:8px;flex-wrap:wrap;margin:6px 0">${c.hidden ? '<span class="pill">🔒 อันดับถูกซ่อน</span>' : `<span class="pill">อันดับรวม ${m.rank ?? "—"}</span><span class="pill">ในห้อง ${m.room_rank ?? "—"}</span><span class="pill">เฉลี่ย ${m.avg ?? 0} แต้ม/คน</span><span class="pill">แต้มฉัน ${m.personal_gp ?? 0}</span>`}</div>
       ${!m.ranked ? `<p class="muted" style="font-size:.85em">กิลด์ต้องมีอย่างน้อย ${c.min_members} คนถึงติดอันดับ (ตอนนี้ ${m.size})</p>` : ""}
       ${c.hidden ? "" : `<div class="lvgauge" style="margin:8px 0"><i style="width:${pct}%"></i></div><div class="muted" style="font-size:.85em">${nxt ? `ขั้นถัดไป ${gem(nxt.emoji)} ${esc(nxt.label)} ที่ ${nxt.min_avg} แต้ม/คน (ตอนนี้ ${avg})` : "ปลดล็อกครบทุกขั้นแล้ว 🎉"}</div>`}
@@ -83,7 +90,7 @@ function guildHtml() {
   let board = "";
   if (GLDB && GLDB.loading) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">กำลังโหลด…</p></div>`;
   else if (GLDB && GLDB.hidden) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">🔒 วันสุดท้ายซ่อนอันดับเพื่อความลุ้น — ประกาศผลหลังจบกิจกรรม</p></div>`;
-  else if (GLDB) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3>${(GLDB.rows || []).length ? (GLDB.rows || []).map((r) => `<div class="gbrow ${r.mine ? "me" : ""}"><div class="lbrow gb">${gmedal(r.rank)}<div class="lbm"><b class="lbname">${esc(r.name)}</b><small class="muted">ห้อง ${esc(r.class_name)} · ${r.size} คน</small></div><div class="lbr"><b>${r.avg}</b><small class="muted">แต้ม/คน</small></div></div>${gStrip(r.members, false, r.rank)}</div>`).join("") : '<p class="muted">ยังไม่มีกิลด์ติดอันดับ (ต้องมีสมาชิก ≥ ' + c.min_members + ' คน)</p>'}${GLDB.unranked ? `<p class="muted" style="font-size:.85em">มี ${GLDB.unranked} กิลด์ที่สมาชิกยังไม่ครบ ${c.min_members} คน จึงยังไม่ติดอันดับ</p>` : ""}</div>`;
+  else if (GLDB) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3>${(GLDB.rows || []).length ? (GLDB.rows || []).map((r) => `<div class="gbrow ${r.mine ? "me" : ""}"><div class="lbrow gb">${gmedal(r.rank)}<div class="lbm">${gnameF(r.name, r.emblem)}<small class="muted">ห้อง ${esc(r.class_name)} · ${r.size} คน</small></div><div class="lbr"><b>${r.avg}</b><small class="muted">แต้ม/คน</small></div></div>${gStrip(r.members, false, r.rank)}</div>`).join("") : '<p class="muted">ยังไม่มีกิลด์ติดอันดับ (ต้องมีสมาชิก ≥ ' + c.min_members + ' คน)</p>'}${GLDB.unranked ? `<p class="muted" style="font-size:.85em">มี ${GLDB.unranked} กิลด์ที่สมาชิกยังไม่ครบ ${c.min_members} คน จึงยังไม่ติดอันดับ</p>` : ""}</div>`;
   return head + mine + board;
 }
 

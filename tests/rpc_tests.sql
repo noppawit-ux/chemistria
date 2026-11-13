@@ -276,6 +276,10 @@ select pg_temp.t('guild_status: สมาชิกครบ และเห็�
 select pg_temp.t('guild_status: สมาชิกมีข้อมูลตัวละคร (คลาส · แรงก์ · ตกแต่ง)', (select bool_and(m ? 'char_class' and m ? 'rank_info' and m ? 'decor' and m ? 'name') and count(*) = 5 and count(*) filter (where (m->>'me')::boolean) = 1 from (select jsonb_array_elements(guild_status((select tok from _gt where no=11))::jsonb->'my'->'members') m) x));
 select pg_temp.t('guild_board: แต่ละกิลด์แสดงสมาชิกพร้อมตัวละคร แต่ไม่เผยแต้มรายคน', (select bool_and(jsonb_array_length(r->'members') >= 1 and not exists (select 1 from jsonb_array_elements(r->'members') mm where mm->'gp' <> 'null'::jsonb))
   from jsonb_array_elements(guild_board((select tok from _go))::jsonb->'rows') r));
+select pg_temp.t('guild_status: มีสัญลักษณ์กิลด์ 1–12 (ค่าเริ่มต้นคงที่)', (select (s->'my'->>'emblem')::int between 1 and 12 from (select guild_status((select tok from _gt where no=11))::jsonb s) x));
+select pg_temp.t('guild_set_emblem: หัวหน้าเปลี่ยนสัญลักษณ์ได้', (select (guild_set_emblem((select tok from _gt where no=11), 7)->>'emblem')::int = 7 and (guild_status((select tok from _gt where no=11))::jsonb->'my'->>'emblem')::int = 7));
+select pg_temp.t('guild_set_emblem: เลขนอกช่วง → ปฏิเสธ', pg_temp.fails($q$select guild_set_emblem((select tok from _gt where no=11), 13)$q$));
+select pg_temp.t('guild_board: แถวอันดับมีสัญลักษณ์', (select bool_and((r->>'emblem')::int between 1 and 12) from jsonb_array_elements(guild_board((select tok from _go))::jsonb->'rows') r));
 select pg_temp.t('guild_board: มีกิลด์ติดอันดับ', (select jsonb_array_length((guild_board((select tok from _go)))::jsonb->'rows') >= 1));
 select pg_temp.t('ชื่อกิลด์แสดงใน student_dashboard', (select student_dashboard((select tok from _gt where no=11))::jsonb->'student'->>'guild') = 'ทีมอัลฟา');
 select pg_temp.t('ชื่อกิลด์แสดงใน leaderboard ของ dashboard', exists (select 1 from jsonb_array_elements(student_dashboard((select tok from _gt where no=11))::jsonb->'leaderboard') e where e->>'guild' = 'ทีมอัลฟา'));
