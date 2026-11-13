@@ -9,7 +9,21 @@ const gShort = (n) => { const t = String(n || "").replace(/^(นางสาว|
 const gChar = (x) => { const dc = x.decor || {}, o = dc.outfit, base = "assets/chars/" + (x.char_class || "novice") + (altGender(x.char_class, dc.gender) ? "_alt" : ""); return `<img class="gch" loading="lazy" decoding="async" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">`; };
 /* ยืนเรียงแบบวงบอยแบนด์: หัวหน้ากลาง · ฉากหลังนิ่ง ไม่มีแอนิเมชัน/เอฟเฟกต์ เพื่อไม่ให้หน้าหน่วง */
 const gStrip = (ms, showGp, seed) => { const a = (ms || []).slice(), li = a.findIndex((x) => x.leader); if (li >= 0) { const [l] = a.splice(li, 1); a.splice(Math.floor(a.length / 2), 0, l); } const mid = Math.floor((a.length - 1) / 2);
-  return `<div class="gband gb${(seed || 0) % 5}"><div class="gstage">${a.map((x, i) => `<div class="gmem ${x.me ? "me" : ""} ${i === mid ? "mid" : ""}">${x.leader ? '<i class="gcrown">👑</i>' : ""}${gChar(x)}</div>`).join("")}</div><div class="gnames">${a.map((x) => `<div class="gnm ${x.me ? "me" : ""}"><b>${esc(gShort(x.name))}</b>${showGp && x.gp != null ? `<small>${x.gp} แต้ม</small>` : ""}</div>`).join("")}</div></div>`; };
+  return `<div class="gband gb${(seed || 0) % 5}"><div class="gstage">${a.map((x, i) => `<div class="gmem ${x.me ? "me" : ""} ${i === mid ? "mid" : ""}">${x.leader ? '<i class="gcrown">👑</i>' : ""}${gChar(x)}<div class="gplate"><b>${esc(gShort(x.name))}</b>${showGp && x.gp != null ? `<small>${x.gp}</small>` : ""}</div></div>`).join("")}</div></div>`; };
+
+/* การ์ดอันดับกิลด์บนหน้าแรก: อันดับ 1 ภาพใหญ่ · อันดับอื่นแถวเล็ก (+ กิลด์ของเราถ้าอยู่นอกท็อป 3) */
+function guildTopHtml() {
+  const hold = (h) => `<div id="guildtop">${h || ""}</div>`;
+  if (!GLD || !GLD.cfg || !["running", "ended"].includes(GLD.cfg.phase) || GLD.cfg.hidden) return hold();
+  if (GLDB === null) { guildBoardLoad(); return hold(); }
+  const rows = (GLDB && GLDB.rows) || [];
+  if (!rows.length || GLDB.hidden) return hold();
+  const top = rows.slice(0, 3), mine = rows.find((r) => r.mine), list = top.slice(); if (mine && !top.includes(mine)) list.push(mine);
+  const r1 = list[0];
+  const big = `<div class="gtop1"><div class="row" style="align-items:center;gap:8px">${gmedal(1, "big")}<div class="grow"><b style="font-size:1.05rem">${esc(r1.name)}</b><div class="muted" style="font-size:.78rem">ห้อง ${esc(r1.class_name)} · ${r1.size} คน</div></div><div style="text-align:right"><b class="gtopavg">${r1.avg}</b><small class="muted" style="display:block">แต้ม/คน</small></div></div>${gStrip(r1.members, false, 1)}</div>`;
+  const small = list.slice(1).map((r) => `<div class="gtopn ${r.mine ? "me" : ""}">${gmedal(r.rank, "sm")}<div class="grow"><b>${esc(r.name)}</b><small class="muted"> ${esc(r.class_name)}</small><div class="gdots">${(r.members || []).map((x) => gChar(x)).join("")}</div></div><div style="text-align:right"><b>${r.avg}</b><small class="muted" style="display:block">แต้ม/คน</small></div></div>`).join("");
+  return hold(`<div class="card gtopcard" onclick="go('guild')"><h3 style="margin:0 0 8px">🏰 อันดับกิลด์ <small class="muted" style="font-weight:400">แตะดูทั้งหมด</small></h3>${big}${small}</div>`);
+}
 
 function guildChip() {
   if (!GLD || !GLD.cfg) return "";
@@ -28,7 +42,7 @@ function guildChip() {
 function guildBoardLoad() {
   GLDB = { loading: true };
   rpc("guild_board", { p_token: tk() }).then((r) => { GLDB = r; }).catch(() => { GLDB = { rows: [], err: true }; })
-    .then(() => { if (tab === "guild") { const v = $("#view"); if (v) v.innerHTML = guildHtml(); } });
+    .then(() => { if (tab === "guild") { const v = $("#view"); if (v) v.innerHTML = guildHtml(); } else if (tab === "home") { const g = $("#guildtop"); if (g) g.outerHTML = guildTopHtml(); } });
 }
 
 function guildHtml() {
