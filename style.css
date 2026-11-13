@@ -1172,15 +1172,23 @@ body.peeking .navwrap{top:34px}
 .cf.has-img .cn,.cf.has-img .cr{position:relative;z-index:1}
 .cf.has-img .cn{position:absolute;left:0;right:0;bottom:0;padding:14px 4px 5px;background:linear-gradient(transparent,rgba(8,4,20,.85));color:#fff;text-shadow:0 1px 3px #000}
 
-/* v1.92 Mini Guild: ตัวละครสมาชิก + เหรียญอันดับ */
+/* v1.92 Mini Guild: เหรียญอันดับ + วงบอยแบนด์ (ภาพนิ่ง เบา) */
 .gmedal{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 3px #0008);vertical-align:middle}.gmedal.sm{width:22px;height:22px}.gmedal.big{width:64px;height:64px}
-.gstrip{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;margin:8px 0 2px;overflow-x:auto;padding-bottom:4px}
-.gmem{position:relative;flex:1 1 0;min-width:0;max-width:96px;text-align:center}
-.gmem .avf.stg{--s:min(17vw,78px);margin:0 auto}
-.gmem b{display:block;font-size:.72rem;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gmem small{display:block;font-size:.66rem;color:var(--muted)}.gmem.me b{color:var(--gold2,#ffd75a)}
-.gmem.me .avf.stg{box-shadow:0 0 0 2px var(--gold2,#ffd75a)}
-.gcrown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:6;font-style:normal;font-size:16px;filter:drop-shadow(0 1px 2px #000)}
 .gbrow{border-bottom:1px solid #ffffff14;padding-bottom:6px}.gbrow:last-child{border-bottom:0}.gbrow.me{background:#3a2a6b55;border-radius:12px}
 .lbrow.gb{border-bottom:0;grid-template-columns:38px minmax(0,1fr) auto}
-.gbrow .gmem .avf.stg{--s:min(13vw,58px)}.gbrow .gmem b{font-size:.66rem}.gbrow .gcrown{font-size:12px;top:-6px}
+.gband{position:relative;margin:8px 0 4px;border-radius:14px;overflow:hidden;padding:12px 6px 0;background:
+ radial-gradient(ellipse 60% 90% at 50% 0,#ffffff30,transparent 70%),
+ repeating-linear-gradient(115deg,#ffffff0d 0 10px,transparent 10px 26px),
+ linear-gradient(180deg,var(--g1),var(--g2));border:1px solid #ffffff22}
+.gband::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,#0000,#000a);pointer-events:none}
+.gb0{--g1:#5b2bd6;--g2:#150a3a}.gb1{--g1:#0aa5c7;--g2:#08203a}.gb2{--g1:#d6336c;--g2:#2a0a2a}.gb3{--g1:#e8890c;--g2:#2d1204}.gb4{--g1:#1faa6b;--g2:#07261e}
+.gstage{position:relative;z-index:1;display:flex;justify-content:center;align-items:flex-end;padding-bottom:2px}
+.gmem{position:relative;flex:0 1 auto;width:min(23vw,92px);margin:0 -7px}
+.gmem.mid{z-index:3;width:min(27vw,108px)}.gmem:not(.mid){z-index:2}
+.gch{display:block;width:100%;height:auto;aspect-ratio:2/3;object-fit:contain}
+.gmem.me::before{content:"";position:absolute;left:12%;right:12%;bottom:-2px;height:5px;border-radius:50%;background:var(--gold2,#ffd75a)}
+.gcrown{position:absolute;top:-4px;left:50%;transform:translateX(-50%);z-index:6;font-style:normal;font-size:15px}
+.gnames{display:flex;justify-content:center;gap:4px;background:#000a;padding:5px 4px;position:relative;z-index:2}
+.gnm{flex:1 1 0;min-width:0;text-align:center}.gnm b{display:block;font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gnm small{display:block;font-size:.64rem;color:var(--muted)}.gnm.me b{color:var(--gold2,#ffd75a)}
+.gbrow .gmem{width:min(19vw,76px)}.gbrow .gmem.mid{width:min(22vw,88px)}
