@@ -1204,3 +1204,6 @@ body.peeking .navwrap{top:34px}
 .gtopn{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid #ffffff14}.gtopn.me{background:#3a2a6b66;border-radius:10px}
 .gtopn b{font-size:.85rem}.gtopn small{font-size:.7rem}
 .gdots{display:flex;margin-top:3px}.gdots .gch{width:26px;height:26px;aspect-ratio:1;object-fit:cover;object-position:50% 10%;border-radius:50%;background:#0006;border:1.5px solid #e6c15a88;margin-right:-6px}
+/* v1.95 พื้นหลังเวที */
+.gband{background:linear-gradient(180deg,#0000 55%,#000a),var(--stg) center bottom/cover no-repeat,#150a3a;min-height:150px}
+.gs0{--stg:url(assets/stages/stage3.jpg)}.gs1{--stg:url(assets/stages/stage2.jpg)}.gs2{--stg:url(assets/stages/stage1.jpg)}

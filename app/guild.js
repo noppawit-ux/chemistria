@@ -9,7 +9,7 @@ const gShort = (n) => { const t = String(n || "").replace(/^(นางสาว|
 const gChar = (x) => { const dc = x.decor || {}, o = dc.outfit, base = "assets/chars/" + (x.char_class || "novice") + (altGender(x.char_class, dc.gender) ? "_alt" : ""); return `<img class="gch" loading="lazy" decoding="async" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">`; };
 /* ยืนเรียงแบบวงบอยแบนด์: หัวหน้ากลาง · ฉากหลังนิ่ง ไม่มีแอนิเมชัน/เอฟเฟกต์ เพื่อไม่ให้หน้าหน่วง */
 const gStrip = (ms, showGp, seed) => { const a = (ms || []).slice(), li = a.findIndex((x) => x.leader); if (li >= 0) { const [l] = a.splice(li, 1); a.splice(Math.floor(a.length / 2), 0, l); } const mid = Math.floor((a.length - 1) / 2);
-  return `<div class="gband gb${(seed || 0) % 5}"><div class="gstage">${a.map((x, i) => `<div class="gmem ${x.me ? "me" : ""} ${i === mid ? "mid" : ""}">${x.leader ? '<i class="gcrown">👑</i>' : ""}${gChar(x)}<div class="gplate"><b>${esc(gShort(x.name))}</b>${showGp && x.gp != null ? `<small>${x.gp}</small>` : ""}</div></div>`).join("")}</div></div>`; };
+  return `<div class="gband gs${(seed || 0) % 3}"><div class="gstage">${a.map((x, i) => `<div class="gmem ${x.me ? "me" : ""} ${i === mid ? "mid" : ""}">${x.leader ? '<i class="gcrown">👑</i>' : ""}${gChar(x)}<div class="gplate"><b>${esc(gShort(x.name))}</b>${showGp && x.gp != null ? `<small>${x.gp}</small>` : ""}</div></div>`).join("")}</div></div>`; };
 
 /* การ์ดอันดับกิลด์บนหน้าแรก: อันดับ 1 ภาพใหญ่ · อันดับอื่นแถวเล็ก (+ กิลด์ของเราถ้าอยู่นอกท็อป 3) */
 function guildTopHtml() {
