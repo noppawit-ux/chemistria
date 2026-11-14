@@ -32,6 +32,24 @@ function guildTopHtml() {
   return hold(`<div class="card gtopcard" onclick="go('guild')"><h3 style="margin:0 0 8px">🏰 อันดับกิลด์ <small class="muted" style="font-weight:400">แตะดูทั้งหมด</small></h3>${big}${small}</div>`);
 }
 
+/* ภารกิจกิลด์ + แถบรางวัลแบบ Battle Pass */
+function gPassHtml(ps, peekMode) {
+  if (!ps || !(ps.quests || []).length) return "";
+  const mx = Math.max(1, ps.max_mp), tot = ps.total_mp, pct = Math.min(100, Math.round((tot / mx) * 100));
+  const mk = (ps.tiers || []).map((t) => { const x = Math.min(100, (t.need_mp / mx) * 100); return `<div class="gpmk ${t.reached ? "on" : ""}" style="left:${x}%"><span>${gem(t.emoji)}</span><small>${t.need_mp}</small></div>`; }).join("");
+  const qs = ps.quests.map((q) => { const f = q.target ? Math.min(100, Math.round((q.progress / q.target) * 100)) : 0; return `<div class="gpq"><div class="row" style="justify-content:space-between;align-items:baseline;gap:6px"><span>${q.emoji} <b>${esc(q.title)}</b></span><small class="muted">${q.progress}/${q.target}${q.kind === "allplay" ? " วัน" : ""} · +${q.mp_got}/${q.mp} MP</small></div><div class="gpmini"><i style="width:${f}%"></i></div></div>`; }).join("");
+  const tr = (ps.tiers || []).map((t) => `<div class="row" style="justify-content:space-between;align-items:center;padding:5px 0;border-top:1px solid var(--line);opacity:${t.reached ? 1 : 0.55}"><span>${gem(t.emoji)} <b>${esc(t.label)}</b> <small class="muted">${t.need_mp} MP</small><br><small class="muted">${t.coins ? t.coins + " เหรียญ " : ""}${t.pulls ? "· ตั๋วกาชา " + t.pulls + " " : ""}${t.exp ? "· " + t.exp + " EXP" : ""}</small></span>${t.claimed ? '<span class="pill">✅ รับแล้ว</span>' : t.claimable && !peekMode ? `<button class="btn small gold" onclick="guildPassClaim(${t.tier})">รับรางวัล</button>` : t.reached ? '<span class="muted" style="font-size:.8em">ต้องช่วยภารกิจก่อน</span>' : '<span class="muted">🔒</span>'}</div>`).join("");
+  const top = Math.max(1, ...(ps.members || []).map((x) => x.mp));
+  const mem = (ps.members || []).map((x) => `<div class="gpm ${x.me ? "me" : ""}"><span>${x.leader ? "👑 " : ""}${esc(gShort(x.name))}</span><div class="gpmini"><i style="width:${Math.round((x.mp / top) * 100)}%"></i></div><b>${x.mp}</b></div>`).join("");
+  return `<div class="card gpass"><h3 style="margin:0">🎯 ภารกิจกิลด์ <small class="muted" style="font-weight:400">ช่วยกันสะสม MP ปลดล็อกรางวัล</small></h3>
+    <div class="row" style="justify-content:space-between;align-items:baseline;margin-top:6px"><b style="font-size:1.4rem;color:#ffd75a">${tot} <small class="muted" style="font-size:.7rem">/ ${mx} MP</small></b>${ps.eligible ? '<span class="pill">✅ คุณช่วยภารกิจแล้ว</span>' : '<span class="pill" style="opacity:.8">ช่วยอย่างน้อย 1 ภารกิจถึงรับรางวัลได้</span>'}</div>
+    <div class="gpbar"><i class="fill" style="width:${pct}%"></i>${mk}</div>
+    <div style="margin-top:34px">${qs}</div>
+    <h4 style="margin:12px 0 4px">🎁 รางวัลตามแถบ</h4>${tr}
+    <h4 style="margin:12px 0 4px">🙌 ใครช่วยบ้าง (MP)</h4>${mem}</div>`;
+}
+const guildPassClaim = (t) => act(() => rpc("guild_pass_claim", { p_token: tk(), p_tier: t }), "รับรางวัลภารกิจแล้ว 🎁").then((r) => { if (r && window.FX) FX.victory(); return r; });
+
 function guildChip() {
   if (!GLD || !GLD.cfg) return "";
   const c = GLD.cfg, m = GLD.my;
@@ -79,7 +97,7 @@ function guildHtml() {
       ${c.hidden ? "" : `<div class="lvgauge" style="margin:8px 0"><i style="width:${pct}%"></i></div><div class="muted" style="font-size:.85em">${nxt ? `ขั้นถัดไป ${gem(nxt.emoji)} ${esc(nxt.label)} ที่ ${nxt.min_avg} แต้ม/คน (ตอนนี้ ${avg})` : "ปลดล็อกครบทุกขั้นแล้ว 🎉"}</div>`}
       ${gStrip(m.members, true, 0)}
       ${peek ? "" : `<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${m.can_rename ? '<button class="btn small ghost" onclick="guildRename()">✏️ เปลี่ยนชื่อ (1 ครั้ง)</button>' : ""}${c.can_edit ? '<button class="btn small ghost" onclick="guildLeave()">ออกจากกิลด์</button>' : ""}</div>`}</div>
-      <div class="card"><h3>🎁 รางวัลปลดล็อกของกิลด์</h3>${tiers.map((t) => `<div class="row" style="justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);opacity:${t.reached ? 1 : .6}">
+      ${gPassHtml(m.pass, peek)}<div class="card"><h3>🎁 รางวัลปลดล็อกของกิลด์</h3>${tiers.map((t) => `<div class="row" style="justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);opacity:${t.reached ? 1 : .6}">
         <span>${gem(t.emoji)} <b>${esc(t.label)}</b> <small class="muted">เฉลี่ย ≥ ${t.min_avg}</small><br><small class="muted">${t.coins ? t.coins + " เหรียญ " : ""}${t.pulls ? "· ตั๋วกาชา " + t.pulls + " " : ""}${t.exp ? "· " + t.exp + " EXP" : ""}</small></span>
         ${t.claimed ? '<span class="pill">✅ รับแล้ว</span>' : t.claimable && !peek ? `<button class="btn small gold" onclick="guildClaimTier(${t.tier})">รับรางวัล</button>` : t.reached ? '<span class="muted" style="font-size:.8em">แต้มส่วนตัวยังไม่ถึงเกณฑ์</span>' : '<span class="muted">🔒</span>'}</div>`).join("")}</div>`;
     const p = GLD.prize;

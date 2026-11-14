@@ -34,4 +34,12 @@ TAB.guild = async function (v) {
   const ph = holder(v, "🏆 รางวัลอันดับกิลด์ (หลังจบกิจกรรม)", "อันดับรวมทุกห้อง · ส่วนอันดับ 1 ของแต่ละห้องได้โบนัสเหรียญตามค่าด้านบน");
   await crud(ph, { table: "guild_prizes", order: "rank", defaults: { rank: 4, label: "", coins: 0, pulls: 0, exp: 0 },
     cols: [{ k: "rank", label: "อันดับ", t: "number", w: 60 }, { k: "label", label: "ชื่อรางวัล", w: 160 }, { k: "coins", label: "เหรียญ", t: "number", w: 60 }, { k: "pulls", label: "ตั๋วกาชา", t: "number", w: 60 }, { k: "exp", label: "EXP", t: "number", w: 60 }] });
+  const qh = holder(v, "🎯 ภารกิจกิลด์ (ชุดเดียวทั้งอีเวนต์)", "เป้าหมาย = ต่อคน × จำนวนสมาชิก (ภารกิจ allplay = จำนวนวัน) · cap% = สัดส่วนสูงสุดที่ 1 คนช่วยได้ · MP = แต้มเต็มของภารกิจ · kind: correct/monster/attend/allplay");
+  await crud(qh, { table: "guild_quests", order: "sort", defaults: { kind: "correct", title: "", emoji: "🎯", per_member: 10, mp: 100, cap_pct: 40, sort: 9, active: true },
+    cols: [{ k: "kind", label: "ชนิด", t: "select", w: 80, opts: () => [["correct", "ตอบถูกรวม"], ["monster", "ล่ามอนสเตอร์"], ["attend", "เช็คชื่อ"], ["allplay", "เล่นครบทุกคน"]] }, { k: "emoji", label: "ไอคอน", w: 50 }, { k: "title", label: "ชื่อ", w: 140 },
+      { k: "per_member", label: "ต่อคน", t: "number", w: 60 }, { k: "mp", label: "MP", t: "number", w: 60 }, { k: "cap_pct", label: "cap%", t: "number", w: 60 }, { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool", w: 50 }] });
+  const pt = holder(v, "🎁 รางวัลตามแถบ MP", "need_mp = MP รวมของกิลด์ที่ต้องถึง · รับได้เฉพาะคนที่ช่วยอย่างน้อย 1 ภารกิจ · อย่าให้ need_mp สูงกว่า MP รวมของทุกภารกิจ");
+  await crud(pt, { table: "guild_pass_tiers", order: "tier", defaults: { tier: 7, need_mp: 450, label: "", emoji: "🏅", coins: 0, pulls: 0, exp: 0 },
+    cols: [{ k: "tier", label: "ขั้น", t: "number", w: 50 }, { k: "emoji", label: "ไอคอน", w: 50 }, { k: "label", label: "ชื่อ", w: 100 }, { k: "need_mp", label: "MP ≥", t: "number", w: 70 },
+      { k: "coins", label: "เหรียญ", t: "number", w: 60 }, { k: "pulls", label: "ตั๋วกาชา", t: "number", w: 60 }, { k: "exp", label: "EXP", t: "number", w: 60 }] });
 };

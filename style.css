@@ -1217,3 +1217,12 @@ body.peeking .navwrap{top:34px}
 .gembpick button{background:#ffffff0f;border:2px solid transparent;border-radius:10px;padding:4px;cursor:pointer}.gembpick button.on{border-color:#ffd75a;background:#ffd75a22}
 .gembpick img{width:100%;aspect-ratio:1;object-fit:contain;display:block}
 .lbrow.gb{grid-template-columns:46px minmax(0,1fr) auto}
+
+/* v1.98 ภารกิจกิลด์ + แถบรางวัล */
+.gpbar{position:relative;height:16px;border-radius:9px;background:#0007;margin:30px 10px 0;border:1px solid #ffffff22}
+.gpbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:9px;background:linear-gradient(90deg,#6d3be6,#ffd75a)}
+.gpmk{position:absolute;top:-26px;transform:translateX(-50%);text-align:center;font-size:.7rem;line-height:1.1;opacity:.6}.gpmk.on{opacity:1}
+.gpmk:last-child{transform:translateX(-85%)}.gpmk span{display:block}.gpmk small{display:block;margin-top:24px;font-size:.62rem;color:var(--muted)}
+.gpmk .gmedal.sm{width:20px;height:20px}
+.gpq{padding:5px 0}.gpmini{height:7px;border-radius:5px;background:#0007;overflow:hidden;margin-top:3px}.gpmini i{display:block;height:100%;background:linear-gradient(90deg,#6d3be6,#ffd75a)}
+.gpm{display:grid;grid-template-columns:90px 1fr 32px;gap:8px;align-items:center;padding:2px 0;font-size:.85rem}.gpm.me span{color:#ffd75a;font-weight:700}.gpm b{text-align:right}

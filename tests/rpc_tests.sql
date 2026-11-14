@@ -233,10 +233,10 @@ select pg_temp.t('ประกาศ Mini Guild (coming soon) อยู่ใน
 
 -- ================= Mini Guild (SQL 45) =================
 reset role;
-update app_settings set value=(current_date - 1)::text where key='guild_reg_from';
-update app_settings set value=current_date::text where key='guild_start';
-update app_settings set value=(current_date + 14)::text where key='guild_end';
-update app_settings set value=(current_date + 3)::text where key='guild_join_until';
+update app_settings set value=(today_th() - 1)::text where key='guild_reg_from';
+update app_settings set value=today_th()::text where key='guild_start';
+update app_settings set value=(today_th() + 14)::text where key='guild_end';
+update app_settings set value=(today_th() + 3)::text where key='guild_join_until';
 update app_settings set value='10' where key='guild_min_personal_gp';
 insert into students(class_id, no, name, pin_hash) select c.id, n, 'กิลด์ทดสอบ '||n, crypt('1234', gen_salt('bf')) from classes c, generate_series(11,19) n where c.code='T99';
 insert into students(class_id, no, name, pin_hash) select c.id, 11, 'อีกห้อง', crypt('1234', gen_salt('bf')) from classes c where c.code='T11';
@@ -280,6 +280,22 @@ select pg_temp.t('guild_status: มีสัญลักษณ์กิลด์
 select pg_temp.t('guild_set_emblem: หัวหน้าเปลี่ยนสัญลักษณ์ได้', (select (guild_set_emblem((select tok from _gt where no=11), 7)->>'emblem')::int = 7 and (guild_status((select tok from _gt where no=11))::jsonb->'my'->>'emblem')::int = 7));
 select pg_temp.t('guild_set_emblem: เลขนอกช่วง → ปฏิเสธ', pg_temp.fails($q$select guild_set_emblem((select tok from _gt where no=11), 13)$q$));
 select pg_temp.t('guild_board: แถวอันดับมีสัญลักษณ์', (select bool_and((r->>'emblem')::int between 1 and 12) from jsonb_array_elements(guild_board((select tok from _go))::jsonb->'rows') r));
+-- ภารกิจกิลด์ + แถบรางวัล
+reset role;
+create temp table _gq as select id, class_id from guilds where name='ทีมอัลฟา'; grant all on _gq to anon, authenticated;
+update guild_quests set per_member = 2 where kind = 'monster';
+insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max)
+  select (select id from students where no = 11 and class_id = (select class_id from _gq)), m.id, 'won', 10, 10, 0, 10 from monsters m, generate_series(1, 6) limit 6;
+set role anon;
+select pg_temp.t('ภารกิจกิลด์: มีภารกิจและขั้นรางวัลใน guild_status', (select jsonb_array_length(s->'my'->'pass'->'quests') = 4 and jsonb_array_length(s->'my'->'pass'->'tiers') = 6 from (select guild_status((select tok from _gt where no=11))::jsonb s) x));
+select pg_temp.t('ภารกิจกิลด์: เป้าปรับตามจำนวนคน + เพดานต่อคน (ชนะ 6 ครั้งคนเดียวนับ 4 จากเป้า 10 = 40 MP)', (select (q->>'target')::int = 10 and (q->>'progress')::int = 4 and (q->>'mp_got')::int = 40
+  from (select jsonb_array_elements(guild_status((select tok from _gt where no=11))::jsonb->'my'->'pass'->'quests') q) x where q->>'kind' = 'monster'));
+select pg_temp.t('ภารกิจกิลด์: ผู้ช่วยกดรับขั้น 1 ได้', (select (s->'my'->'pass'->'tiers'->0->>'claimable')::boolean from (select guild_status((select tok from _gt where no=11))::jsonb s) x));
+select pg_temp.t('ภารกิจกิลด์: คนที่ยังไม่ได้ช่วยรับไม่ได้', (select not (s->'my'->'pass'->>'eligible')::boolean from (select guild_status((select tok from _gt where no=14))::jsonb s) x)
+  and pg_temp.fails($q$select guild_pass_claim((select tok from _gt where no=14), 1)$q$));
+select pg_temp.t('ภารกิจกิลด์: รับขั้น 1 สำเร็จ', (select (guild_pass_claim((select tok from _gt where no=11), 1)->>'coins')::int = 15));
+select pg_temp.t('ภารกิจกิลด์: รับซ้ำไม่ได้', pg_temp.fails($q$select guild_pass_claim((select tok from _gt where no=11), 1)$q$));
+select pg_temp.t('ภารกิจกิลด์: ขั้นที่ยังไม่ถึงรับไม่ได้', pg_temp.fails($q$select guild_pass_claim((select tok from _gt where no=11), 6)$q$));
 select pg_temp.t('guild_board: มีกิลด์ติดอันดับ', (select jsonb_array_length((guild_board((select tok from _go)))::jsonb->'rows') >= 1));
 select pg_temp.t('ชื่อกิลด์แสดงใน student_dashboard', (select student_dashboard((select tok from _gt where no=11))::jsonb->'student'->>'guild') = 'ทีมอัลฟา');
 select pg_temp.t('ชื่อกิลด์แสดงใน leaderboard ของ dashboard', exists (select 1 from jsonb_array_elements(student_dashboard((select tok from _gt where no=11))::jsonb->'leaderboard') e where e->>'guild' = 'ทีมอัลฟา'));
@@ -319,16 +335,16 @@ select pg_temp.t('สุ่มจัด: ทุกกิลด์ 3–5 คน',
 select pg_temp.t('สุ่มจัด: ไม่มีใครอยู่สองกิลด์ (คีย์หลัก)', (select count(*) = count(distinct student_id) from guild_members));
 select pg_temp.t('สุ่มจัด: ห้องอื่นไม่ถูกแตะ', not exists (select 1 from guild_members m join students s on s.id=m.student_id join classes c on c.id=s.class_id where c.code='T11'));
 -- ล็อกสมาชิกหลังหมดเวลารับสมัคร
-update app_settings set value=(current_date - 1)::text where key='guild_join_until';
+update app_settings set value=(today_th() - 1)::text where key='guild_join_until';
 set role anon;
 select pg_temp.t('หลังล็อก: ออกกิลด์ไม่ได้', pg_temp.fails($q$select guild_leave((select tok from _gt where no=12))$q$));
 select pg_temp.t('หลังล็อก: สร้างกิลด์ไม่ได้', pg_temp.fails($q$select guild_create((select tok from _go), 'กิลด์สาย')$q$));
 -- ซ่อนอันดับวันสุดท้าย
-reset role; update app_settings set value=current_date::text where key='guild_end'; set role anon;
+reset role; update app_settings set value=today_th()::text where key='guild_end'; set role anon;
 select pg_temp.t('วันสุดท้าย: board ถูกซ่อน', (select (guild_board((select tok from _gt where no=11))::jsonb->>'hidden') = 'true'));
 select pg_temp.t('วันสุดท้าย: status ไม่เผยอันดับ/แต้มเฉลี่ย', (select (s->'my'->'rank') = 'null'::jsonb and (s->'my'->'avg') = 'null'::jsonb from (select guild_status((select tok from _gt where no=11))::jsonb s) x));
 -- จบกิจกรรม: รางวัลอันดับ
-reset role; update app_settings set value=(current_date - 1)::text where key='guild_end'; update app_settings set value=(current_date - 5)::text where key='guild_start';
+reset role; update app_settings set value=(today_th() - 1)::text where key='guild_end'; update app_settings set value=(today_th() - 5)::text where key='guild_start';
 update ledger set created_at = now() - interval '2 days' where ref_key in ('g:1','g:3','g:4');
 set role anon;
 select pg_temp.t('จบกิจกรรม: อันดับกลับมาแสดง', (select (guild_board((select tok from _gt where no=11))::jsonb->>'hidden') = 'false'));
