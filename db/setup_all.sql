@@ -7056,3 +7056,10 @@ begin
 end $$;
 revoke execute on function guild_status(uuid) from public;
 grant execute on function guild_status(uuid) to anon, authenticated;
+-- 64: ประกาศภารกิจกิลด์ (v1.98) — รันซ้ำได้ ไม่โพสต์ซ้ำ
+insert into news_posts (kind, title, summary, body, image, sort, active)
+select 'news', 'ภารกิจกิลด์ 🎯 ช่วยกันสะสม MP ปลดล็อกรางวัล',
+  'ตอบถูก · ล่ามอนสเตอร์ · มาเรียน · เล่นพร้อมกัน — MP รวมของทีมปลดล็อกรางวัล 6 ขั้น',
+  E'🎯 ภารกิจกิลด์ เปิดแล้ว! ดูได้ที่หน้า Mini Guild\n\n✅ ตอบถูกรวมทีม\n👾 ล่ามอนสเตอร์\n📅 มาเรียนครบทีม\n🤝 ทุกคนในกิลด์เล่นเกมในวันเดียวกัน\n\n📊 เป้าหมายปรับตามจำนวนสมาชิก · คนเดียวช่วยได้ไม่เกินสัดส่วนที่กำหนด จึงต้องช่วยกันทั้งทีม\n🎁 สะสม MP รวมของกิลด์ ปลดล็อกรางวัล 6 ขั้น (เหรียญ · ตั๋วกาชา · EXP)\n🙋 รับรางวัลได้เฉพาะคนที่ช่วยอย่างน้อย 1 ภารกิจ ใครไม่ช่วยอดนะ!\n\nรีบชวนเพื่อนในทีมมาเล่นกันเลย 💪',
+  'assets/news/mission.jpg', 45, true
+where not exists (select 1 from news_posts where title like 'ภารกิจกิลด์%');
