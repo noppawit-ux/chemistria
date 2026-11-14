@@ -625,6 +625,62 @@ select pg_temp.t('การ์ด: ทำสถิติใหม่แล้ว
 update app_settings set value='30' where key='card_drop_pct';
 select pg_temp.t('การ์ด: นักเรียนเรียกฟังก์ชันภายในตรงๆ ไม่ได้', pg_temp.fails($q$select _card_grant((select a from _ks), (select id from cards limit 1), 'gift')$q$, 'anon') and pg_temp.fails($q$select _gacha_pull('00000000-0000-0000-0000-000000000001', 1)$q$, 'anon'));
 
+-- ================= ไอเทมกดใช้ / อัปเกรด / สมดุล / SSR (66) =================
+create temp table _it as select (select id from students where class_id=(select id from classes where code='T99') and no=18) sid, (select tok from _gt where no=18) tok,
+  (select id from consumables where key='p_exp') exp_i, (select id from consumables where key='p_heal') heal_i, (select id from consumables where key='scroll') scr_i, (select id from consumables where key='t_reset') rst_i;
+grant all on _it to anon, authenticated;
+update students set coins = 2000, exp = 0 where id = (select sid from _it);
+select pg_temp.t('ไอเทม: มีไอเทมตั้งต้น 8 ชนิด', (select count(*) from consumables) = 8);
+select pg_temp.t('ไอเทม: นักเรียนเรียกฟังก์ชันภายในไม่ได้', pg_temp.fails($q$select _stats((select sid from _it))$q$) and pg_temp.fails($q$select _upg_cost('N',1)$q$));
+set role anon;
+select pg_temp.t('ไอเทม: ซื้อยา EXP 1 ชิ้น หักเหรียญ 90', (select (buy_item((select tok from _it), (select exp_i from _it), 1)->>'coins')::int = 1910));
+select pg_temp.t('ไอเทม: ซื้อเกินโควตาต่อวันไม่ได้ (2/วัน)', pg_temp.fails($q$select buy_item((select tok from _it), (select exp_i from _it), 2)$q$));
+reset role;
+select pg_temp.t('ไอเทม: ซื้อแล้วมีในคลัง 1 ชิ้น', (select qty from student_items where student_id=(select sid from _it) and item_id=(select exp_i from _it)) = 1);
+set role anon;
+select pg_temp.t('ไอเทม: ใช้ยา EXP แล้วบัฟ +15% เข้า effects', (select use_item((select tok from _it), (select exp_i from _it))->>'name') is not null);
+reset role;
+select pg_temp.t('ไอเทม: effects.exp_pct รวมบัฟ', ((select _stats((select sid from _it)))->'effects'->>'exp_pct')::int >= 15);
+select pg_temp.t('ไอเทม: ใช้แล้วคลังเหลือ 0', (select qty from student_items where student_id=(select sid from _it) and item_id=(select exp_i from _it)) = 0);
+set role anon;
+select pg_temp.t('ไอเทม: ไม่มีของในคลังใช้ไม่ได้', pg_temp.fails($q$select use_item((select tok from _it), (select exp_i from _it))$q$));
+select pg_temp.t('ไอเทม: ยาฟื้นฟูนอกศึกใช้ไม่ได้', (select buy_item((select tok from _it), (select heal_i from _it), 1)) is not null
+  and pg_temp.fails($q$select use_item((select tok from _it), (select heal_i from _it))$q$));
+reset role;
+insert into monsters (key, name, emoji, level, hp, atk, exp, coins, sort) values ('t_mon','ทดสอบ','👾',1,40,5,1,1,99) on conflict (key) do nothing;
+insert into battles (student_id, monster_id, p_hp, p_max, m_hp, m_max) select (select sid from _it), id, 20, 100, 40, 40 from monsters where key='t_mon';
+create temp table _bt as select (select id from battles where student_id=(select sid from _it) and status='active') bid;
+grant all on _bt to anon, authenticated;
+set role anon;
+select pg_temp.t('ไอเทม: ยาฟื้นฟูในศึก +40% HP', (select use_item((select tok from _it), (select heal_i from _it), (select bid from _bt))->>'msg') like '%+40%');
+reset role;
+select pg_temp.t('ไอเทม: HP ในศึกเพิ่มเป็น 60', (select p_hp from battles where student_id=(select sid from _it) and status='active') = 60);
+-- อัปเกรด
+insert into decor_items (slot, key, name, emoji, rarity, price, sort, st_int, st_dil, st_str, st_luk, st_coin) values ('hat','x','หมวกทดสอบ66','🎩','R',10,99,0,0,2,0,0);
+insert into student_decor (student_id, item_id, source) select (select sid from _it), id, 'teacher' from decor_items where name='หมวกทดสอบ66';
+create temp table _hat as select id from decor_items where name='หมวกทดสอบ66';
+grant all on _hat to anon, authenticated;
+update students set decor = jsonb_build_object('hat', (select id::text from _hat)) where id=(select sid from _it);
+select pg_temp.t('อัปเกรด: ไม่มีม้วนอัปเกรดไม่ได้', pg_temp.fails($q$select upgrade_decor((select tok from _it), (select id from _hat))$q$));
+insert into student_items (student_id, item_id, qty) values ((select sid from _it), (select scr_i from _it), 5) on conflict (student_id, item_id) do update set qty = 5;
+set role anon;
+select pg_temp.t('อัปเกรด: Lv1→2 สำเร็จ', (select (upgrade_decor((select tok from _it), (select id from _hat))->>'lvl')::int = 2));
+reset role;
+select pg_temp.t('อัปเกรด: พลังเพิ่มจาก 2 เป็น 3 (+1/เลเวล)', ((select _stats((select sid from _it)))->'str'->>'item')::int = 3);
+set role anon;
+select upgrade_decor((select tok from _it), (select id from _hat));
+select pg_temp.t('อัปเกรด: เกินเลเวลสูงสุดของ R (Lv3) ไม่ได้', pg_temp.fails($q$select upgrade_decor((select tok from _it), (select id from _hat))$q$));
+select pg_temp.t('ไอเทม: my_items ส่งคลัง/อุปกรณ์/บัฟ', (select json_array_length(my_items((select tok from _it))->'gear') >= 1 and json_array_length(my_items((select tok from _it))->'items') = 8));
+reset role;
+-- สมดุล
+select pg_temp.t('สมดุล: ไม่มีไอเทมเกินเพดานสเตตัสต่อชิ้น', not exists (select 1 from decor_items where st_int+st_dil+st_str+st_luk > case rarity when 'N' then 2 when 'R' then 3 when 'SR' then 4 when 'SSR' then 5 else 7 end));
+select pg_temp.t('สมดุล: เพดานรวมโบนัสไอเทมต่อด้านไม่เกิน 12', (select (_stats(a)->'str'->>'item')::int <= 12 from _s));
+select pg_temp.t('กาชา: ตั้ง gacha_ssr_mult ค่าเริ่มต้น 20', _setting_int('gacha_ssr_mult', 0) = 20);
+do $$ declare n int := 0; ssr int := 0; it gacha_items; sid uuid := (select a from _s); begin
+  for i in 1..4000 loop it := _gacha_pick_luk(false, 0, sid); n := n + 1; if it.rarity = 'SSR' then ssr := ssr + 1; end if; end loop;
+  perform pg_temp.t('กาชา: SSR น้อยกว่า 7% จาก 4000 ครั้ง (ได้ ' || ssr || ')', ssr * 100.0 / n < 7);
+end $$;
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

@@ -109,6 +109,19 @@ const BATTLE = (() => {
     try { await rpc("battle_flee", { p_token: tk(), p_battle: S.bat.id }); } catch (e) {}
     S.bat = null; open();
   }
+  async function heal() {
+    if (S.busy || !S.bat) return; S.busy = true;
+    try {
+      const it = await rpc("my_items", { p_token: tk() }), h = (it.items || []).find((x) => x.kind === "heal");
+      if (!h || h.qty < 1) toast("ไม่มียาฟื้นฟู — ซื้อได้ที่แท็บ 🧪 ไอเทม");
+      else {
+        const r = await rpc("use_item", { p_token: tk(), p_item: h.id, p_battle: S.bat.id });
+        const d = await rpc("battle_status", { p_token: tk() }); if (d.active && d.active.status === "active") S.bat = d.active;
+        S.msg = "💚 ใช้ยา " + r.msg; toast(r.msg);
+      }
+    } catch (e) { toast(e.message); }
+    S.busy = false; paint();
+  }
   const back = () => { clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null; S.bat = null; S.fb = null; open(); };
   const exit = () => { clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null; GAMES.home(); };
 
@@ -253,7 +266,7 @@ const BATTLE = (() => {
     const skills = b.skills.map((s) => `<button class="bt-skill ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')">
         <span class="bt-sico">${s.emoji}</span><b>${esc(s.name)}</b><small>${KIND[s.kind][1]}${s.kind !== "buff" ? ` ${s.power}` : ""}${s.left > 0 ? ` · รอ ${s.left} เทิร์น` : s.cd ? ` · CD ${s.cd}` : ""}</small>
         <em>${esc(s.descr || "")}</em></button>`).join("");
-    return arena + `<div class="card"><div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
+    return arena + `<div class="card"><div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <p class="muted" style="margin:4px 0 8px">เลือกสกิล แล้วตอบคำถามให้ถูก (ภายใน 20 วิ) สกิลถึงจะออกผล · ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</p><div class="bt-skillrow">${skills}</div>
       ${b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }
@@ -307,5 +320,5 @@ const BATTLE = (() => {
   }
 
   const view = () => (S.screen === "list" || !S.bat ? listView() : fightView());
-  return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, back, exit };
+  return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
 })();

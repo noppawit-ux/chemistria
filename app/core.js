@@ -1,7 +1,7 @@
 /* แกนหน้านักเรียน: ตัวแปรกลาง ล็อกอิน — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
-  ["class", "⚔️ คลาส"], ["decor", "🎨 ตกแต่ง"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["cards", "📖 สมุดสะสม"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"], ["guild", "🏰 กิลด์"], ["board", "📢 บอร์ด"],
+  ["class", "⚔️ คลาส"], ["decor", "🎨 ตกแต่ง"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["items", "🧪 ไอเทม"], ["cards", "📖 สมุดสะสม"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"], ["guild", "🏰 กิลด์"], ["board", "📢 บอร์ด"],
 ];
 let PROMO = { active: false }, TT = [], NEWS = [], D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";

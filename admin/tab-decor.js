@@ -8,4 +8,10 @@ TAB.decor = async function (v) {
       { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR", "LEG"].map((x) => [x, x]) }, { k: "price", label: "ราคา(เหรียญ)", t: "number", w: 80 },
       { k: "image", label: "ภาพ (ไอเทมถือ)", w: 150 }, { k: "st_int", label: "🧠ปัญญา", t: "number", w: 55 }, { k: "st_dil", label: "💪ขยัน", t: "number", w: 55 }, { k: "st_str", label: "⚔️พลัง", t: "number", w: 55 }, { k: "st_luk", label: "🍀โชค", t: "number", w: 55 }, { k: "st_coin", label: "🪙เหรียญ%", t: "number", w: 60 }, { k: "ability", label: "ความสามารถ (ข้อความ)", w: 180 },
       { k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "active", label: "เปิด", t: "bool" }] });
+  const ch = holder(v, "🧪 ไอเทมกดใช้ (ยา/บัฟ/ม้วนอัปเกรด)", "kind: buff_exp/buff_coin/buff_luk/buff_str/buff_int = บัฟถึงสิ้นวัน (power = ค่าที่เพิ่ม) · heal = ใช้ในศึก (power = % HP) · scroll = ม้วนอัปเกรด · stat_reset = ล้างแต้มสเตตัส · ราคาว่าง = ไม่วางขาย · ซื้อได้ไม่เกิน daily_buy ชิ้น/คน/วัน");
+  await crud(ch, { table: "consumables", order: "sort", defaults: { key: "", name: "", emoji: "🧪", rarity: "R", kind: "buff_exp", power: 10, price: 100, daily_buy: 2, descr: "", sort: 90, active: true },
+    cols: [{ k: "key", label: "รหัส", w: 70 }, { k: "name", label: "ชื่อ", w: 120 }, { k: "emoji", label: "ไอคอน", w: 50 }, { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) },
+      { k: "kind", label: "ชนิด", t: "select", opts: () => ["buff_exp", "buff_coin", "buff_luk", "buff_str", "buff_int", "heal", "scroll", "stat_reset"].map((x) => [x, x]) },
+      { k: "power", label: "ค่า", t: "number", w: 55 }, { k: "price", label: "ราคา", t: "number", w: 60 }, { k: "daily_buy", label: "ซื้อ/วัน", t: "number", w: 55 }, { k: "descr", label: "คำอธิบาย", w: 200 },
+      { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
 };
