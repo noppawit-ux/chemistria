@@ -169,7 +169,7 @@ const slotIco = (k, it, cls) => !it ? "" : it.image ? `<img src="${esc(it.image)
   : k === "outfit" ? `<img src="assets/chars/${esc(cls || "novice")}_${esc(it.key)}.png" alt="" onerror="this.replaceWith(document.createTextNode('${esc(it.emoji || "👕")}'))">` : esc(it.emoji || "🎁");
 function eqPanel(me) {   // ช่องอุปกรณ์ทั้งหมดอยู่ฝั่งขวาของตัวละคร (2 คอลัมน์ × 4 แถว) · ช่องว่างใช้ไอคอนเทา
   return `<div class="eqcol">${SLOTS.map(([k, ic, lb]) => { const it = (me.decor || {})[k];
-    return `<button class="eqslot ${it ? "on rar-" + esc(it.rarity || "N") : ""}" onclick="eqOpen('${k}')" aria-label="${lb}${it ? ": " + esc(it.name) : ""}" title="${lb}${it ? ": " + esc(it.name) : ""}"><span class="eqi">${it ? slotIco(k, it, me.char_class) : `<img class="eqgrey" src="assets/slots/${k}.png" alt="">`}</span><small>${lb}</small></button>`; }).join("")}</div>`;
+    return `<button class="eqslot ${it ? "on rar-" + esc(it.rarity || "N") : ""}" onclick="eqOpen('${k}')" aria-label="${lb}${it ? ": " + esc(it.name) : ""}" title="${lb}${it ? ": " + esc(it.name) : ""}">${it ? `<i class="eqlv">Lv${it.lvl || 1}</i>` : ""}<span class="eqi">${it ? slotIco(k, it, me.char_class) : `<img class="eqgrey" src="assets/slots/${k}.png" alt="">`}</span><small>${lb}</small></button>`; }).join("")}</div>`;
 }
 function eqClose() { document.getElementById("eqov")?.remove(); }
 function eqOpen(k) {
@@ -180,17 +180,42 @@ function eqOpen(k) {
     <span class="eqi">${d ? (k === "title" ? esc(d.emoji || "🏷️") : slotIco(k, d, me.char_class) || esc(d.emoji || "🎁")) : `<img class="eqgrey" src="assets/slots/${k}.png" alt="">`}</span><small>${d ? esc(d.name) : k === "outfit" ? "ชุดเริ่มต้น" : "ถอดออก"}</small></button>`;
   const ov = document.createElement("div"); ov.id = "eqov"; ov.setAttribute("role", "dialog");
   ov.innerHTML = `<div class="eqbox"><button class="patchx" aria-label="ปิด" onclick="eqClose()">✕</button><h3>เลือก${lb}</h3>
+    ${cur ? `<div id="eqdet" class="eqdet"><small class="muted">กำลังโหลดรายละเอียด…</small></div>` : ""}
+    <h4 style="margin:6px 0">${cur ? "สลับเป็นชิ้นอื่น" : "ยังไม่ได้สวมใส่"}</h4>
     <div class="eqgrid">${tile(null)}${own.map(tile).join("")}</div>
     ${own.length ? "" : `<p class="muted center">ยังไม่มีไอเทมช่องนี้ — ไปหาได้จากกาชา/ร้านค้า/ล่ามอนสเตอร์</p>`}
     <div class="row" style="justify-content:center"><button class="btn small ghost" onclick="eqClose();go('decor')">🎨 ไปหน้าแต่งตัวละคร</button></div></div>`;
   ov.addEventListener("click", (e) => { if (e.target === ov) eqClose(); });
   document.body.appendChild(ov);
+  if (cur) eqDetail(cur.id);
 }
+async function eqDetail(id) {
+  const box = document.getElementById("eqdet"); if (!box) return;
+  try {
+    const r = await rpc("my_items", { p_token: tk() }); ITM = r; ITM_STALE = false;
+    const g = (r.gear || []).find((x) => x.id === id), sc = (r.items || []).find((i) => i.kind === "scroll"), sq = sc ? sc.qty : 0;
+    if (!g || !document.getElementById("eqdet")) return;
+    const c = g.cost, maxed = g.lvl >= c.max, up = Math.max(0, g.lvl - 1);
+    const st = ["int", "dil", "str", "luk"].filter((k) => g.stats[k] > 0).map((k) => `${ST_LBL[k]} +${g.stats[k] + (g.main === k ? up : 0)}`).join(" · ") || "ไม่มีสเตตัส";
+    const ok = !maxed && g.main && sq >= c.scrolls && D.student.coins >= c.coins;
+    box.innerHTML = `<div class="row" style="gap:10px;align-items:center"><span style="font-size:34px">${esc(g.emoji)}</span><div class="grow"><b>${esc(g.name)}</b> <span class="tag">${esc(g.rarity)}</span> <span class="tag ok">Lv ${g.lvl}/${c.max}</span>
+      <div class="muted" style="font-size:.85em">${st}${g.coin ? ` · 🪙 +${g.coin}%` : ""}</div>${g.ability ? `<div class="muted" style="font-size:.8em">${esc(g.ability)}</div>` : ""}</div></div>
+      <div class="row" style="margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap">${!g.main ? '<span class="muted">ไอเทมนี้ไม่มีสเตตัสให้อัปเกรด</span>' : maxed ? '<span class="tag ok">เลเวลสูงสุดแล้ว</span>'
+        : `<button class="btn small ${ok ? "gold" : "ghost"}" onclick="eqUp('${g.id}','${esc(g.name)}',${c.coins},${c.scrolls},'${esc(id)}')">⬆ อัปเลเวล ${c.coins}🪙 + 📜${c.scrolls}</button><small class="muted">มีม้วน ${sq} · อัปแล้ว +1 ${ST_LBL[g.main]}</small>`}</div>`;
+  } catch (e) { box.innerHTML = `<small class="muted">${esc(e.message)}</small>`; }
+}
+const eqUp = async (id, n, c, s, wid) => {
+  if (!confirm(`อัปเกรด “${n}” ใช้ ${c} เหรียญ + ม้วน ${s} ม้วน?`)) return;
+  try { await rpc("upgrade_decor", { p_token: tk(), p_item: id }); ITM_STALE = true; await load(); toast("อัปเกรดสำเร็จ ✨"); const k = Object.entries(D.student.decor || {}).find(([, v]) => v && v.id === id); if (k) eqOpen(k[0]); else eqClose(); }
+  catch (e) { toast(e.message); }
+};
 const eqPick = (k, id) => { eqClose(); const cur = ((D.student.decor || {})[k] || {}).id || null; if (cur === id) return; equipDecor(k, id); };
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") eqClose(); });
 function statTotals(dc) {
   const S = X.stats || {}, IS = X.item_stats || {}, o = {};
-  const add = (k) => Object.entries(dc || {}).reduce((a, [sl, it]) => a + (it && it.id && IS[it.id] ? +IS[it.id][k] || 0 : 0), 0);
+  const mainOf = (m) => { const v = ["int", "dil", "str", "luk"].map((x) => +m[x] || 0), mx = Math.max(...v); return mx <= 0 ? null : ["int", "dil", "str", "luk"][v.indexOf(mx)]; };
+  const addRaw = (k) => Object.entries(dc || {}).reduce((a, [sl, it]) => a + (it && it.id && IS[it.id] ? (+IS[it.id][k] || 0) + (mainOf(IS[it.id]) === k ? Math.max(0, (it.lvl || 1) - 1) : 0) : 0), 0);
+  const add = (k) => (k === "coin" ? Math.min(15, addRaw(k)) : Math.min(12, addRaw(k)));
   ["int", "dil", "str", "luk"].forEach((k) => { const b = ((S[k] || {}).base || 0) + ((S[k] || {}).pts || 0); o[k] = { base: b, item: add(k), total: b + add(k) }; });
   o.coin = add("coin");
   return o;

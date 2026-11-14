@@ -681,6 +681,19 @@ do $$ declare n int := 0; ssr int := 0; it gacha_items; sid uuid := (select a fr
   perform pg_temp.t('กาชา: SSR น้อยกว่า 7% จาก 4000 ครั้ง (ได้ ' || ssr || ')', ssr * 100.0 / n < 7);
 end $$;
 
+-- 67: บัฟมีเวลา + lv ใน _decor_of
+select pg_temp.t('บัฟเวลา: บัฟที่ใช้แล้วมีเวลาหมดอายุ ~60 นาที', (select expires_at between now() + interval '55 minutes' and now() + interval '61 minutes' from student_buffs where student_id=(select sid from _it) and kind='buff_exp'));
+set role anon;
+select pg_temp.t('บัฟเวลา: ซื้อเพิ่มแล้วใช้ซ้อนขณะบัฟยังอยู่ไม่ได้', (select buy_item((select tok from _it), (select exp_i from _it), 1)) is not null
+  and pg_temp.fails($q$select use_item((select tok from _it), (select exp_i from _it))$q$));
+reset role;
+update student_buffs set expires_at = now() - interval '1 minute' where student_id=(select sid from _it);
+select pg_temp.t('บัฟเวลา: หมดเวลาแล้วบัฟไม่นับใน effects', ((select _stats((select sid from _it)))->'effects'->>'exp_pct')::int < 15);
+set role anon;
+select pg_temp.t('บัฟเวลา: หมดเวลาแล้วใช้ใหม่ได้', (select use_item((select tok from _it), (select exp_i from _it))->>'msg') like '%60 นาที%');
+reset role;
+select pg_temp.t('_decor_of: ส่ง lv ของหมวกที่สวมอยู่ (Lv3)', (select (_decor_of((select sid from _it))->'hat'->>'lvl')::int = 3));
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

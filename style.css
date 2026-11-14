@@ -1226,3 +1226,8 @@ body.peeking .navwrap{top:34px}
 .gpmk .gmedal.sm{width:20px;height:20px}
 .gpq{padding:5px 0}.gpmini{height:7px;border-radius:5px;background:#0007;overflow:hidden;margin-top:3px}.gpmini i{display:block;height:100%;background:linear-gradient(90deg,#6d3be6,#ffd75a)}
 .gpm{display:grid;grid-template-columns:90px 1fr 32px;gap:8px;align-items:center;padding:2px 0;font-size:.85rem}.gpm.me span{color:#ffd75a;font-weight:700}.gpm b{text-align:right}
+
+/* v2.01 เลเวลอุปกรณ์ในช่อง + รายละเอียด */
+.eqlv{position:absolute;top:-6px;right:-6px;z-index:2;font-style:normal;font-size:9px;font-weight:800;line-height:1;padding:2px 4px;border-radius:8px;background:#f6c453;color:#2a1a00;box-shadow:0 1px 4px #0008}
+.eqdet{padding:10px;border-radius:12px;background:#ffffff0d;border:1px solid #ffffff22;margin-bottom:10px}
+.eqpick{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
