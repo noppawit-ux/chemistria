@@ -1236,3 +1236,9 @@ body.peeking .navwrap{top:34px}
 .relchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .relchip{padding:4px 10px;border-radius:14px;background:#ffffff14;border:1px solid #ff7ac855;font-size:.9em}.relchip small{opacity:.75}
 .relhome{border-color:#ff7ac866}
+
+/* v2.03 พื้นหลังเวทีพอดีกับสมาชิก: แถบกว้างเท่าตัวละคร จัดกลาง (ไม่ยืดเต็มจอกว้าง) */
+.gband{width:fit-content;max-width:100%;box-sizing:border-box;margin-left:auto;margin-right:auto;padding-left:16px;padding-right:16px}
+.gtop1 .gband,.gbrow .gband{padding-left:12px;padding-right:12px}
+@media(min-width:700px){.gwide .gmem{width:118px;margin:0 -10px}.gwide .gmem.mid{width:140px}.gwide .gband{min-height:200px;padding-left:24px;padding-right:24px}
+  .gtop1 .gmem{width:84px}.gtop1 .gmem.mid{width:100px}}

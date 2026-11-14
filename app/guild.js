@@ -95,7 +95,7 @@ function guildHtml() {
       <div class="row" style="gap:8px;flex-wrap:wrap;margin:6px 0">${c.hidden ? '<span class="pill">🔒 อันดับถูกซ่อน</span>' : `<span class="pill">อันดับรวม ${m.rank ?? "—"}</span><span class="pill">ในห้อง ${m.room_rank ?? "—"}</span><span class="pill">เฉลี่ย ${m.avg ?? 0} แต้ม/คน</span><span class="pill">แต้มฉัน ${m.personal_gp ?? 0}</span>`}</div>
       ${!m.ranked ? `<p class="muted" style="font-size:.85em">กิลด์ต้องมีอย่างน้อย ${c.min_members} คนถึงติดอันดับ (ตอนนี้ ${m.size})</p>` : ""}
       ${c.hidden ? "" : `<div class="lvgauge" style="margin:8px 0"><i style="width:${pct}%"></i></div><div class="muted" style="font-size:.85em">${nxt ? `ขั้นถัดไป ${gem(nxt.emoji)} ${esc(nxt.label)} ที่ ${nxt.min_avg} แต้ม/คน (ตอนนี้ ${avg})` : "ปลดล็อกครบทุกขั้นแล้ว 🎉"}</div>`}
-      ${gStrip(m.members, true, 0)}
+      <div class="gwide">${gStrip(m.members, true, 0)}</div>
       ${peek ? "" : `<div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${m.can_rename ? '<button class="btn small ghost" onclick="guildRename()">✏️ เปลี่ยนชื่อ (1 ครั้ง)</button>' : ""}${c.can_edit ? '<button class="btn small ghost" onclick="guildLeave()">ออกจากกิลด์</button>' : ""}</div>`}</div>
       ${gPassHtml(m.pass, peek)}<div class="card"><h3>🎁 รางวัลปลดล็อกของกิลด์</h3>${tiers.map((t) => `<div class="row" style="justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);opacity:${t.reached ? 1 : .6}">
         <span>${gem(t.emoji)} <b>${esc(t.label)}</b> <small class="muted">เฉลี่ย ≥ ${t.min_avg}</small><br><small class="muted">${t.coins ? t.coins + " เหรียญ " : ""}${t.pulls ? "· ตั๋วกาชา " + t.pulls + " " : ""}${t.exp ? "· " + t.exp + " EXP" : ""}</small></span>
