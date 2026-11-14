@@ -1231,3 +1231,8 @@ body.peeking .navwrap{top:34px}
 .eqlv{position:absolute;top:-6px;right:-6px;z-index:2;font-style:normal;font-size:9px;font-weight:800;line-height:1;padding:2px 4px;border-radius:8px;background:#f6c453;color:#2a1a00;box-shadow:0 1px 4px #0008}
 .eqdet{padding:10px;border-radius:12px;background:#ffffff0d;border:1px solid #ffffff22;margin-bottom:10px}
 .eqpick{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+
+/* v2.02 เพื่อน/ความสัมพันธ์ */
+.relchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.relchip{padding:4px 10px;border-radius:14px;background:#ffffff14;border:1px solid #ff7ac855;font-size:.9em}.relchip small{opacity:.75}
+.relhome{border-color:#ff7ac866}

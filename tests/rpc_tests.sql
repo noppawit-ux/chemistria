@@ -694,6 +694,46 @@ select pg_temp.t('บัฟเวลา: หมดเวลาแล้วใช
 reset role;
 select pg_temp.t('_decor_of: ส่ง lv ของหมวกที่สวมอยู่ (Lv3)', (select (_decor_of((select sid from _it))->'hat'->>'lvl')::int = 3));
 
+-- ================= ของขวัญเพื่อน / ความสัมพันธ์ (68) =================
+create temp table _fr as select (select tok from _gt where no=12) t12, (select tok from _gt where no=13) t13, (select tok from _gt where no=14) t14,
+  (select id from students where class_id=(select id from classes where code='T99') and no=12) s12, (select id from students where class_id=(select id from classes where code='T99') and no=13) s13,
+  (select id from gift_items where key='candy') candy, (select id from gift_items where key='crystal') crystal, (select id from gift_items where key='bear') bear;
+grant all on _fr to anon, authenticated;
+update students set coins = 1000 where id in (select s12 from _fr union select s13 from _fr);
+select pg_temp.t('เพื่อน: มีของขวัญ 5 ชิ้น และชนิดความสัมพันธ์ 10 แบบ', (select count(*) from gift_items) = 5 and (select count(*) from relation_types) = 10);
+select pg_temp.t('เพื่อน: นักเรียนเรียกฟังก์ชันภายในไม่ได้', pg_temp.fails($q$select _rel_home((select s12 from _fr))$q$) and pg_temp.fails($q$select _student_extras((select t12 from _fr))$q$));
+set role anon;
+select pg_temp.t('เพื่อน: ส่งลูกอมให้เพื่อน +3 RP หักเหรียญ 15', (select (gift_send((select t12 from _fr), 13, (select candy from _fr), 'ขอบคุณที่ช่วยติว')->>'rp')::int = 3));
+select pg_temp.t('เพื่อน: ส่งให้ตัวเองไม่ได้', pg_temp.fails($q$select gift_send((select t12 from _fr), 12, (select candy from _fr))$q$));
+select pg_temp.t('เพื่อน: ส่งให้คนนอกห้อง/เลขที่ไม่มีไม่ได้', pg_temp.fails($q$select gift_send((select t12 from _fr), 99, (select candy from _fr))$q$));
+reset role;
+select pg_temp.t('เพื่อน: เหรียญถูกหัก 15', (select coins from students where id=(select s12 from _fr)) = 985);
+select pg_temp.t('เพื่อน: เกินเพดาน RP ต่อวัน (ผลึก 38 + 3 > 40) ส่งไม่ได้ และไม่หักเหรียญ',
+  (select pg_temp.fails($q$select gift_send((select t12 from _fr), 13, (select crystal from _fr))$q$, 'anon')) and (select coins from students where id=(select s12 from _fr)) = 985);
+set role anon;
+select pg_temp.t('เพื่อน: ฝ่ายรับส่งกลับได้ RP รวมของคู่เดียวกัน', (select (gift_send((select t13 from _fr), 12, (select candy from _fr))->>'rp')::int = 6));
+select pg_temp.t('เพื่อน: friend_list แสดงเพื่อนและกล่องของขวัญ', (select json_array_length(friend_list((select t13 from _fr))->'inbox') = 1));
+select pg_temp.t('เพื่อน: ไม่ถึงเกณฑ์เสนอความสัมพันธ์ไม่ได้', pg_temp.fails($q$select rel_propose((select t12 from _fr), 13, 'bestie')$q$));
+reset role;
+update friendships set rp = 100, day_rp = 0;
+set role anon;
+select pg_temp.t('เพื่อน: ถึงเกณฑ์เสนอ "เพื่อนสนิท" ได้', (select rel_propose((select t12 from _fr), 13, 'bestie')->>'rel') = 'เพื่อนสนิท');
+select pg_temp.t('เพื่อน: ผู้เสนอตอบรับคำขอของตัวเองไม่ได้', pg_temp.fails($q$select rel_respond((select t12 from _fr), 13, true)$q$));
+select pg_temp.t('เพื่อน: ชนิดที่ต้อง 300 แต้มยังเสนอไม่ได้', pg_temp.fails($q$select rel_propose((select t12 from _fr), 13, 'forever')$q$));
+select pg_temp.t('เพื่อน: ฝ่ายรับเห็นคำขอใน student_extras.relations', (select json_array_length(student_extras((select t13 from _fr))->'relations'->'incoming') = 1));
+select pg_temp.t('เพื่อน: ฝ่ายรับกดยอมรับสำเร็จ', (select (rel_respond((select t13 from _fr), 12, true)->>'accepted')::boolean));
+select pg_temp.t('เพื่อน: ทั้งสองฝ่ายเห็นความสัมพันธ์บนหน้าหลัก', (select student_extras((select t12 from _fr))->'relations'->'rels'->0->>'rel' = 'bestie' and student_extras((select t13 from _fr))->'relations'->'rels'->0->>'rel_name' = 'เพื่อนสนิท'));
+select rel_end((select t13 from _fr), 12);
+select pg_temp.t('เพื่อน: เลิกความสัมพันธ์แล้วหายจากหน้าหลัก (คะแนนยังอยู่)', (select json_array_length(student_extras((select t12 from _fr))->'relations'->'rels') = 0));
+reset role;
+select pg_temp.t('เพื่อน: คะแนนยังคงอยู่หลังเลิก', (select rp from friendships limit 1) >= 100);
+update app_settings set value='1' where key='gift_daily_limit';
+set role anon;
+select pg_temp.t('เพื่อน: เกินโควตาส่งต่อวันไม่ได้ (limit 1 แต่ส่งไปแล้ว)', pg_temp.fails($q$select gift_send((select t12 from _fr), 13, (select candy from _fr))$q$));
+reset role;
+update app_settings set value='5' where key='gift_daily_limit';
+select pg_temp.t('เพื่อน: ครูดูบันทึกของขวัญได้ นักเรียนดูไม่ได้', pg_temp.fails($q$select admin_gift_log()$q$));
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

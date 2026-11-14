@@ -27,7 +27,7 @@ const VIEWS = {
       <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
         <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
         <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
-    ${alertsChip()}${todayLessonsHtml()}${bossHtml(false)}
+    ${alertsChip()}${relHomeHtml()}${todayLessonsHtml()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>

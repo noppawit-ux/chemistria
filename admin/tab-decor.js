@@ -14,4 +14,13 @@ TAB.decor = async function (v) {
       { k: "kind", label: "ชนิด", t: "select", opts: () => ["buff_exp", "buff_coin", "buff_luk", "buff_str", "buff_int", "heal", "scroll", "stat_reset"].map((x) => [x, x]) },
       { k: "power", label: "ค่า", t: "number", w: 55 }, { k: "minutes", label: "นาที", t: "number", w: 55 }, { k: "price", label: "ราคา", t: "number", w: 60 }, { k: "daily_buy", label: "ซื้อ/วัน", t: "number", w: 55 }, { k: "descr", label: "คำอธิบาย", w: 200 },
       { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
+  const gh = holder(v, "💝 ของขวัญเพื่อน", "ราคา = เหรียญที่ผู้ส่งจ่าย · points = คะแนนมิตรภาพ (RP) ที่คู่ได้รับ · ปรับเพดาน RP/วัน และจำนวนชิ้น/วันที่แท็บตั้งค่า (gift_pair_cap, gift_daily_limit)");
+  await crud(gh, { table: "gift_items", order: "sort", defaults: { key: "", name: "", emoji: "🎁", rarity: "N", price: 30, points: 7, descr: "", sort: 90, active: true },
+    cols: [{ k: "key", label: "รหัส", w: 70 }, { k: "name", label: "ชื่อ", w: 130 }, { k: "emoji", label: "ไอคอน", w: 50 }, { k: "rarity", label: "ระดับ", t: "select", opts: () => ["N", "R", "SR", "SSR"].map((x) => [x, x]) },
+      { k: "price", label: "ราคา", t: "number", w: 60 }, { k: "points", label: "RP", t: "number", w: 55 }, { k: "descr", label: "คำอธิบาย", w: 180 }, { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
+  const rh = holder(v, "💞 ชนิดความสัมพันธ์", "need_rp = คะแนนมิตรภาพที่ต้องมีถึงจะเสนอชนิดนี้ได้ · รหัส (key) เป็นภาษาอังกฤษไม่ซ้ำ");
+  await crud(rh, { table: "relation_types", order: "need_rp", defaults: { key: "", name: "", emoji: "🤝", need_rp: 100, sort: 50, active: true },
+    cols: [{ k: "key", label: "รหัส", w: 80 }, { k: "name", label: "ชื่อ", w: 140 }, { k: "emoji", label: "ไอคอน", w: 50 }, { k: "need_rp", label: "ต้องมี RP", t: "number", w: 70 }, { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
+  const lh = holder(v, "📬 บันทึกของขวัญล่าสุด (ตรวจข้อความ)", "แสดง 60 รายการล่าสุด · ข้อความไม่เหมาะสมให้ตักเตือนนักเรียน");
+  try { const rows = await rpc("admin_gift_log", { p_limit: 60 }); lh.innerHTML += `<div style="max-height:260px;overflow:auto;font-size:.9em">${rows.map((r) => `<div class="item"><span class="grow">${esc(r.class || "")} · <b>${esc(r.from)}</b> → <b>${esc(r.to)}</b> ${esc(r.gift)} <small class="muted">+${r.points}</small>${r.msg ? ` <i>“${esc(r.msg)}”</i>` : ""}</span><small class="muted">${new Date(r.at).toLocaleString("th-TH")}</small></div>`).join("") || '<p class="muted">ยังไม่มี</p>'}</div>`; } catch (e) { lh.innerHTML += `<p class="muted">${esc(e.message)}</p>`; }
 };
