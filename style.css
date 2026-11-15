@@ -1266,3 +1266,11 @@ body.peeking .navwrap{top:34px}
 .legshow .box{padding:24px;max-width:340px}.legshow h2{color:#ff7b86;letter-spacing:3px;text-shadow:0 0 18px #ff2a3c}
 .legshow .big{font-size:110px;filter:drop-shadow(0 0 30px #ff2a3c)}.legshow img.lgi{width:210px;height:210px;object-fit:contain;filter:drop-shadow(0 0 28px #ff2a3c)}
 .legshow .nm{font-size:1.4rem;font-weight:800;color:#fff;margin-top:6px}
+
+/* v2.06 ด่านบอสเลื่อนแรงค์ */
+.trialban{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 10px;border:1px solid var(--gold,#f5c542);border-radius:12px;background:linear-gradient(90deg,rgba(245,197,66,.16),rgba(245,197,66,.04));cursor:pointer;animation:trialglow 2s ease-in-out infinite}
+.trialban img{width:40px;height:40px;object-fit:contain}
+@keyframes trialglow{0%,100%{box-shadow:0 0 0 rgba(245,197,66,0)}50%{box-shadow:0 0 14px rgba(245,197,66,.45)}}
+.trialboss{display:block;margin:8px auto;width:120px;height:120px;object-fit:contain}
+.trialboss.emo{font-size:84px;line-height:120px;text-align:center}
+.trialban{flex-wrap:wrap}.trialban .grow{min-width:140px}.trialban b{font-size:.95em}.trialban .btn{margin-left:auto}

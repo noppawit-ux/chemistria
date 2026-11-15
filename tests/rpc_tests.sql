@@ -734,6 +734,56 @@ reset role;
 update app_settings set value='5' where key='gift_daily_limit';
 select pg_temp.t('เพื่อน: ครูดูบันทึกของขวัญได้ นักเรียนดูไม่ได้', pg_temp.fails($q$select admin_gift_log()$q$));
 
+-- ================= ด่านบอสเลื่อนแรงค์ (69) =================
+update students set exp = 700 where id in (select s12 from _fr union select s13 from _fr);
+select pg_temp.t('ด่านแรงค์: ถึงเกณฑ์ Silver (600+) แต่ยังไม่ผ่านด่าน → แรงค์ถูกกั้นไว้ที่ Bronze และ locked',
+  (select (_rank_info_s((select s12 from _fr), 700)->>'locked')::boolean and (_rank_info_s((select s12 from _fr), 700)->>'key') = 'bronze'));
+select pg_temp.t('ด่านแรงค์: ตัวเลข EXP ไม่หาย (ยัง 700)', (select exp from students where id=(select s12 from _fr)) = 700);
+select pg_temp.t('ด่านแรงค์: แดชบอร์ดส่ง rank_info.locked ให้หน้าเว็บ',
+  (select (student_dashboard((select t12 from _fr))->'rank_info'->>'locked')::boolean) is true);
+set role anon;
+select pg_temp.t('ด่านแรงค์: สถานะด่านมีบอส Silver และเริ่มได้', (select (rank_trial_status((select t12 from _fr))->'boss'->>'name') = 'ผู้พิทักษ์ธาตุเงิน'
+  and (rank_trial_status((select t12 from _fr))->>'can_start')::boolean));
+select pg_temp.t('ด่านแรงค์: บอสด่านไม่โผล่ในรายการมอนสเตอร์ปกติ',
+  (select not exists (select 1 from json_array_elements(battle_status((select t12 from _fr))->'monsters') e where e->>'name' = 'ผู้พิทักษ์ธาตุเงิน')));
+select pg_temp.t('ด่านแรงค์: เริ่มสู้บอสด่านผ่าน battle_start ตรงๆ ไม่ได้',
+  pg_temp.fails($q$select battle_start((select t12 from _fr), (select id from monsters where key='trial_silver'))$q$));
+reset role;
+select pg_temp.t('ด่านแรงค์: ฟังก์ชันภายในนักเรียนเรียกไม่ได้', pg_temp.fails($q$select _rank_gate((select s12 from _fr), 700)$q$));
+set role anon;
+select pg_temp.t('ด่านแรงค์: เริ่มสอบสำเร็จ', (select rank_trial_start((select t12 from _fr))->>'status') = 'active');
+reset role;
+select pg_temp.t('ด่านแรงค์: การต่อสู้ติดป้าย silver และไม่ให้รางวัลปกติ',
+  (select trial_rank = 'silver' and not rewarded from battles where student_id=(select s12 from _fr) order by created_at desc limit 1));
+select pg_temp.t('ด่านแรงค์: ยังไม่ชนะ → ยังไม่ผ่านด่าน', not exists (select 1 from rank_trial_pass where student_id=(select s12 from _fr)));
+create temp table _cb as select coins c0 from students where id=(select s12 from _fr);
+update battles set status='won', m_hp=0, finished_at=now() where student_id=(select s12 from _fr) and trial_rank='silver';
+select pg_temp.t('ด่านแรงค์: ชนะบอส → บันทึกผ่านด่าน Silver', exists (select 1 from rank_trial_pass where student_id=(select s12 from _fr) and rank_key='silver'));
+select pg_temp.t('ด่านแรงค์: ได้เหรียญรางวัลผ่านด่าน +50', (select coins from students where id=(select s12 from _fr)) = (select c0 from _cb) + 50);
+select pg_temp.t('ด่านแรงค์: เลื่อนเป็น Silver แล้ว ไม่ locked', (select (_rank_info_s((select s12 from _fr), 700)->>'key') = 'silver' and (_rank_info_s((select s12 from _fr), 700)->>'locked') is null));
+select pg_temp.t('ด่านแรงค์: มีประกาศเลื่อนแรงค์ในห้อง', exists (select 1 from celebrations where student_id=(select s12 from _fr) and kind='rank' and title='Silver'));
+update students set exp = 5000 where id = (select s12 from _fr);
+select pg_temp.t('ด่านแรงค์: EXP สูงมาก ถูกกั้นที่ด่านถัดไป (Gold) ไม่ข้ามด่าน', (select (_rank_info_s((select s12 from _fr), 5000)->>'gate_key') = 'gold' and (_rank_info_s((select s12 from _fr), 5000)->>'key') = 'silver'));
+-- แพ้แล้วต้องรอวันถัดไป
+set role anon;
+select rank_trial_start((select t13 from _fr));
+reset role;
+update battles set status='lost', finished_at=now() where student_id=(select s13 from _fr) and trial_rank='silver';
+select pg_temp.t('ด่านแรงค์: แพ้แล้วไม่ผ่านด่าน EXP ยังอยู่', not exists (select 1 from rank_trial_pass where student_id=(select s13 from _fr)) and (select exp from students where id=(select s13 from _fr)) = 700);
+select pg_temp.t('ด่านแรงค์: แพ้แล้วสอบซ้ำวันเดียวกันไม่ได้', pg_temp.fails($q$select rank_trial_start((select t13 from _fr))$q$, 'anon'));
+select pg_temp.t('ด่านแรงค์: สถานะแจ้งว่าวันนี้สอบแล้ว', (select (rank_trial_status((select t13 from _fr))->>'tried_today')::boolean) is true) ;
+update battles set play_date = today_th() - 1 where student_id=(select s13 from _fr) and trial_rank='silver';
+set role anon;
+select pg_temp.t('ด่านแรงค์: ข้ามวันแล้วสอบใหม่ได้', (select rank_trial_start((select t13 from _fr))->>'status') = 'active');
+reset role;
+select pg_temp.t('ด่านแรงค์: ครูให้ผ่านด่านรายคนได้ นักเรียนเรียกไม่ได้', pg_temp.fails($q$select admin_rank_trial_pass((select s13 from _fr), 'silver')$q$, 'anon'));
+update app_settings set value='0' where key='rank_trial_on';
+select pg_temp.t('ด่านแรงค์: ปิดระบบด่านแล้ว ไม่มีการกั้นแรงค์', (select _rank_gate((select s13 from _fr), 9999)) is null);
+update app_settings set value='1' where key='rank_trial_on';
+update monsters set active=false where key='trial_silver';
+select pg_temp.t('ด่านแรงค์: ปิดบอสด่านนั้น = แรงค์นั้นเข้าฟรี', (select _rank_gate((select s13 from _fr), 700)) is null);
+update monsters set active=true where key='trial_silver';
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

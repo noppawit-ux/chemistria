@@ -1,7 +1,7 @@
 /* มินิเกมต่อสู้มอนสเตอร์เคมี: เลือกสกิลตามคลาส → ตอบคำถามเพื่อใช้สกิล → มอนสเตอร์โต้กลับ กดลูกศรลดดาเมจ
    (ดาเมจ/เฉลย/รางวัล คำนวณที่เซิร์ฟเวอร์ทั้งหมด) */
 const BATTLE = (() => {
-  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null, shown: {}, hpDelay: 0 };
+  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null, trial: null, shown: {}, hpDelay: 0 };
   const ARW = { L: "⬅️", U: "⬆️", R: "➡️", D: "⬇️" };
   const KEYS = { ArrowLeft: "L", ArrowUp: "U", ArrowRight: "R", ArrowDown: "D" };
   const KIND = { attack: ["⚔️", "โจมตี"], buff: ["📈", "บัพ"], heal: ["💚", "ฮีล"] };
@@ -26,7 +26,8 @@ const BATTLE = (() => {
     S.screen = "list"; S.fb = null; S.msg = ""; S.drop = null; GAMES.setMode("battle"); paint();
     try {
       S.data = await rpc("battle_status", { p_token: tk() });
-      if (S.data.active && S.data.active.status === "active") { S.bat = S.data.active; S.screen = "fight"; resume(); }
+      if (S.data.active && S.data.active.status === "active") { S.bat = S.data.active; S.screen = "fight"; resume();
+        try { const ts = await rpc("rank_trial_status", { p_token: tk() }); S.trial = ts.active_trial && ts.gate ? { name: ts.gate.name } : null; } catch (e) {} }
     } catch (e) { toast(e.message); }
     paint();
   }
@@ -34,9 +35,13 @@ const BATTLE = (() => {
 
   async function start(id) {
     if (S.busy) return; S.busy = true;
-    try { S.bat = await rpc("battle_start", { p_token: tk(), p_monster: id }); S.screen = "fight"; S.fb = null; S.msg = "การต่อสู้เริ่มขึ้น! เลือกสกิลแล้วตอบคำถามให้ถูกเพื่อใช้สกิล"; S.drop = null; }
+    try { S.bat = await rpc("battle_start", { p_token: tk(), p_monster: id }); S.trial = null; S.screen = "fight"; S.fb = null; S.msg = "การต่อสู้เริ่มขึ้น! เลือกสกิลแล้วตอบคำถามให้ถูกเพื่อใช้สกิล"; S.drop = null; }
     catch (e) { toast(e.message); }
     S.busy = false; paint();
+  }
+  function begin(bat, gname) {   // เริ่มด่านบอสเลื่อนแรงค์ (เรียกจาก trial.js)
+    S.bat = bat; S.screen = "fight"; S.fb = null; S.drop = null; S.gs = null; S.trial = { name: gname };
+    S.msg = "ด่านบอสเลื่อนแรงค์! เลือกสกิลเพื่อโจมตี"; GAMES.setMode("battle"); paint(); resume();
   }
   async function useSkill(key) {
     if (S.busy) return; S.busy = true; paint();
@@ -104,7 +109,7 @@ const BATTLE = (() => {
   }
   function finishLoad() { recBattle(); setTimeout(async () => { try { await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
   async function flee() {
-    if (!confirm("หนีจากการต่อสู้? จะนับเป็น 1 รอบของวันนี้และไม่ได้รางวัล")) return;
+    if (!confirm(S.trial ? "หนีจากด่านบอส? จะนับเป็นการสอบ 1 ครั้ง ต้องรอพรุ่งนี้ถึงท้าใหม่ได้" : "หนีจากการต่อสู้? จะนับเป็น 1 รอบของวันนี้และไม่ได้รางวัล")) return;
     clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null;
     try { await rpc("battle_flee", { p_token: tk(), p_battle: S.bat.id }); } catch (e) {}
     S.bat = null; open();
@@ -268,7 +273,7 @@ const BATTLE = (() => {
         <em>${esc(s.descr || "")}</em></button>`).join("");
     return arena + `<div class="card"><div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <p class="muted" style="margin:4px 0 8px">เลือกสกิล แล้วตอบคำถามให้ถูก (ภายใน 20 วิ) สกิลถึงจะออกผล · ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</p><div class="bt-skillrow">${skills}</div>
-      ${b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
+      ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }
 
   function questionView() {
@@ -307,7 +312,12 @@ const BATTLE = (() => {
     if (S.fxFor !== b.id && b.status !== "fled") { S.fxFor = b.id; setTimeout(() => {
       if (win) { FX.victory(); if (dr) { FX.screen("loot-beam", 0.5, 0.5, { scale: 3 }); FX.later(400, () => FX.screen("chest-open", 0.5, 0.55, { scale: 3 })); } }
       else FX.screen("curse", 0.5, 0.45, { scale: 3 }); }, 400); }
-    if (b.status === "fled") return `<div class="card center"><p>หนีจากการต่อสู้แล้ว</p><button class="btn" onclick="BATTLE.back()">กลับ</button></div>`;
+    if (b.status === "fled") return `<div class="card center"><p>หนีจากการต่อสู้แล้ว${S.trial ? " (นับเป็นการสอบ 1 ครั้งของวันนี้)" : ""}</p><button class="btn" onclick="BATTLE.${S.trial ? "endTrial" : "back"}()">กลับ</button></div>`;
+    if (S.trial) return `<div class="card center gm-res ${win ? "perfect" : ""}"><div style="font-size:54px">${win ? "🎖️" : "💀"}</div>
+      <h2>${win ? `ผ่านด่านเลื่อนแรงค์ ${esc(S.trial.name)}!` : `ยังไม่ผ่านด่าน ${esc(S.trial.name)}`}</h2>
+      <p>${win ? '<span class="pill">🏅 เลื่อนแรงค์สำเร็จ + รับเหรียญรางวัล</span>' : '<span class="pill">EXP ไม่หาย</span> <span class="pill">🗓️ พรุ่งนี้ท้าใหม่ได้</span>'}</p>
+      ${S.gs && S.gs.bid === b.id ? gsCard(S.gs) : ""}
+      <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.endTrial()">${win ? "ดูแรงค์ใหม่" : "กลับหน้าหลัก"}</button></div></div>`;
     return `<div class="card center gm-res ${win ? "perfect" : ""}"><div style="font-size:54px">${win ? "🏆" : "💀"}</div>
       <h2>${win ? `ปราบ ${esc(m.name)} สำเร็จ!` : `พ่ายแพ้ให้ ${esc(m.name)}`}</h2>
       <p>${b.rewarded ? (b.exp || b.coins ? `<span class="pill">+${b.exp} EXP</span> ${b.coins ? `<span class="pill">+${b.coins} 🪙</span>` : ""}` : '<span class="pill">ไม่มีรางวัลรอบนี้</span>')
@@ -319,6 +329,7 @@ const BATTLE = (() => {
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.start('${m.id}')">⚔️ สู้อีกครั้ง</button><button class="btn ghost" onclick="BATTLE.back()">เลือกมอนสเตอร์</button></div></div>`;
   }
 
+  function endTrial() { S.trial = null; S.bat = null; S.screen = "list"; load().then(() => go("home")).catch(() => go("home")); }
   const view = () => (S.screen === "list" || !S.bat ? listView() : fightView());
-  return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
+  return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
 })();

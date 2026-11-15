@@ -47,7 +47,7 @@ function render() {
   const span = s.exp_next_level - s.exp_this_level;
   const pct = Math.min(100, Math.round(((s.exp - s.exp_this_level) / span) * 100));
   const lp = ri.top ? "" : `<div class="lpbar"><i style="width:${ri.lp}%"></i></div>
-      <div class="lvrow"><span>LP ${ri.lp} / ${ri.lp_max}</span><span>ถัดไป: ${esc(ri.next)} (EXP ${ri.exp_hi})</span></div>`;
+      <div class="lvrow"><span>LP ${ri.lp} / ${ri.lp_max}</span><span>${ri.locked ? "🔒 รอผ่านด่าน " + esc(ri.gate_name) : "ถัดไป: " + esc(ri.next) + " (EXP " + ri.exp_hi + ")"}</span></div>${trialBanner(ri)}`;
   app.innerHTML = `
     <div class="card profile rk-${ri.key}">
       <div class="avwrap">${frame(s.avatar, s.char_class, ri, s.level, "", s.decor)}
