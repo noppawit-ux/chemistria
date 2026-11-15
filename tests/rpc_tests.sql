@@ -786,6 +786,69 @@ update monsters set active=true where key='trial_silver';
 
 select pg_temp.t('ด่านแรงค์: บอสทั้ง 8 ตัวมีภาพ (SQL 70)', (select count(*) from monsters where trial_rank is not null and image like 'assets/monsters/trial_%') = 8);
 
+-- ================= ระบบตั้งรับในการต่อสู้ (71) =================
+create temp table _gd as select (select tok from _gt where no=15) t, (select id from students where class_id=(select id from classes where code='T99') and no=15) sid,
+  (select id from monsters where key='bubble') mon;
+grant all on _gd to anon, authenticated;
+update students set exp = 50 where id = (select sid from _gd);
+set role anon;
+select battle_start((select t from _gd), (select mon from _gd));
+reset role;
+create temp table _gdb as select id from battles where student_id=(select sid from _gd) and status='active' order by created_at desc limit 1;
+grant all on _gdb to anon, authenticated;
+select pg_temp.t('ตั้งรับ: การต่อสู้ใหม่ guard=false และมุมมองส่ง guard_left=0', (select not guard from battles where id=(select id from _gdb))
+  and (select (_battle_view((select id from _gdb))->>'guard_left')::int = 0));
+update battles set p_hp = 100, p_max = 100, m_hp = 60, m_max = 60, turn = 1, pend = jsonb_build_object('dmg',20,'n',3,'seq','LUR','at', extract(epoch from now())-10) where id=(select id from _gdb);
+set role anon;
+select pg_temp.t('ตั้งรับ: ไม่ตั้งรับ → กดลูกศรไม่มีผล รับ 70% (20→14)', (select (battle_defend((select t from _gd), (select id from _gdb), 3)->'event'->>'taken')::int) = 14);
+reset role;
+update battles set turn = 3, p_hp = 100, pend = jsonb_build_object('dmg',20,'n',3,'seq','LUR','at', extract(epoch from now())-10) where id=(select id from _gdb);
+set role anon;
+select pg_temp.t('ตั้งรับ: เทิร์นที่ 3 มอนโจมตีหนัก ×1.5 (20→21 เมื่อไม่ตั้งรับ)', (select (battle_defend((select t from _gd), (select id from _gdb), 0)->'event'->>'taken')::int) = 21);
+reset role;
+update battles set turn = 1, p_hp = 100, pend = null, cds = '{}'::jsonb where id=(select id from _gdb);
+set role anon;
+create temp table _gdg as select battle_guard((select t from _gd), (select id from _gdb)) j;
+reset role;
+select pg_temp.t('ตั้งรับ: กดตั้งรับได้ → เข้าเฟสป้องกัน guard=true คูลดาวน์ 2', (select j->>'phase' from _gdg) = 'defend'
+  and (select guard from battles where id=(select id from _gdb)) and (select (cds->>'guard')::int from battles where id=(select id from _gdb)) = 2);
+set role anon;
+select pg_temp.t('ตั้งรับ: ระหว่างป้องกันตั้งรับซ้ำไม่ได้', pg_temp.fails($q$select battle_guard((select t from _gd), (select id from _gdb))$q$, 'anon'));
+reset role;
+update battles set p_hp = 70, pend = jsonb_build_object('dmg',20,'n',4,'seq','LURD','at', extract(epoch from now())-10) where id=(select id from _gdb);
+set role anon;
+select pg_temp.t('ตั้งรับ: กดถูก 2/4 ลดดาเมจครึ่ง (20→10)', (select (battle_defend((select t from _gd), (select id from _gdb), 2)->'event'->>'taken')::int) = 10);
+reset role;
+select pg_temp.t('ตั้งรับ: หลังรับแล้ว guard กลับเป็น false', (select not guard from battles where id=(select id from _gdb)));
+select pg_temp.t('ตั้งรับ: ยังอยู่ในคูลดาวน์ ตั้งรับอีกไม่ได้', pg_temp.fails($q$select battle_guard((select t from _gd), (select id from _gdb))$q$, 'anon'));
+update battles set cds = '{}'::jsonb, p_hp = 70, m_hp = 60, turn = 2 where id=(select id from _gdb);
+set role anon;
+select battle_guard((select t from _gd), (select id from _gdb));
+reset role;
+update battles set pend = jsonb_build_object('dmg',20,'n',4,'seq','LURD','at', extract(epoch from now())-10) where id=(select id from _gdb);
+set role anon;
+create temp table _gdpf as select battle_defend((select t from _gd), (select id from _gdb), 4)->'event' ev;
+reset role;
+select pg_temp.t('ตั้งรับ: ถูกครบ → ไม่เสีย HP + ปัดป้องสมบูรณ์', ((select ev->>'taken' from _gdpf)::int = 0) and (select (ev->>'perfect')::boolean from _gdpf));
+select pg_temp.t('ตั้งรับ: ปัดป้องสมบูรณ์ → สวนกลับลด HP มอน และฟื้น HP ผู้เล่น', (select m_hp < 60 and p_hp = 78 from battles where id=(select id from _gdb)));
+update battles set cds = '{}'::jsonb, p_hp = 70, m_hp = 5, turn = 2 where id=(select id from _gdb);
+set role anon;
+select battle_guard((select t from _gd), (select id from _gdb));
+reset role;
+update battles set pend = jsonb_build_object('dmg',20,'n',3,'seq','LUR','at', extract(epoch from now())-10) where id=(select id from _gdb);
+set role anon;
+select battle_defend((select t from _gd), (select id from _gdb), 3);
+reset role;
+select pg_temp.t('ตั้งรับ: สวนกลับไม่ฆ่ามอน (เหลือ HP อย่างน้อย 1)', (select m_hp = 1 and status = 'active' from battles where id=(select id from _gdb)));
+update battles set cds = '{}'::jsonb, p_hp = 70, m_hp = 60, turn = 2 where id=(select id from _gdb);
+set role anon;
+select battle_guard((select t from _gd), (select id from _gdb));
+reset role;
+update battles set pend = jsonb_build_object('dmg',20,'n',3,'seq','LUR','at', extract(epoch from now())) where id=(select id from _gdb);
+set role anon;
+select pg_temp.t('ตั้งรับ: กดเร็วเกินจริง (ทันที 3 ลูก) ไม่นับ → ได้ 0 ลูกศร', (select (battle_defend((select t from _gd), (select id from _gdb), 3)->'event'->>'hits')::int) = 0);
+reset role;
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

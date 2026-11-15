@@ -1274,3 +1274,8 @@ body.peeking .navwrap{top:34px}
 .trialboss{display:block;margin:8px auto;width:120px;height:120px;object-fit:contain}
 .trialboss.emo{font-size:84px;line-height:120px;text-align:center}
 .trialban{flex-wrap:wrap}.trialban .grow{min-width:140px}.trialban b{font-size:.95em}.trialban .btn{margin-left:auto}
+
+/* v2.08 ตั้งรับ */
+.bt-skill.guard{border-color:#5aa9ff88;background:linear-gradient(180deg,rgba(90,169,255,.14),rgba(90,169,255,.04))}
+.bt-skill.guard.hot:not(:disabled){animation:trialglow 1.2s ease-in-out infinite;border-color:#ffd166}
+.bt-warn{margin:0 0 8px;padding:6px 10px;border-radius:10px;background:rgba(255,120,60,.14);border:1px solid #ff8a4c88;font-weight:700;color:#ffb184}

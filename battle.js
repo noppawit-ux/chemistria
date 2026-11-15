@@ -50,6 +50,13 @@ const BATTLE = (() => {
     S.busy = false; paint();
   }
   const QSECS = 20;
+  const heavyNow = () => !!(S.bat && S.bat.turn % 3 === 0);   // เทิร์นที่ 3,6,9… มอนสเตอร์โจมตีหนัก ×1.5
+  async function guard() {
+    if (S.busy || !S.bat) return; S.busy = true; paint();
+    try { S.bat = await rpc("battle_guard", { p_token: tk(), p_battle: S.bat.id }); S.fb = null; S.msg = "🛡️ ตั้งรับ! เตรียมกดลูกศร"; startDef(); }
+    catch (e) { toast(e.message); }
+    S.busy = false; paint();
+  }
   function armQ(el) { clearTimeout(S.qtimer); clearInterval(S.qint);
     S.qint = setInterval(() => { const e = document.getElementById("bqt"); if (!e || !S.bat || S.bat.phase !== "question") return clearInterval(S.qint); e.textContent = "⏱️ " + Math.max(0, Math.ceil(QSECS - (Date.now() - S.qstart) / 1000)); }, 250); S.qtimer = setTimeout(() => answer(-1), Math.max(300, (QSECS - el) * 1000)); S.qstart = Date.now() - el * 1000; }
   async function answer(i) {
@@ -68,6 +75,10 @@ const BATTLE = (() => {
   /* ----- ป้องกันด้วยลูกศร ----- */
   function startDef() {
     const p = S.bat.pend; clearTimeout(S.def && S.def.t);
+    if (!S.bat.guard) {   // ไม่ได้ตั้งรับ: มอนสเตอร์โจมตีอัตโนมัติ (รับ 70%) ไม่ต้องกดลูกศร
+      S.def = { i: 0, hits: 0, marks: [], seq: [], n: 0, state: "send", auto: true }; S.msg = heavyNow() ? "⚠️ โจมตีหนัก!" : "";
+      S.def.t = setTimeout(endDef, 700); paint(); return;
+    }
     S.def = { i: 0, hits: 0, marks: [], seq: p.seq.split(""), n: p.n, open: true, state: "ready" };
     S.def.t = setTimeout(nextArrow, 900); paint();
   }
@@ -91,7 +102,10 @@ const BATTLE = (() => {
     try {
       const r = await rpc("battle_defend", { p_token: tk(), p_battle: S.bat.id, p_hits: d.hits });
       S.bat = r.state; const e = r.event;
-      S.msg = `🏹 ${S.bat.monster.atk_name}! กดถูก ${e.hits}/${e.n} → รับดาเมจ ${e.taken}${e.shield ? " (โล่ช่วยลดอีกครึ่ง 🛡️)" : ""}`;
+      const sh = e.shield ? " (โล่ช่วยลดอีกครึ่ง 🛡️)" : "";
+      S.msg = !e.guard ? `💥 ${S.bat.monster.atk_name}${e.heavy ? " (โจมตีหนัก ⚠️)" : ""} → รับดาเมจ ${e.taken}${sh} — ลอง “🛡️ ตั้งรับ” เพื่อลดดาเมจ`
+        : e.perfect ? `🛡️ ปัดป้องสมบูรณ์! ไม่โดนเลย · สวนกลับ -${e.counter}${e.heal ? " · ฟื้น +" + e.heal : ""}`
+        : `🛡️ ตั้งรับ ${S.bat.monster.atk_name}! กดถูก ${e.hits}/${e.n} → รับดาเมจ ${e.taken}${sh}`;
       S.hit = "";
       if (S.bat.status !== "active") { S.screen = "result"; finishLoad(); }
       S.def = null; S.hpDelay = 520; paint(); const mo = S.bat.monster; setTimeout(() => playMonster(e, mo.atk_name, mo.emoji), 30); return;
@@ -218,7 +232,9 @@ const BATTLE = (() => {
     span(".bt-mo", ".bt-pl", "magic-missile", 0.9, (zx, zy) => {
       if (e.taken <= 0) { num("🌀 หลบได้!", zx, zy - 50, "heal"); pfx("shield-block", zx, zy, { scale: 1.4 }); }
       else { const h = MONFX[key] || ["hit-spark", 1.5]; pfx(h[0], zx, zy, { scale: h[1] }); pop("hurt", PL.querySelector(".bt-spr")); flash("flashred"); num("-" + e.taken, zx, zy - 40, "dmg"); }
-      if (e.hits > 0 && e.taken > 0) num("🛡️ ลดดาเมจ " + Math.round((80 * e.hits) / e.n) + "%", zx, zy - 74, "fast");
+      if (e.guard && e.hits > 0 && e.taken > 0) num("🛡️ ลดดาเมจ " + Math.round((100 * e.hits) / e.n) + "%", zx, zy - 74, "fast");
+      if (e.heavy && !e.guard) num("⚠️ โจมตีหนัก", zx, zy - 74, "dmg");
+      if (e.perfect) { num("✨ ปัดป้องสมบูรณ์!", zx, zy - 74, "crit"); if (e.counter) setTimeout(() => { const t = document.querySelector(".bt-mo"); if (t) { const r = t.getBoundingClientRect(), fr = $f().getBoundingClientRect(); num("-" + e.counter, r.left - fr.left + r.width / 2, r.top - fr.top, "dmg"); } if (e.heal) num("+" + e.heal, zx, zy - 20, "heal"); }, 450); }
     });
   }
   function syncLoops() {   // เอฟเฟกต์วนต่อเนื่อง: ชาร์จสกิลระหว่างตอบคำถาม + ออร่าบัพที่ยังติดอยู่
@@ -271,8 +287,9 @@ const BATTLE = (() => {
     const skills = b.skills.map((s) => `<button class="bt-skill ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')">
         <span class="bt-sico">${s.emoji}</span><b>${esc(s.name)}</b><small>${KIND[s.kind][1]}${s.kind !== "buff" ? ` ${s.power}` : ""}${s.left > 0 ? ` · รอ ${s.left} เทิร์น` : s.cd ? ` · CD ${s.cd}` : ""}</small>
         <em>${esc(s.descr || "")}</em></button>`).join("");
-    return arena + `<div class="card"><div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
-      <p class="muted" style="margin:4px 0 8px">เลือกสกิล แล้วตอบคำถามให้ถูก (ภายใน 20 วิ) สกิลถึงจะออกผล · ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</p><div class="bt-skillrow">${skills}</div>
+    const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
+    return arena + `<div class="card">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
+      <p class="muted" style="margin:4px 0 8px">เลือกสกิล แล้วตอบคำถามให้ถูก (ภายใน 20 วิ) สกิลถึงจะออกผล · ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡ · มอนสเตอร์โจมตีเองอัตโนมัติ (รับ 70%) ทุกเทิร์นที่ 3 จะโจมตีหนัก</p><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
       ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }
 
@@ -295,15 +312,21 @@ const BATTLE = (() => {
       <p class="muted" style="margin:8px 0">${f.correct ? "✅ ตอบถูก" : `คำตอบที่ถูก: <b style="color:var(--mint)">${"กขคง"[f.answer]}. ${esc(q.choices[f.answer])}</b>`}</p>
       ${f.explain ? `<p class="muted">💡 ${esc(f.explain)}</p>` : ""}<button class="btn gold" onclick="BATTLE.next()">${nextTxt}</button></div>`;
   }
+  function guardBtn(b) {
+    const left = b.guard_left || 0;
+    return `<button class="bt-skill guard ${heavyNow() ? "hot" : ""}" ${left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.guard()"><span class="bt-sico">🛡️</span><b>ตั้งรับ</b>
+      <small>แทนโจมตี 1 เทิร์น${left > 0 ? ` · รอ ${left} เทิร์น` : " · CD 2"}</small><em>กดลูกศรลดดาเมจ ถูกครบ = ไม่โดนเลย + สวนกลับ + ฟื้น HP 8%</em></button>`;
+  }
   function defendView() {
     const d = S.def, p = S.bat.pend; if (!d) return '<div class="card"><p class="muted">…</p></div>';
+    if (d.auto) return `<div class="card center bt-def"><h3 style="margin:0">💥 ${esc(p.name)} โจมตี!${heavyNow() ? " (หนัก ⚠️)" : ""}</h3><p class="muted" style="margin:6px 0 0">ไม่ได้ตั้งรับ — รับดาเมจ ${heavyNow() ? "105" : "70"}% ของพลังโจมตี</p></div>`;
     const cur = d.seq[d.i];
     const marks = d.seq.map((_, i) => `<span class="bt-mk ${d.marks[i] === 1 ? "ok" : d.marks[i] === 0 ? "no" : i === d.i ? "now" : ""}">${d.marks[i] === 1 ? "✔" : d.marks[i] === 0 ? "✖" : "•"}</span>`).join("");
     const big = d.state === "go" ? `<div class="bt-arrow go">${ARW[cur]}<div class="bt-ring" style="animation-duration:${d.win || curWin()}ms"></div></div>`
       : d.state === "ok" ? '<div class="bt-arrow ok">✔</div>' : d.state === "miss" ? '<div class="bt-arrow no">✖</div>'
       : d.state === "send" ? '<div class="bt-arrow">…</div>' : '<div class="bt-arrow">⚠️</div>';
-    return `<div class="card center bt-def"><h3 style="margin:0">⚠️ ${esc(p.name)}! ดาเมจ ~${p.dmg}</h3>
-      <p class="muted" style="margin:4px 0 8px">กดลูกศรให้ตรงตามที่ปรากฏ (คีย์บอร์ด ← ↑ → ↓ หรือแตะปุ่มด้านล่าง) ยิ่งถูกมาก ดาเมจยิ่งลด (สูงสุด 80%) · มอนสเตอร์ยิ่งเก่ง เวลากดยิ่งสั้น (${((d.win || curWin()) / 1000).toFixed(1)} วิ/ลูกศร)</p>
+    return `<div class="card center bt-def"><h3 style="margin:0">🛡️ ตั้งรับ ${esc(p.name)}! ดาเมจ ~${heavyNow() ? Math.round(p.dmg * 1.5) : p.dmg}${heavyNow() ? " (หนัก ⚠️)" : ""}</h3>
+      <p class="muted" style="margin:4px 0 8px">กดลูกศรให้ตรงตามที่ปรากฏ (คีย์บอร์ด ← ↑ → ↓ หรือแตะปุ่มด้านล่าง) ยิ่งถูกมาก ดาเมจยิ่งลด · ถูกครบ = ไม่โดนเลย + สวนกลับ & ฟื้น HP · มอนสเตอร์ยิ่งเก่ง เวลากดยิ่งสั้น (${((d.win || curWin()) / 1000).toFixed(1)} วิ/ลูกศร)</p>
       <div class="bt-marks">${marks}</div>${big}
       <div class="bt-pad"><button onclick="BATTLE.arrow('U')">⬆️</button><div><button onclick="BATTLE.arrow('L')">⬅️</button><button onclick="BATTLE.arrow('D')">⬇️</button><button onclick="BATTLE.arrow('R')">➡️</button></div></div></div>`;
   }
@@ -331,5 +354,5 @@ const BATTLE = (() => {
 
   function endTrial() { S.trial = null; S.bat = null; S.screen = "list"; load().then(() => go("home")).catch(() => go("home")); }
   const view = () => (S.screen === "list" || !S.bat ? listView() : fightView());
-  return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
+  return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
 })();
