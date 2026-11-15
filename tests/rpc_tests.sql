@@ -784,6 +784,8 @@ update monsters set active=false where key='trial_silver';
 select pg_temp.t('ด่านแรงค์: ปิดบอสด่านนั้น = แรงค์นั้นเข้าฟรี', (select _rank_gate((select s13 from _fr), 700)) is null);
 update monsters set active=true where key='trial_silver';
 
+select pg_temp.t('ด่านแรงค์: บอสทั้ง 8 ตัวมีภาพ (SQL 70)', (select count(*) from monsters where trial_rank is not null and image like 'assets/monsters/trial_%') = 8);
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

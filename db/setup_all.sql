@@ -7883,3 +7883,7 @@ grant execute on function admin_rank_trial_pass(uuid, text, boolean) to authenti
 insert into rank_trial_pass (student_id, rank_key)
 select s.id, r.key from students s join ch_ranks r on r.min_exp <= s.exp where r.sort > 1
 on conflict do nothing;
+-- 70: ภาพบอสด่านเลื่อนแรงค์ (ต้องรันหลัง 69) — ใส่เฉพาะบอสที่ยังไม่มีภาพ ครูเปลี่ยนภาพเองที่แท็บมอนสเตอร์ได้
+update monsters set image = 'assets/monsters/' || key || '.png'
+ where key in ('trial_silver','trial_gold','trial_platinum','trial_emerald','trial_diamond','trial_master','trial_grandmaster','trial_challenger')
+   and (image is null or image = '');
