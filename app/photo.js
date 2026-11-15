@@ -46,19 +46,52 @@ async function cropSave() {
 const photoReset = () => act(() => rpc("set_photo", { p_token: tk(), p_data: null }), "กลับไปใช้รูปเดิมแล้ว");
 const setAv = (id) => act(() => rpc("set_avatar", { p_token: tk(), p_item: id }), "เปลี่ยนอวาตาร์แล้ว");
 
+let PULL_RUN = 0, PULL_SKIP = false;
+const pullWait = (ms) => new Promise((res) => { const t0 = Date.now(), iv = setInterval(() => { if (PULL_SKIP || Date.now() - t0 >= ms) { clearInterval(iv); res(); } }, 40); });
+function legBlast(el) {
+  const f = document.createElement("div"); f.className = "legflash"; document.body.appendChild(f); setTimeout(() => f.remove(), 1200);
+  const r = el.getBoundingClientRect(), ring = document.createElement("div"); ring.className = "legring";
+  ring.style.cssText = `left:${r.left + r.width / 2 - 20}px;top:${r.top + r.height / 2 - 20}px;width:40px;height:40px`; document.body.appendChild(ring); setTimeout(() => ring.remove(), 1100);
+  const ov = $("#overlay"); ov.classList.add("quake"); setTimeout(() => ov.classList.remove("quake"), 700);
+  try { SFX.play("boom"); } catch (e) {}
+}
+function legShow(it, run) {
+  return new Promise((res) => {
+    const d = document.createElement("div"); d.className = "legshow";
+    d.innerHTML = `<div class="box"><h2>🔴 LEGENDARY!</h2>${it.image ? itemImg(it.image, it.emoji, "lgi") : `<div class="big">${esc(it.emoji || "🎁")}</div>`}<div class="nm">${esc(it.name)}</div>
+      <p class="muted">${it.kind === "decor" ? (it.dup_refund ? "ซ้ำ! คืน +" + it.dup_refund + "🪙" : "🎨 ไอเทมตกแต่งใหม่!") : ""}</p><small class="muted">แตะเพื่อไปต่อ</small></div>`;
+    const done = () => { d.remove(); res(); };
+    d.addEventListener("click", done); document.body.appendChild(d);
+    const iv = setInterval(() => { if (run !== PULL_RUN) { clearInterval(iv); done(); } }, 300);
+  });
+}
+const pullSkip = () => { PULL_SKIP = true; const b = $("#gskip"); if (b) b.style.display = "none"; };
 async function pull(n) {
   try {
     const r = await rpc("gacha_pull", { p_token: tk(), p_n: n });
-    const ov = $("#overlay");
-    ov.innerHTML = `<h2>✨ ผลการสุ่ม</h2><div id="cards">${r.items.map((it, i) => `
+    const ov = $("#overlay"), run = ++PULL_RUN; PULL_SKIP = false;
+    ov.innerHTML = `<h2>✨ ผลการสุ่ม</h2><div id="cards" class="gcards ${r.items.length === 1 ? "one" : ""}">${r.items.map((it, i) => `
       <div class="gcard rar-${it.rarity}" id="gc${i}"><div class="in"><div class="b"></div>
-      <div class="f"><div><div class="e">${itemImg(it.image, it.emoji, "gi")}</div><div class="rar">${it.rarity}</div><div class="n">${esc(it.name)}</div>${it.kind === "decor" ? `<div class="n muted">${it.dup_refund ? "ซ้ำ! คืน +" + it.dup_refund + "🪙" : "🎨 ไอเทมตกแต่งใหม่!"}</div>` : ""}</div></div></div></div>`).join("")}</div>
+      <div class="f"><div><div class="e">${itemImg(it.image, it.emoji, "gi")}</div><div class="rar">${it.rarity}</div><div class="n">${esc(it.name)}</div>${it.kind === "decor" ? `<div class="n muted">${it.dup_refund ? "ซ้ำ! คืน +" + it.dup_refund + "🪙" : "🎨 ใหม่!"}</div>` : ""}</div></div></div></div>`).join("")}</div>
       ${(r.cards || []).length ? `<p class="gnote">🃏 ได้การ์ดสะสมเพิ่ม ${r.cards.length} ใบ! กดรับของเพื่อเปิดดู</p>` : ""}
-      <p><button class="btn gold" onclick="closeOv()">รับของ</button></p>`;
+      <p><button class="btn ghost small" id="gskip" onclick="pullSkip()">⏩ ข้ามแอนิเมชัน</button> <button class="btn gold" onclick="closeOv()">รับของ</button></p>`;
     if ((r.cards || []).length) CARDQ.push(...r.cards);
     ov.classList.add("on");
-    r.items.forEach((it, i) => { setTimeout(() => $("#gc" + i)?.classList.add("flip"), 350 + i * 330); setTimeout(() => FX.gacha("#gc" + i, it.rarity), 600 + i * 330); });
+    (async () => {
+      for (let i = 0; i < r.items.length; i++) {
+        const it = r.items[i], el = $("#gc" + i); if (!el || run !== PULL_RUN) return;
+        await pullWait(i === 0 ? 700 : 900); if (run !== PULL_RUN) return;
+        if (it.rarity === "SSR" || it.rarity === "LEG") {
+          const k = it.rarity === "LEG" ? "shake-leg" : "shake-ssr"; el.classList.add(k);
+          try { SFX.play("charge"); } catch (e) {}
+          await pullWait(it.rarity === "LEG" ? 1800 : 1100); el.classList.remove(k); if (run !== PULL_RUN) return;
+        }
+        el.classList.add("flip"); await pullWait(350); if (run !== PULL_RUN) return;
+        FX.gacha("#gc" + i, it.rarity);
+        if (it.rarity === "LEG") { legBlast(el); await pullWait(500); await legShow(it, run); }
+      }
+    })();
     await load();
   } catch (e) { toast(e.message); }
 }
-function closeOv() { $("#overlay").classList.remove("on"); setTimeout(cardQueueShow, 250); }
+function closeOv() { PULL_RUN++; document.querySelectorAll(".legshow").forEach((e) => e.remove()); $("#overlay").classList.remove("on"); setTimeout(cardQueueShow, 250); }
