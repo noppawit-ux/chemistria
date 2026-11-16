@@ -148,6 +148,7 @@ TAB.exam = async function (v) {
         <div style="width:220px"><label>ปิดสอบ</label><input id="e_close" type="datetime-local" value="${toLocal(x.close_at)}"></div>
         <div style="width:200px"><label>แสดงผล/เฉลย</label><select id="e_show">${Object.entries(SHOW).map(([k, l]) => `<option value="${k}" ${x.show_result === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
         <div style="width:140px"><label>สถานะ</label><select id="e_st">${[["draft", "ร่าง (ซ่อน)"], ["open", "เปิดให้สอบ"], ["closed", "ปิด"]].map(([k, l]) => `<option value="${k}" ${x.status === k ? "selected" : ""}>${l}</option>`).join("")}</select></div></div>
+      <div class="row"><div style="width:240px"><label>สลับหน้าจอได้ไม่เกิน (ครั้ง · 0 = ไม่จำกัด แต่นับให้ครู)</label><input id="e_blur" type="number" min="0" max="20" value="${x.max_blur ?? 3}"></div></div>
       <label><input type="checkbox" id="e_shuf" ${x.shuffle ? "checked" : ""}> สลับลำดับข้อ/ตัวเลือกของแต่ละคน</label>
       <label>เลือกข้อสอบ <small class="muted" id="e_cnt"></small></label><div class="scroll" style="max-height:280px"><table><tbody id="e_qs"></tbody></table></div>
       <div style="margin-top:10px"><button class="btn gold" id="e_save">💾 บันทึก</button></div>`;
@@ -159,7 +160,7 @@ TAB.exam = async function (v) {
     $("#e_save", f).onclick = async () => {
       const ids = [...f.querySelectorAll(".e_cls:checked")].map((c) => c.value);
       if (!$("#e_title", f).value.trim() || !ids.length || !picked.size) return toast("ใส่ชื่อ เลือกห้อง และเลือกข้อสอบอย่างน้อย 1 ข้อ");
-      const row = { access_code: $("#e_code", f).value.trim() || null, title: $("#e_title", f).value.trim(), class_ids: ids, score_cat: $("#e_cat", f).value, max_score: +$("#e_max", f).value || 10, minutes: +$("#e_min", f).value || 30,
+      const row = { max_blur: Math.max(0, +$("#e_blur", f).value || 0), access_code: $("#e_code", f).value.trim() || null, title: $("#e_title", f).value.trim(), class_ids: ids, score_cat: $("#e_cat", f).value, max_score: +$("#e_max", f).value || 10, minutes: +$("#e_min", f).value || 30,
         max_attempts: +$("#e_att", f).value || 1, reward_exp: +$("#e_exp", f).value || 0, show_result: $("#e_show", f).value, status: $("#e_st", f).value, shuffle: $("#e_shuf", f).checked,
         open_at: $("#e_open", f).value ? new Date($("#e_open", f).value).toISOString() : null, close_at: $("#e_close", f).value ? new Date($("#e_close", f).value).toISOString() : null };
       await run(async () => {

@@ -1327,3 +1327,8 @@ body.exlock{overflow:hidden}
 .exm span,.exc span{min-width:0}
 .exchip{border-radius:14px}
 .exzone .exchip,.expool .exchip{max-width:100%}
+
+.exwarn{position:fixed;inset:0;z-index:9600;background:rgba(5,3,16,.92);display:flex;align-items:center;justify-content:center;padding:16px}
+.exwarn .excard{max-width:420px}
+#exov,#exov *{-webkit-touch-callout:none}
+#exov .exq,#exov .exc,#exov .exm{-webkit-user-select:none;user-select:none}

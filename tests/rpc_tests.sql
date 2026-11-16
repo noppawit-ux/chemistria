@@ -1003,6 +1003,19 @@ select pg_temp.t('รหัสสอบ: exam_list บอก has_code แต่�
 do $$ begin for i in 1..5 loop perform exam_start((select tok from _gt where no=17), (select id from _ex where kind='exam2'), 'x'||i); end loop; end $$;
 select pg_temp.t('รหัสสอบ: ผิด 5 ครั้งถูกล็อก แม้ใส่รหัสถูกก็ยังไม่ได้', (select exam_start((select tok from _gt where no=17), (select id from _ex where kind='exam2'), 'Ab12')::jsonb ? 'code_error'));
 
+
+-- กันสลับหน้าจอ (db/75)
+update exams set access_code=null, max_blur=2, status='open', max_attempts=9 where id=(select id from _ex where kind='exam2');
+create temp table _exb as select exam_start((select tok from _gt where no=18), (select id from _ex where kind='exam2'))::jsonb p;
+grant all on _exb to anon, authenticated;
+select pg_temp.t('กันโกง: สลับครั้งที่ 1-2 ยังสอบต่อได้', (select (exam_blur((select tok from _gt where no=18), (select (p->'attempt'->>'id')::uuid from _exb))::jsonb->>'locked') = 'false')
+  and (select (exam_blur((select tok from _gt where no=18), (select (p->'attempt'->>'id')::uuid from _exb))::jsonb->>'blur') = '2'));
+create temp table _exb3 as select exam_blur((select tok from _gt where no=18), (select (p->'attempt'->>'id')::uuid from _exb))::jsonb r;
+select pg_temp.t('กันโกง: สลับครั้งที่ 3 (เกิน 2) → ส่งอัตโนมัติ', (select r->>'locked' from _exb3) = 'true'
+  and (select status from exam_attempts where id=(select (p->'attempt'->>'id')::uuid from _exb)) = 'submitted');
+select pg_temp.t('กันโกง: ส่งไปแล้วบันทึกคำตอบไม่ได้', pg_temp.fails($q$select exam_save((select tok from _gt where no=18), (select (p->'attempt'->>'id')::uuid from _exb), (select id from _ex where kind='mcq'), '{"i":0}')$q$));
+select pg_temp.t('กันโกง: คนอื่นนับสลับหน้าจอของเราไม่ได้', pg_temp.fails($q$select exam_blur((select tok from _gt where no=19), (select (p->'attempt'->>'id')::uuid from _exb))$q$));
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

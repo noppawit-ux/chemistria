@@ -73,11 +73,36 @@ async function examGo(id, code) {
   document.getElementById("exov")?.remove();
   const ov = document.createElement("div"); ov.id = "exov"; document.body.appendChild(ov);
   document.body.classList.add("exlock");
-  document.addEventListener("visibilitychange", exVis);
+  document.addEventListener("visibilitychange", exVis); window.addEventListener("blur", exAway); window.addEventListener("focus", exBack);
+  ["copy", "cut", "paste", "contextmenu", "dragstart"].forEach((t) => ov.addEventListener(t, (e) => { if (!(t === "dragstart" && e.target.closest && e.target.closest(".exchip"))) e.preventDefault(); }));
+  try { (ov.requestFullscreen || ov.webkitRequestFullscreen || (() => {})).call(ov); } catch (e) { /* ไม่รองรับ */ }
   clearInterval(EX_TIMER); EX_TIMER = setInterval(exTick, 1000);
   exRender();
 }
-const exVis = () => { if (document.hidden && EX && !EX.done) rpc("exam_blur", { p_token: tk(), p_attempt: EX.att.id }).catch(() => {}); };
+/* กันสลับหน้าจอ: ออกจากหน้าสอบ (ยุบแอป/สลับแท็บ/แยกหน้าจอ) แล้วกลับมา = นับ 1 ครั้ง เกินที่ครูกำหนด → ส่งข้อสอบอัตโนมัติ
+   (ถ่ายรูปคำตอบได้: เปิดกล้องแล้วกลับมาภายใน 90 วินาทีไม่นับ) */
+function exAway() { if (EX && !EX.done && !EX.away) EX.away = Date.now(); }
+const exVis = () => { if (document.hidden) exAway(); else exBack(); };
+async function exBack() {
+  if (!EX || EX.done || !EX.away || document.hidden) return;
+  const t = EX.away; EX.away = 0;
+  if (EX.cam && Date.now() - EX.cam < 90000 && t >= EX.cam - 1000) { EX.cam = 0; return; }
+  if (Date.now() - t < 700) return; // กะพริบสั้นๆ (เช่น แจ้งเตือนระบบ)
+  let r = null;
+  try { r = await rpc("exam_blur", { p_token: tk(), p_attempt: EX.att.id }); } catch (e) { return; }
+  if (!r) return;
+  if (r.locked) return exLockedScreen(r);
+  const w = document.createElement("div"); w.id = "exwarn"; w.className = "exwarn";
+  w.innerHTML = `<div class="excard center"><div style="font-size:48px">⚠️</div><h3>ออกจากหน้าสอบ</h3>
+    <p>ครั้งที่ <b>${r.blur}</b>${r.max ? ` จาก ${r.max}` : ""} — ครูเห็นการออกจากหน้าสอบทุกครั้ง${r.max ? `<br>ถ้าเกิน ${r.max} ครั้ง ระบบจะส่งข้อสอบให้อัตโนมัติ` : ""}</p>
+    <button class="btn gold" onclick="document.getElementById('exwarn').remove()">กลับไปทำข้อสอบ</button></div>`;
+  document.getElementById("exov")?.appendChild(w);
+}
+function exLockedScreen(r) {
+  EX.done = true; clearInterval(EX_TIMER); document.getElementById("exwarn")?.remove();
+  document.getElementById("exov").innerHTML = `<div class="exwrap"><div class="excard center"><div style="font-size:56px">🔒</div><h2 style="margin:4px 0">ส่งข้อสอบแล้ว</h2>
+    <p class="muted">ออกจากหน้าสอบเกิน ${r.max} ครั้ง ระบบจึงส่งข้อสอบให้อัตโนมัติ (คำตอบที่บันทึกไว้ยังถูกนับ)</p><button class="btn gold" onclick="exClose()">กลับหน้าสอบ</button></div></div>`;
+}
 const exRemain = () => (Date.parse(EX.att.deadline) - (Date.now() + EX_SKEW)) / 1000;
 function exTick() {
   if (!EX || EX.done) return;
@@ -86,7 +111,8 @@ function exTick() {
   if (r <= 0 && !EX.sending) { toast("หมดเวลา — กำลังส่งข้อสอบ…", 4000); exSubmit(true); }
 }
 function exClose() {
-  clearInterval(EX_TIMER); document.removeEventListener("visibilitychange", exVis);
+  clearInterval(EX_TIMER); document.removeEventListener("visibilitychange", exVis); window.removeEventListener("blur", exAway); window.removeEventListener("focus", exBack);
+  try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* ไม่เป็นไร */ }
   document.getElementById("exov")?.remove(); document.body.classList.remove("exlock"); EX = null;
   examLoad(true); if (tab === "exam") { const v = $("#view"); if (v) v.innerHTML = examListHtml(); }
 }
@@ -131,9 +157,9 @@ function exBody(q) {
   if (q.kind === "mcq") return `<div class="exch">${v.choices.map((c, k) => `<button class="exc ${a && a.i === k ? "on" : ""}" onclick="exPick(${k})"><b>${"ABCDEFGH"[k] || k + 1}</b><span>${fm(c.t)}${exImg(c.img, "chimg")}</span></button>`).join("")}</div>`;
   if (q.kind === "tf") return `<div class="extf"><button class="exc ${a && a.v === true ? "on" : ""}" onclick="exTF(true)">✅ ถูก</button><button class="exc ${a && a.v === false ? "on" : ""}" onclick="exTF(false)">❌ ผิด</button></div>`;
   if (q.kind === "short") {
-    const up = v.upload ? `<div class="exup"><label class="btn small ghost">📷 ${EX.photo[q.id] ? "เปลี่ยนรูป" : "ถ่าย/แนบรูปคำตอบ"}<input type="file" accept="image/*" hidden onchange="exPhoto(this)"></label>
+    const up = v.upload ? `<div class="exup"><label class="btn small ghost" onclick="EX.cam=Date.now()">📷 ${EX.photo[q.id] ? "เปลี่ยนรูป" : "ถ่าย/แนบรูปคำตอบ"}<input type="file" accept="image/*" hidden onchange="exPhoto(this)"></label>
       <span class="${EX.photo[q.id] ? "tag ok" : "muted"}" id="exphs">${EX.photo[q.id] ? "แนบรูปแล้ว ✓" : "วาดบนกระดาษแล้วถ่ายรูป หรือพิมพ์คำตอบ"}</span></div>` : "";
-    return `${v.hint ? `<p class="muted">💡 ${fm(v.hint)}</p>` : ""}<textarea id="exta" class="exta" rows="${v.upload ? 3 : 2}" placeholder="พิมพ์คำตอบที่นี่" oninput="exText(this.value)">${esc((a && a.t) || "")}</textarea>${up}`;
+    return `${v.hint ? `<p class="muted">💡 ${fm(v.hint)}</p>` : ""}<textarea id="exta" class="exta" spellcheck="false" autocorrect="off" autocomplete="off" rows="${v.upload ? 3 : 2}" placeholder="พิมพ์คำตอบที่นี่" oninput="exText(this.value)">${esc((a && a.t) || "")}</textarea>${up}`;
   }
   if (q.kind === "match") {
     const used = {}; a.m.forEach((r, l) => { if (r != null) used[r] = l; });
