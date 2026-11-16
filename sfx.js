@@ -29,6 +29,9 @@ const SFX = (() => {
   const arp = (t, notes, step, type, g, dur) => notes.forEach((m, i) => tone(t + i * step, mtof(m), 0, dur || step * 1.6, type, g));
   const S = {
     click: (t) => tone(t, 900, 700, 0.05, "square", 0.08),
+    gb_L: (t) => tone(t, mtof(64), 0, 0.14, "triangle", 0.2), gb_D: (t) => tone(t, mtof(67), 0, 0.14, "triangle", 0.2),
+    gb_U: (t) => tone(t, mtof(71), 0, 0.14, "triangle", 0.2), gb_R: (t) => tone(t, mtof(74), 0, 0.14, "triangle", 0.2),
+    gb_miss: (t) => tone(t, 180, 120, 0.12, "sawtooth", 0.08),
     tab: (t) => { tone(t, 520, 0, 0.06, "triangle", 0.12); tone(t + 0.05, 780, 0, 0.07, "triangle", 0.1); },
     pop: (t) => tone(t, 500, 1100, 0.09, "sine", 0.18),
     blip: (t) => tone(t, 1200, 1800, 0.07, "square", 0.07),

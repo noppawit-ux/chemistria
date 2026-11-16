@@ -316,6 +316,98 @@ select pg_temp.t('สมาชิกที่แต้มส่วนตัว�
 select pg_temp.t('หัวหน้าเปลี่ยนชื่อกิลด์ได้', (select guild_rename((select tok from _gt where no=11), 'ทีมเบตา')->>'name') = 'ทีมเบตา');
 select pg_temp.t('เปลี่ยนชื่อครั้งที่สองไม่ได้', pg_temp.fails($q$select guild_rename((select tok from _gt where no=11), 'ทีมแกมมา')$q$));
 select pg_temp.t('สมาชิกทั่วไปเปลี่ยนชื่อไม่ได้', pg_temp.fails($q$select guild_rename((select tok from _gt where no=12), 'ทีมแกมมา')$q$));
+-- ================= Guild Battle (db/80) =================
+reset role;
+set role anon;
+select guild_create((select tok from _gt where no=16), 'ทีมแข่งบี');
+reset role; create temp table _gbg as select (select id from guilds where name='ทีมแข่งบี') b; grant all on _gbg to anon, authenticated; set role anon;
+select guild_join((select tok from _gt where no=17), (select b from _gbg));
+select guild_join((select tok from _gt where no=18), (select b from _gbg));
+select guild_join((select tok from _gt where no=19), (select b from _gbg));
+select pg_temp.t('GB: นักเรียนสร้างรอบแข่งไม่ได้', pg_temp.fails($q$select admin_gb_create('x')$q$) and pg_temp.fails('select admin_gb_list()'));
+reset role;
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+create temp table _gbr as select admin_gb_create('ทดสอบ', 100, 20, 24, 2, 40, 1, 15, 600) id; grant all on _gbr to anon, authenticated;
+select admin_gb_pair((select id from _gbr), 'rank');
+select admin_gb_add_match((select id from _gbr),
+  (select guild_id from guild_members where student_id=(select id from students where name='กิลด์ทดสอบ 11')),
+  (select b from _gbg));
+reset role;
+select pg_temp.t('GB: สร้างรอบ 20 โน้ต และจับคู่แล้ว', (select jsonb_array_length(chart) = 20 and paired from guild_battle_rounds where id=(select id from _gbr))
+  and (select count(*) = 1 from guild_battle_matches where round_id=(select id from _gbr) and guild_b = (select b from _gbg)));
+select pg_temp.t('GB: โน้ตเรียงเวลา ห่างกันอย่างน้อย 300 ms', (select bool_and(d >= 300) from (select (e->>'t')::int - lag((e->>'t')::int) over (order by o) d from guild_battle_rounds r, jsonb_array_elements(r.chart) with ordinality x(e, o) where r.id=(select id from _gbr)) q where d is not null));
+set role anon;
+select pg_temp.t('GB: สถานะ — อยู่ในคู่แข่ง รอบเปิด เหลือ 2 ครั้ง', (select (s->'round'->>'state') = 'open' and (s->>'in_match')::boolean and (s->>'left')::int = 2 and (s->'opp'->>'name') = 'ทีมแข่งบี' from (select gb_status((select tok from _gt where no=11))::jsonb s) x));
+select pg_temp.t('GB: ไม่เห็นรายชื่อสมาชิกฝั่งตรงข้าม', (select (s->'opp'->'members') = '[]'::jsonb and jsonb_array_length(s->'me'->'members') = 5 from (select gb_status((select tok from _gt where no=11))::jsonb s) x));
+create temp table _gs1 as select gb_start((select tok from _gt where no=11)) j; grant all on _gs1 to anon;
+select pg_temp.t('GB: เริ่มเล่นได้รับโน้ตครบ', (select jsonb_array_length((j::jsonb)->'chart') = 20 from _gs1));
+select pg_temp.t('GB: เริ่มซ้อนขณะรอบแรกยังไม่ส่ง → ปฏิเสธ', pg_temp.fails($q$select gb_start((select tok from _gt where no=11))$q$));
+select pg_temp.t('GB: ส่งเร็วผิดปกติ (ยังไม่ถึงเวลาเล่นจริง) → ปฏิเสธ', pg_temp.fails($q$select gb_submit((select tok from _gt where no=11), ((select j from _gs1)->>'run')::uuid, '[]'::jsonb)$q$));
+reset role;
+update guild_battle_runs set started_at = now() - make_interval(secs => (select len_ms / 1000.0 + 5 from guild_battle_rounds where id=(select id from _gbr))) where id = ((select j from _gs1)->>'run')::uuid;
+create temp table _pp as select jsonb_agg(jsonb_build_object('t', (e->>'t')::int, 'k', e->>'k')) perf, jsonb_agg(jsonb_build_object('t', (e->>'t')::int + 150, 'k', e->>'k')) good,
+  jsonb_agg(jsonb_build_object('t', (e->>'t')::int + 100000, 'k', e->>'k')) wrong
+  from guild_battle_rounds r, jsonb_array_elements(r.chart) e where r.id=(select id from _gbr);
+grant all on _pp to anon;
+set role anon;
+select pg_temp.t('GB: ข้อมูลการกดผิดรูปแบบ → ปฏิเสธ', pg_temp.fails($q$select gb_submit((select tok from _gt where no=11), ((select j from _gs1)->>'run')::uuid, '[{"t":"x","k":"Q"}]'::jsonb)$q$));
+select pg_temp.t('GB: กดตรงทุกโน้ต = 1000 คะแนน เพอร์เฟกต์ครบ', (select (r->>'score')::int = 1000 and (r->>'perfect')::int = 20 and (r->>'max_combo')::int = 20 from (select gb_submit((select tok from _gt where no=11), ((select j from _gs1)->>'run')::uuid, (select perf from _pp))::jsonb r) x));
+select pg_temp.t('GB: ส่งซ้ำรอบเดิมไม่ได้', pg_temp.fails($q$select gb_submit((select tok from _gt where no=11), ((select j from _gs1)->>'run')::uuid, (select perf from _pp))$q$));
+create temp table _gs2 as select gb_start((select tok from _gt where no=11)) j; grant all on _gs2 to anon;
+reset role;
+update guild_battle_runs set started_at = now() - make_interval(secs => (select len_ms / 1000.0 + 5 from guild_battle_rounds where id=(select id from _gbr))) where id = ((select j from _gs2)->>'run')::uuid;
+set role anon;
+select pg_temp.t('GB: ไม่กดเลย = 0 คะแนน แต่คะแนนดีที่สุดยังอยู่', (select (r->>'score')::int = 0 and (r->>'miss')::int = 20 and (r->>'best')::int = 1000 from (select gb_submit((select tok from _gt where no=11), ((select j from _gs2)->>'run')::uuid, '[]'::jsonb)::jsonb r) x));
+select pg_temp.t('GB: ใช้สิทธิ์ครบ 2 ครั้งแล้วเล่นต่อไม่ได้', pg_temp.fails($q$select gb_start((select tok from _gt where no=11))$q$));
+create temp table _gs3 as select gb_start((select tok from _gt where no=16)) j; grant all on _gs3 to anon;
+reset role;
+update guild_battle_runs set started_at = now() - make_interval(secs => (select len_ms / 1000.0 + 5 from guild_battle_rounds where id=(select id from _gbr))) where id = ((select j from _gs3)->>'run')::uuid;
+set role anon;
+select pg_temp.t('GB: กดช้า 150 ms = Good ทุกตัว คะแนนราว 600 (ไม่ถึง 1000)', (select (r->>'score')::int between 550 and 650 and (r->>'good')::int = 20 and (r->>'perfect')::int = 0 from (select gb_submit((select tok from _gt where no=16), ((select j from _gs3)->>'run')::uuid, (select good from _pp))::jsonb r) x));
+create temp table _gs4 as select gb_start((select tok from _gt where no=17)) j; grant all on _gs4 to anon;
+reset role;
+update guild_battle_runs set started_at = now() - make_interval(secs => (select len_ms / 1000.0 + 5 from guild_battle_rounds where id=(select id from _gbr))) where id = ((select j from _gs4)->>'run')::uuid;
+set role anon;
+select pg_temp.t('GB: กดผิดจังหวะมากทุกตัว = 0', (select (r->>'score')::int = 0 from (select gb_submit((select tok from _gt where no=17), ((select j from _gs4)->>'run')::uuid, (select wrong from _pp))::jsonb r) x));
+select pg_temp.t('GB: คะแนนกิลด์ = ผลรวม 3 คนดีสุด / 3 (อัลฟา 1000/3 = 333)', (select (s->'me'->>'score')::int = 333 and (s->'me'->>'played')::int = 1 from (select gb_status((select tok from _gt where no=11))::jsonb s) x));
+select pg_temp.t('GB: ยังไม่จบรอบ ยังไม่รู้ผล และรับรางวัลไม่ได้', (select (s->>'result') is null and not (s->>'can_claim')::boolean from (select gb_status((select tok from _gt where no=11))::jsonb s) x)
+  and pg_temp.fails($q$select gb_claim((select tok from _gt where no=11))$q$));
+reset role;
+create temp table _c1 as select (select coins from students where name='กิลด์ทดสอบ 11') a, (select free_pulls from students where name='กิลด์ทดสอบ 11') ap, (select coins from students where name='กิลด์ทดสอบ 16') b; grant all on _c1 to anon;
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select admin_gb_end((select id from _gbr));
+reset role;
+update guild_battle_rounds set ends_at = now() - interval '10 minutes' where id=(select id from _gbr);
+set role anon;
+select pg_temp.t('GB: จบรอบแล้วเริ่มเล่นไม่ได้', pg_temp.fails($q$select gb_start((select tok from _gt where no=12))$q$));
+select pg_temp.t('GB: ผลสุดท้าย — อัลฟาชนะ (333 > 200)', (select (s->>'result') = 'a' and (s->>'mine') = 'win' and (s->>'can_claim')::boolean from (select gb_status((select tok from _gt where no=11))::jsonb s) x)
+  and (select (s->>'mine') = 'lose' from (select gb_status((select tok from _gt where no=16))::jsonb s) x));
+select pg_temp.t('GB: ผู้ชนะรับรางวัล 40 เหรียญ + 1 ตั๋ว', (select (gb_claim((select tok from _gt where no=11))->>'coins')::int = 40));
+select pg_temp.t('GB: รับซ้ำไม่ได้', pg_temp.fails($q$select gb_claim((select tok from _gt where no=11))$q$));
+select pg_temp.t('GB: ผู้แพ้ที่ร่วมแข่งรับรางวัลปลอบใจ 15 เหรียญ', (select (gb_claim((select tok from _gt where no=16))->>'coins')::int = 15 and not (gb_claim((select tok from _gt where no=17))->>'win')::boolean));
+select pg_temp.t('GB: คนที่ไม่ได้ลงแข่งรับรางวัลไม่ได้', pg_temp.fails($q$select gb_claim((select tok from _gt where no=12))$q$));
+reset role;
+select pg_temp.t('GB: เหรียญและตั๋วเข้าบัญชีจริง และไม่นับเป็นแต้ม Mini Guild', (select coins - (select a from _c1) = 40 and free_pulls - (select ap from _c1) = 1 from students where name='กิลด์ทดสอบ 11')
+  and (select coins - (select b from _c1) = 15 from students where name='กิลด์ทดสอบ 16')
+  and not _gp_ok('Mini Guild: Guild Battle ทดสอบ (ชนะ)'));
+select pg_temp.t('GB: แก้คู่ของกิลด์ที่มีคนเล่นแล้วไม่ได้ (กันผลเพี้ยน)', pg_temp.fails($q$select admin_gb_add_match((select id from _gbr), (select b from _gbg), null)$q$, 'authenticated')
+  and pg_temp.fails($q$select admin_gb_pair((select id from _gbr), 'random')$q$, 'authenticated'));
+-- ผีกิลด์ (กิลด์ไม่มีคู่)
+delete from guild_battle_rounds where id=(select id from _gbr);
+select pg_temp.t('GB: ลบรอบแล้วข้อมูลลูกหายตามไป', not exists (select 1 from guild_battle_runs) and not exists (select 1 from guild_battle_matches) and not exists (select 1 from guild_battle_claims));
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+create temp table _gbr2 as select admin_gb_create('รอบผี', 80, 16, 24, 1, 40, 1, 15, 600) id; grant all on _gbr2 to anon, authenticated;
+select admin_gb_add_match((select id from _gbr2), (select b from _gbg), null);
+reset role;
+set role anon;
+select pg_temp.t('GB: กิลด์ไม่มีคู่ได้สู้ผีกิลด์ (คะแนนผี 600)', (select (s->'opp'->>'ghost')::boolean and (s->'opp'->>'score')::int = 600 and (s->>'in_match')::boolean from (select gb_status((select tok from _gt where no=16))::jsonb s) x));
+reset role;
+update guild_battle_rounds set ends_at = now() - interval '10 minutes' where id=(select id from _gbr2);
+set role anon;
+select pg_temp.t('GB: ไม่มีใครเล่น ผีกิลด์ชนะ', (select (s->>'result') = 'b' and (s->>'mine') = 'lose' from (select gb_status((select tok from _gt where no=16))::jsonb s) x));
+reset role;
+delete from guild_battle_rounds where id=(select id from _gbr2);
+delete from guilds where name='ทีมแข่งบี';
 -- โหมดส่อง: ดูกิลด์ได้ แต่สร้าง/เข้าไม่ได้
 reset role;
 insert into student_sessions(student_id, observer, expires_at) select id, true, now()+interval '1 hour' from students where name='กิลด์ทดสอบ 16';

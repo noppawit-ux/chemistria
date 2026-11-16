@@ -109,7 +109,7 @@ function guildHtml() {
   if (GLDB && GLDB.loading) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">กำลังโหลด…</p></div>`;
   else if (GLDB && GLDB.hidden) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">🔒 วันสุดท้ายซ่อนอันดับเพื่อความลุ้น — ประกาศผลหลังจบกิจกรรม</p></div>`;
   else if (GLDB) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3>${(GLDB.rows || []).length ? (GLDB.rows || []).map((r) => `<div class="gbrow ${r.mine ? "me" : ""}"><div class="lbrow gb">${gmedal(r.rank)}<div class="lbm">${gnameF(r.name, r.emblem)}<small class="muted">ห้อง ${esc(r.class_name)} · ${r.size} คน</small></div><div class="lbr"><b>${r.avg}</b><small class="muted">แต้ม/คน</small></div></div>${gStrip(r.members, false, r.rank)}</div>`).join("") : '<p class="muted">ยังไม่มีกิลด์ติดอันดับ (ต้องมีสมาชิก ≥ ' + c.min_members + ' คน)</p>'}${GLDB.unranked ? `<p class="muted" style="font-size:.85em">มี ${GLDB.unranked} กิลด์ที่สมาชิกยังไม่ครบ ${c.min_members} คน จึงยังไม่ติดอันดับ</p>` : ""}</div>`;
-  return head + mine + board;
+  return head + (m && !peek ? gbHold() : "") + mine + board;
 }
 
 const guildCreate = () => { const n = ($("#gname") || {}).value || ""; if (n.trim().length < 2) return toast("ชื่อกิลด์ต้องยาว 2–16 ตัวอักษร"); GLDB = null; return act(() => rpc("guild_create", { p_token: tk(), p_name: n }), "ตั้งกิลด์แล้ว 🏰"); };

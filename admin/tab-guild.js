@@ -9,6 +9,37 @@ TAB.guild = async function (v) {
   st.innerHTML = `<div class="grid2">${KEYS.map(([k, l, t]) => `<div class="field"><label>${l}</label><input data-k="${k}" type="${t}" value="${esc(cfg[k] ?? "")}"></div>`).join("")}</div><button class="btn gold" id="gsave">💾 บันทึกการตั้งค่า</button>`;
   $("#gsave", st).onclick = async () => { await run(async () => must(await sb.from("app_settings").upsert($$("[data-k]", st).map((i) => ({ key: i.dataset.k, value: i.value })))), "บันทึกแล้ว ✅"); TAB.guild(v.replaceChildren() || v); };
 
+  /* ⚔️ Guild Battle (SQL 80) */
+  const gbh = holder(v, "⚔️ Guild Battle — จับคู่กิลด์แข่งกดลูกศรตามจังหวะ", "สร้างรอบ → จับคู่ → นักเรียนเล่นเวลาไหนก็ได้ภายในช่วงเวลา · คะแนนกิลด์ = เฉลี่ย 3 คนที่ดีที่สุด · กิลด์ที่ไม่มีคู่สู้ผีกิลด์");
+  let GL = null; try { GL = await rpc("admin_gb_list"); } catch (e) { gbh.innerHTML = `<span style="color:var(--red)">${esc(e.message)}<br>ถ้าเพิ่งอัปเดต ให้รัน SQL 80_guild_battle.sql ใน Supabase</span>`; }
+  if (GL) {
+    const reB = () => { v.innerHTML = ""; TAB.guild(v); };
+    const stName = { soon: "เร็วๆ นี้", unpaired: "ยังไม่จับคู่", open: "🟢 เปิดแข่ง", counting: "⏳ นับคะแนน", final: "🏁 จบแล้ว" };
+    const gopt = (GL.guilds || []).map((g) => `<option value="${g.id}">${esc(g.class)} · ${esc(g.name)}</option>`).join("");
+    const sideT = (x) => x.ghost ? "👻 ผีกิลด์" : `${esc(x.name)} <b>${x.score}</b> <small class="muted">(เล่น ${x.played}/${x.size})</small>`;
+    gbh.innerHTML = `<div class="grid2">${[["gbt", "ชื่อรอบ", "text", "รอบที่ 1"], ["gbb", "BPM (60–140)", "number", 100], ["gbn", "จำนวนโน้ต (16–80)", "number", 40], ["gbh", "เปิดกี่ชั่วโมง", "number", 48], ["gba", "เล่นได้กี่ครั้ง/คน", "number", 3],
+        ["gbwc", "ชนะ: เหรียญ", "number", 40], ["gbwp", "ชนะ: ตั๋วกาชา", "number", 1], ["gblc", "แพ้/ร่วมแข่ง: เหรียญ", "number", 15], ["gbg", "คะแนนผีกิลด์ (0–1000)", "number", 600]]
+      .map(([id, l, t, d]) => `<div class="field"><label>${l}</label><input id="${id}" type="${t}" value="${d}"></div>`).join("")}</div>
+      <button class="btn gold" id="gbnew">➕ สร้างรอบใหม่ (สุ่มโน้ตให้)</button>
+      ${(GL.rounds || []).map((r) => `<div style="padding:10px 0;border-top:1px solid var(--line)">
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b>${esc(r.title)}</b> <span class="pill">${stName[r.state] || r.state}</span>
+          <span class="muted">${r.notes} โน้ต · ${r.bpm} BPM · ${r.attempts} ครั้ง · ถึง ${new Date(r.ends_at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ผู้เล่น ${r.players} คน · รับรางวัลแล้ว ${r.claims} คน</span>
+          <span class="grow"></span>
+          <button class="btn small" data-pair="${r.id}" data-m="rank">🎯 จับคู่ตามอันดับ</button><button class="btn small ghost" data-pair="${r.id}" data-m="random">🎲 สุ่มคู่</button>
+          ${r.state === "open" || r.state === "unpaired" ? `<button class="btn small ghost" data-end="${r.id}">⏹ จบรอบเดี๋ยวนี้</button>` : ""}<button class="btn red small" data-del="${r.id}">ลบ</button></div>
+        <div style="margin-top:6px">${(r.matches || []).length ? r.matches.map((m) => `<div class="row" style="gap:8px;padding:3px 0;align-items:center"><span>${sideT(m.a)}</span><b>VS</b><span>${sideT(m.b)}</span>
+            ${m.result ? `<span class="pill">${m.result === "draw" ? "เสมอ" : m.result === "a" ? "ซ้ายชนะ" : "ขวาชนะ"}</span>` : ""}<button class="btn ghost small" data-dm="${m.id}">✕</button></div>`).join("")
+          : '<span class="muted">ยังไม่มีคู่ — กด “จับคู่” (เฉพาะกิลด์ที่มีสมาชิกถึงเกณฑ์)</span>'}
+          <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><select data-ma="${r.id}" style="width:auto">${gopt}</select> VS <select data-mb="${r.id}" style="width:auto"><option value="">👻 ผีกิลด์</option>${gopt}</select><button class="btn small ghost" data-am="${r.id}">+ เพิ่ม/แก้คู่เอง</button></div></div></div>`).join("")}`;
+    const val = (id) => $("#" + id, gbh).value;
+    $("#gbnew", gbh).onclick = () => run(() => rpc("admin_gb_create", { p_title: val("gbt"), p_bpm: +val("gbb"), p_notes: +val("gbn"), p_hours: +val("gbh"), p_attempts: +val("gba"), p_win_coins: +val("gbwc"), p_win_pulls: +val("gbwp"), p_lose_coins: +val("gblc"), p_ghost: +val("gbg") }), "สร้างรอบแล้ว ✅").then(reB);
+    $$("[data-pair]", gbh).forEach((b) => (b.onclick = () => run(async () => { const n = await rpc("admin_gb_pair", { p_round: b.dataset.pair, p_mode: b.dataset.m }); if (!n) throw new Error("ยังไม่มีกิลด์ที่มีสมาชิกถึงเกณฑ์"); }, "จับคู่แล้ว ✅").then(reB)));
+    $$("[data-end]", gbh).forEach((b) => (b.onclick = () => confirm("จบรอบนี้เดี๋ยวนี้? (นักเรียนที่กำลังเล่นยังส่งคะแนนได้ภายใน 3 นาที)") && run(() => rpc("admin_gb_end", { p_round: b.dataset.end }), "จบรอบแล้ว").then(reB)));
+    $$("[data-del]", gbh).forEach((b) => (b.onclick = () => confirm("ลบรอบนี้พร้อมคะแนนทั้งหมด? (เหรียญที่แจกไปแล้วไม่ถูกเรียกคืน)") && run(() => rpc("admin_gb_delete", { p_round: b.dataset.del }), "ลบแล้ว").then(reB)));
+    $$("[data-dm]", gbh).forEach((b) => (b.onclick = () => run(() => rpc("admin_gb_del_match", { p_match: b.dataset.dm }), "ลบคู่แล้ว").then(reB)));
+    $$("[data-am]", gbh).forEach((b) => (b.onclick = () => run(() => rpc("admin_gb_add_match", { p_round: b.dataset.am, p_a: $(`[data-ma="${b.dataset.am}"]`, gbh).value, p_b: $(`[data-mb="${b.dataset.am}"]`, gbh).value || null }), "บันทึกคู่แล้ว ✅").then(reB)));
+  }
+
   let L; try { L = await rpc("admin_guild_list"); } catch (e) { holder(v, "🏰 กิลด์", `<span style="color:var(--red)">${esc(e.message)}<br>ถ้าเพิ่งอัปเดต ให้รัน SQL 45_guild.sql ก่อน</span>`); return; }
   const un = L.unassigned || [], tot = un.reduce((a, x) => a + x.n, 0);
   const rd = holder(v, "🎲 สุ่มจัดนักเรียนที่ยังไม่มีกิลด์", `ช่วง ${L.cfg.phase === "soon" || L.cfg.phase === "reg" ? "สมัครยังไม่ปิด — แนะนำสุ่มหลังวันล็อกสมาชิก" : "ตอนนี้"} · ระบบเติมกิลด์ที่ยังไม่ถึง 4 คนก่อน แล้วแบ่งกลุ่มใหม่ 4–5 คนในห้องเดียวกัน (ชื่อ “กิลด์ รหัสห้อง-เลข” หัวหน้าเปลี่ยนชื่อได้ 1 ครั้ง)`);
