@@ -1055,6 +1055,10 @@ select pg_temp.t('คลัง 77: มี 300 ข้อใน 13 หัวข้
 select pg_temp.t('คลัง 77: เฉลยของข้อเลือกตอบอยู่ในช่วงตัวเลือกทุกข้อ', (select bool_and((data->>'answer')::int between 0 and jsonb_array_length(data->'choices') - 1) from exam_questions where kind = 'mcq' and topic = 'พอลิเมอร์'));
 select pg_temp.t('คลัง 77: ข้อจับคู่และลากวางมีเฉลยครบ', (select bool_and(jsonb_array_length(data->'pairs') = jsonb_array_length(data->'left')) from exam_questions where kind = 'match' and topic = 'คาร์โบไฮเดรต')
   and (select bool_and(jsonb_array_length(data->'answer') = jsonb_array_length(data->'items')) from exam_questions where kind = 'drag' and topic = 'หมู่ฟังก์ชันและเฮโลแอลเคน'));
+
+-- ข้อสอบเน้นจำ 300 ข้อสำหรับควิซประจำวัน (db/78)
+select pg_temp.t('คลังควิซ 78: เพิ่ม 300 ข้อ ใช้ได้กับทุกห้อง (class_id ว่าง) และเปิดใช้งาน', (select count(*) from quiz_questions where topic in ('สัญลักษณ์ธาตุ','เลขอะตอม','หมู่ของธาตุ','ไอออนและประจุ','สูตรและชื่อสาร','ไอออนอะตอมกลุ่ม','อินดิเคเตอร์','อุปกรณ์วิทยาศาสตร์','ความปลอดภัยในห้องปฏิบัติการ','หน่วยและการวัด','นักวิทยาศาสตร์และแบบจำลองอะตอม','สถานะและการเปลี่ยนสถานะ','การแยกสาร','สารในชีวิตประจำวัน','โมลและมวลโมเลกุล','สมบัติธาตุตามหมู่และคาบ','แก๊สและการทดสอบแก๊ส') and class_id is null and active and explain is not null) >= 286);
+select pg_temp.t('คลังควิซ 78: ตัวเลือกไม่ซ้ำและมีเฉลยถูกช่วงทุกข้อ', (select bool_and(answer between 0 and 3 and a <> b and a <> c and a <> d and b <> c and b <> d and c <> d) from quiz_questions where topic in ('เลขอะตอม','หมู่ของธาตุ','ไอออนและประจุ','สูตรและชื่อสาร','ไอออนอะตอมกลุ่ม','โมลและมวลโมเลกุล')));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
