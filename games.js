@@ -40,7 +40,8 @@ const GAMES = (() => {
     if (st.mode === "kb") return KB.view();
     if (st.mode === "run") return RUN.view();
     if (!s) return head();
-    return head() + `<div class="gm-grid">
+    if (!st.list) return head() + CITY.html(s);
+    return head() + `<p class="center" style="margin:0 0 6px"><button class="btn small ghost" onclick="GAMES.setList(false)">🗺️ กลับแผนที่เมือง</button></p><div class="gm-grid">
       <div class="card gm-card">
         <div class="gm-ico">🧠</div><h3>ควิซประจำวัน</h3>
         <p class="muted">${s.quiz_total} ข้อ · ถูกข้อละ +${s.per_correct} EXP${s.perfect_bonus ? ` · ถูกหมดโบนัส +${s.perfect_bonus}` : ""} · วันละ 1 ครั้ง</p>
@@ -178,5 +179,5 @@ const GAMES = (() => {
 
   const home = () => { st.mode = "home"; st.status = null; go("game"); };
   const quit = () => { if (!confirm("ออกจากเกม? ความคืบหน้าจะไม่ถูกบันทึก")) return; clearInterval(st.tm); home(); };
-  return { paint, mode: () => st.mode, setMode: (m) => { st.mode = m; }, view, startQuiz, pick, startMatch, tap, home, quit };
+  return { paint, status: () => st.status, setList: (v) => { st.list = v; paint(); }, mode: () => st.mode, setMode: (m) => { st.mode = m; }, view, startQuiz, pick, startMatch, tap, home, quit };
 })();
