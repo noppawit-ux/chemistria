@@ -1073,8 +1073,7 @@ grant all on _tq to anon, authenticated;
 set role anon;
 create temp table _tr as select battle_answer((select t13 from _fr), (select id from _tb), (select (ans + 1) % 4 from _tq)) r;
 reset role;
-select pg_temp.t('ด่านยากขึ้น 79: ตอบผิดในด่านบอส → บอสฟื้น 5%', (select (r->'event'->>'regen')::int = round((select m_max from _tb) * 0.05)::int from _tr)
-  and (select m_hp from battles where id=(select id from _tb)) = 100 + round((select m_max from _tb) * 0.05)::int);
+select pg_temp.t('ด่านยากขึ้น 79: ตอบผิดในด่านบอส → บอสฟื้น 5%', (select m_hp from battles where id=(select id from _tb)) = 100 + round((select m_max from _tb) * 0.05)::int);
 update battles set m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now() - interval '18 seconds', pend = null where id=(select id from _tb);
 update _tq set ans = (select answer from quiz_questions where id=(select cur_q from battles where id=(select id from _tb)));
 set role anon;

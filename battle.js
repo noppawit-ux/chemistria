@@ -200,7 +200,7 @@ const BATTLE = (() => {
     const [px, py] = ctr(PL, f), [mx, my] = ctr(MO, f), [fx0, fy0] = foot(PL, f);
     const killed = S.bat.status === "won";
     S.hpDelay = 520;
-    if (!ev.correct) { num("พลาด!", px, py - 60, "miss"); if (ev.regen > 0) num("👹 บอสฟื้น +" + ev.regen, mx, my - 50, "heal"); put('<span class="fizz">💨</span>', 900, px, py - 20); return; }
+    if (!ev.correct) { num("พลาด!", px, py - 60, "miss"); put('<span class="fizz">💨</span>', 900, px, py - 20); return; }
     if (sk.kind === "attack") {
       pop("lunge2", PL);
       const impact = (zx, zy) => {

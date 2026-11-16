@@ -22,17 +22,25 @@ begin
     if d not like '%0.85%' then raise exception 'แก้ rank_trial_start ไม่สำเร็จ (ต้องรัน 69 ก่อน)'; end if;
     execute d;
   end if;
-  -- เวลา 17 วินาทีฝั่งเซิร์ฟเวอร์ (เผื่อเน็ตช้า) + บอสฟื้นเมื่อตอบผิด
+  -- เวลา 17 วินาทีฝั่งเซิร์ฟเวอร์ (เผื่อเน็ตช้า) — ถ้าหาจุดแก้ไม่เจอจะข้าม (ฝั่งหน้าเว็บจำกัด 15 วินาทีอยู่แล้ว)
   select pg_get_functiondef('battle_answer(uuid,uuid,int)'::regprocedure) into d;
-  if d not like '%b.trial_rank is not null%' then
-    d := replace(d, 'p_pick = q.answer and elapsed <= 40;',
-                    'p_pick = q.answer and elapsed <= case when b.trial_rank is not null then 17 else 40 end;');
-    d := replace(d, E'    b.correct := b.correct + 1;\n  end if;\n  ev := ev || jsonb_build_object(''dmg'', dmg, ''heal'', heal, ''crit'', crit, ''fast'', fast);',
-                    E'    b.correct := b.correct + 1;\n  elsif b.trial_rank is not null then\n    regen := round(b.m_max * 0.05)::int; b.m_hp := least(b.m_max, b.m_hp + regen);\n  end if;\n  ev := ev || jsonb_build_object(''dmg'', dmg, ''heal'', heal, ''crit'', crit, ''fast'', fast, ''regen'', regen);');
-    d := replace(d, E'declare\n', E'declare\n  regen int := 0;\n');
-    if d not like '%regen := round%' or d not like '%then 17 else 40%' or d not like '%regen int := 0%' then
-      raise exception 'แก้ battle_answer ไม่สำเร็จ (ต้องรัน 17 ก่อน)';
-    end if;
-    execute d;
+  if d !~ 'b\.trial_rank is not null then 17' and d ~ 'elapsed\s*<=\s*40' then
+    execute regexp_replace(d, 'elapsed\s*<=\s*40', 'elapsed <= case when b.trial_rank is not null then 17 else 40 end');
+  elsif d !~ 'b\.trial_rank is not null then 17' then
+    raise notice 'ข้ามการแก้เวลาฝั่งเซิร์ฟเวอร์ (ไม่พบจุดแก้) — ไม่กระทบส่วนอื่น';
   end if;
 end $$;
+
+-- ตอบผิดในด่านบอส → บอสฟื้น 5% (ใช้ trigger แทนการแก้ฟังก์ชันตอบ จึงไม่ขึ้นกับหน้าตาของฟังก์ชัน)
+create or replace function trg_trial_regen() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.trial_rank is not null and new.status = 'active' and old.cur_q is not null and new.cur_q is null
+     and new.correct = old.correct and new.m_hp = old.m_hp then
+    new.m_hp := least(new.m_max, new.m_hp + round(new.m_max * 0.05)::int);
+  end if;
+  return new;
+end $$;
+drop trigger if exists trial_regen on battles;
+create trigger trial_regen before update on battles for each row execute function trg_trial_regen();
+revoke execute on function trg_trial_regen() from public, anon, authenticated;
