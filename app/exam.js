@@ -26,7 +26,7 @@ function examListHtml() {
     const used = (e.attempts || []).length, left = e.max_attempts - used;
     let st = "", btn = "";
     if (e.active) { st = '<span class="tag wait">กำลังสอบ</span>'; btn = `<button class="btn gold" onclick="examGo('${e.id}')">▶️ ทำต่อ</button>`; }
-    else if (e.state === "open" && left > 0) { st = '<span class="tag ok">เปิดสอบ</span>'; btn = `<button class="btn gold" onclick="examGo('${e.id}')">${used ? "🔁 สอบอีกครั้ง" : "✏️ เริ่มสอบ"}</button>`; }
+    else if (e.state === "open" && left > 0) { st = '<span class="tag ok">เปิดสอบ</span>'; btn = `<button class="btn gold" onclick="examAsk('${e.id}', ${!!e.has_code})">${used ? "🔁 สอบอีกครั้ง" : "✏️ เริ่มสอบ"}</button>`; }
     else if (e.state === "upcoming") { st = '<span class="tag wait">ยังไม่เปิด</span>'; }
     else if (e.state === "open") { st = '<span class="tag">สอบครบครั้งแล้ว</span>'; }
     else { st = '<span class="tag">ปิดแล้ว</span>'; }
@@ -43,9 +43,25 @@ function examListHtml() {
 VIEWS.exam = () => { examLoad(true); return examListHtml(); };
 
 /* ---------- ทำข้อสอบ ---------- */
-async function examGo(id) {
+/* เริ่มสอบแต่ละครั้งต้องกรอกรหัสสอบที่ครูบอก (ทำต่อที่ค้างไว้ไม่ต้องกรอก) */
+function examAsk(id, hasCode, msg) {
+  if (!hasCode) return examGo(id);
+  eqClose();
+  const ov = document.createElement("div"); ov.id = "eqov"; ov.setAttribute("role", "dialog");
+  ov.innerHTML = `<div class="eqbox center"><button class="patchx" aria-label="ปิด" onclick="eqClose()">✕</button><h3>🔑 รหัสเข้าสอบ</h3>
+    <p class="muted" style="margin:4px 0">ขอรหัสจากครูในห้องสอบ แล้วกรอกเพื่อเริ่มสอบ</p>
+    ${msg ? `<p style="color:var(--red);margin:4px 0">${esc(msg)}</p>` : ""}
+    <input id="excode" autocomplete="off" autocapitalize="off" style="text-align:center;font-size:1.4em;letter-spacing:.15em;max-width:240px" placeholder="รหัสสอบ">
+    <div style="margin-top:10px"><button class="btn gold" id="exgo">✏️ เริ่มสอบ</button></div></div>`;
+  ov.addEventListener("click", (e) => { if (e.target === ov) eqClose(); });
+  document.body.appendChild(ov);
+  const go1 = () => { const c = $("#excode").value.trim(); if (!c) return; eqClose(); examGo(id, c); };
+  $("#exgo").onclick = go1; $("#excode").addEventListener("keydown", (e) => { if (e.key === "Enter") go1(); }); $("#excode").focus();
+}
+async function examGo(id, code) {
   let p;
-  try { p = await rpc("exam_start", { p_token: tk(), p_exam: id }); } catch (e) { toast(e.message); examLoad(true); return; }
+  try { p = await rpc("exam_start", { p_token: tk(), p_exam: id, p_code: code || null }); } catch (e) { toast(e.message); examLoad(true); return; }
+  if (p && p.code_error) return examAsk(id, true, p.code_error);
   EX_SKEW = Date.parse(p.attempt.now) - Date.now();
   const ans = {}, photo = {};
   p.qs.forEach((q) => { ans[q.id] = q.ans || null; photo[q.id] = !!q.photo; });

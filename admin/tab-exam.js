@@ -118,7 +118,7 @@ TAB.exam = async function (v) {
     const cn = (ids) => (ids || []).map((id) => S.classes.find((c) => c.id === id)?.name || "?").join(", ");
     root.innerHTML = `${subBar()}<div class="card"><button class="btn mint" id="xe_new">➕ สร้างชุดสอบ</button>
       <div class="scroll"><table><thead><tr><th>ชื่อ</th><th>ห้อง</th><th>ข้อ</th><th>เวลา</th><th>สถานะ</th><th>เปิด–ปิด</th><th></th></tr></thead><tbody>
-      ${rows.map((e) => `<tr><td><b>${esc(e.title)}</b><br><small class="muted">${CAT[e.score_cat]} · เต็ม ${e.max_score}${e.pushed_at ? " · ส่งคะแนนแล้ว" : ""}</small></td><td>${esc(cn(e.class_ids))}</td><td>${nq[e.id] || 0}</td><td>${e.minutes} น.</td>
+      ${rows.map((e) => `<tr><td><b>${esc(e.title)}</b><br><small class="muted">${CAT[e.score_cat]} · เต็ม ${e.max_score}${e.pushed_at ? " · ส่งคะแนนแล้ว" : ""}</small></td><td>${esc(cn(e.class_ids))}</td><td>${nq[e.id] || 0}</td><td>${e.minutes} น.${e.access_code ? `<br><b title="รหัสเข้าสอบ">🔑 ${esc(e.access_code)}</b>` : ""}</td>
         <td>${{ draft: "ร่าง", open: "เปิด", closed: "ปิด" }[e.status]}</td><td><small>${fmtD(e.open_at)}<br>${fmtD(e.close_at)}</small></td>
         <td style="white-space:nowrap"><button class="btn small gold" data-mon="${e.id}">ติดตาม/ตรวจ</button> <button class="btn small" data-ed="${e.id}">แก้</button> <button class="btn red small" data-del="${e.id}">ลบ</button></td></tr>`).join("") || '<tr><td colspan="7" class="muted">ยังไม่มีชุดสอบ</td></tr>'}</tbody></table></div></div>`;
     bindSub();
@@ -137,6 +137,7 @@ TAB.exam = async function (v) {
     const picked = new Set(cur);
     const o = overlay(`<h3>${e ? "แก้ชุดสอบ" : "สร้างชุดสอบ"}</h3><div id="ef"></div>`), f = $("#ef", o);
     f.innerHTML = `<label>ชื่อชุดสอบ</label><input id="e_title" value="${esc(x.title)}">
+      <label>🔑 รหัสเข้าสอบ (นักเรียนต้องกรอกทุกครั้งที่เริ่มสอบ · ครูบอกในห้อง) <button class="btn small ghost" type="button" id="e_gen">สุ่มใหม่</button></label><input id="e_code" value="${esc(x.access_code || String(Math.floor(1000 + Math.random() * 9000)))}" style="max-width:200px;font-size:1.2em;letter-spacing:.15em">
       <label>ห้องที่สอบ</label><div>${S.classes.map((c) => `<label style="display:inline-block;margin-right:12px"><input type="checkbox" class="e_cls" value="${c.id}" ${(x.class_ids || []).includes(c.id) ? "checked" : ""}> ${esc(c.name)}</label>`).join("")}</div>
       <div class="row"><div style="width:170px"><label>ประเภทคะแนนในสมุด</label><select id="e_cat">${Object.entries(CAT).map(([k, l]) => `<option value="${k}" ${x.score_cat === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
         <div style="width:110px"><label>คะแนนเต็มในสมุด</label><input id="e_max" type="number" step="0.5" value="${x.max_score}"></div>
@@ -150,6 +151,7 @@ TAB.exam = async function (v) {
       <label><input type="checkbox" id="e_shuf" ${x.shuffle ? "checked" : ""}> สลับลำดับข้อ/ตัวเลือกของแต่ละคน</label>
       <label>เลือกข้อสอบ <small class="muted" id="e_cnt"></small></label><div class="scroll" style="max-height:280px"><table><tbody id="e_qs"></tbody></table></div>
       <div style="margin-top:10px"><button class="btn gold" id="e_save">💾 บันทึก</button></div>`;
+    $("#e_gen", f).onclick = () => { $("#e_code", f).value = String(Math.floor(1000 + Math.random() * 9000)); };
     const cntUpd = () => { const pts = bankRows.filter((r) => picked.has(r.id)).reduce((a, r) => a + +r.points, 0); $("#e_cnt", f).textContent = `เลือก ${picked.size} ข้อ · รวม ${pts} คะแนน`; };
     $("#e_qs", f).innerHTML = bankRows.map((r) => `<tr><td><input type="checkbox" data-q="${r.id}" ${picked.has(r.id) ? "checked" : ""}></td><td><small>${esc(r.topic)}</small></td><td><small>${KD[r.kind]}</small></td><td>${sub(r.q).slice(0, 110)}</td><td>${r.points}</td></tr>`).join("");
     $("#e_qs", f).onchange = (ev) => { const id = ev.target.dataset.q; if (!id) return; ev.target.checked ? picked.add(id) : picked.delete(id); cntUpd(); };
@@ -157,7 +159,7 @@ TAB.exam = async function (v) {
     $("#e_save", f).onclick = async () => {
       const ids = [...f.querySelectorAll(".e_cls:checked")].map((c) => c.value);
       if (!$("#e_title", f).value.trim() || !ids.length || !picked.size) return toast("ใส่ชื่อ เลือกห้อง และเลือกข้อสอบอย่างน้อย 1 ข้อ");
-      const row = { title: $("#e_title", f).value.trim(), class_ids: ids, score_cat: $("#e_cat", f).value, max_score: +$("#e_max", f).value || 10, minutes: +$("#e_min", f).value || 30,
+      const row = { access_code: $("#e_code", f).value.trim() || null, title: $("#e_title", f).value.trim(), class_ids: ids, score_cat: $("#e_cat", f).value, max_score: +$("#e_max", f).value || 10, minutes: +$("#e_min", f).value || 30,
         max_attempts: +$("#e_att", f).value || 1, reward_exp: +$("#e_exp", f).value || 0, show_result: $("#e_show", f).value, status: $("#e_st", f).value, shuffle: $("#e_shuf", f).checked,
         open_at: $("#e_open", f).value ? new Date($("#e_open", f).value).toISOString() : null, close_at: $("#e_close", f).value ? new Date($("#e_close", f).value).toISOString() : null };
       await run(async () => {
@@ -175,7 +177,7 @@ TAB.exam = async function (v) {
   async function monitor(e) {
     let m; try { m = await rpc("exam_monitor", { p_exam: e.id }); } catch (er) { return toast(er.message); }
     const best = (att) => (att || []).filter((a) => a.status === "submitted").sort((a, b) => b.score - a.score)[0];
-    const o = overlay(`<h3>📊 ${esc(e.title)}</h3>
+    const o = overlay(`<h3>📊 ${esc(e.title)}</h3>${e.access_code ? `<p style="font-size:1.6em;margin:4px 0">🔑 รหัสเข้าสอบ: <b style="letter-spacing:.15em">${esc(e.access_code)}</b></p>` : '<p class="muted">⚠️ ชุดนี้ยังไม่ตั้งรหัสเข้าสอบ</p>'}
       <div class="row"><button class="btn small" id="m_re">🔄 โหลดใหม่</button><button class="btn small" id="m_rg">♻️ ตรวจใหม่ทั้งชุด</button><button class="btn small red" id="m_cl">⏹ ปิดสอบทันที</button>
         <button class="btn small gold" id="m_push">📤 ส่งคะแนนเข้าสมุด</button><button class="btn small ghost" id="m_csv">⬇️ CSV</button></div>
       <div class="scroll"><table><thead><tr><th>ห้อง</th><th>เลขที่</th><th>ชื่อ</th><th>สถานะ</th><th>คะแนนดีที่สุด</th><th>สลับหน้าจอ</th><th></th></tr></thead><tbody>

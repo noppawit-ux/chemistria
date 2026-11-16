@@ -991,6 +991,18 @@ select pg_temp.t('ข้อสอบไอโซเมอร์: ทุกข้
   or (kind='drag' and (jsonb_array_length(data->'answer') <> jsonb_array_length(data->'items')
        or exists (select 1 from jsonb_array_elements_text(data->'answer') a where a::int >= jsonb_array_length(data->'zones')))))));
 
+
+-- รหัสสอบ (db/74)
+update exams set access_code = 'Ab12', status='open', max_attempts=5 where id=(select id from _ex where kind='exam2');
+reset role;
+select pg_temp.t('รหัสสอบ: ไม่กรอกรหัส → เริ่มไม่ได้', (select exam_start((select tok from _gt where no=15), (select id from _ex where kind='exam2'))::jsonb ? 'code_error'));
+select pg_temp.t('รหัสสอบ: รหัสผิด → เริ่มไม่ได้', (select exam_start((select tok from _gt where no=15), (select id from _ex where kind='exam2'), 'zzzz')::jsonb ? 'code_error'));
+select pg_temp.t('รหัสสอบ: รหัสถูก (ไม่สนตัวพิมพ์/ช่องว่าง) เริ่มได้', (select exam_start((select tok from _gt where no=15), (select id from _ex where kind='exam2'), ' ab12 ')::jsonb->'attempt'->>'no') = '1');
+select pg_temp.t('รหัสสอบ: ทำต่อที่ค้างไว้ไม่ต้องกรอกรหัสซ้ำ', (select exam_start((select tok from _gt where no=15), (select id from _ex where kind='exam2'))::jsonb->'attempt'->>'no') = '1');
+select pg_temp.t('รหัสสอบ: exam_list บอก has_code แต่ไม่เปิดเผยรหัส', (select exam_list((select tok from _gt where no=16))::text like '%"has_code": true%' and exam_list((select tok from _gt where no=16))::text not like '%Ab12%'));
+do $$ begin for i in 1..5 loop perform exam_start((select tok from _gt where no=17), (select id from _ex where kind='exam2'), 'x'||i); end loop; end $$;
+select pg_temp.t('รหัสสอบ: ผิด 5 ครั้งถูกล็อก แม้ใส่รหัสถูกก็ยังไม่ได้', (select exam_start((select tok from _gt where no=17), (select id from _ex where kind='exam2'), 'Ab12')::jsonb ? 'code_error'));
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
