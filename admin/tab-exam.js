@@ -150,11 +150,22 @@ TAB.exam = async function (v) {
         <div style="width:140px"><label>สถานะ</label><select id="e_st">${[["draft", "ร่าง (ซ่อน)"], ["open", "เปิดให้สอบ"], ["closed", "ปิด"]].map(([k, l]) => `<option value="${k}" ${x.status === k ? "selected" : ""}>${l}</option>`).join("")}</select></div></div>
       <div class="row"><div style="width:240px"><label>สลับหน้าจอได้ไม่เกิน (ครั้ง · 0 = ไม่จำกัด แต่นับให้ครู)</label><input id="e_blur" type="number" min="0" max="20" value="${x.max_blur ?? 3}"></div></div>
       <label><input type="checkbox" id="e_shuf" ${x.shuffle ? "checked" : ""}> สลับลำดับข้อ/ตัวเลือกของแต่ละคน</label>
-      <label>เลือกข้อสอบ <small class="muted" id="e_cnt"></small></label><div class="scroll" style="max-height:280px"><table><tbody id="e_qs"></tbody></table></div>
+      <label>เลือกข้อสอบ <small class="muted" id="e_cnt"></small></label>
+      <div class="row" style="align-items:flex-end;gap:8px"><div style="width:190px"><label>หัวข้อ</label><select id="e_ft"><option value="">ทั้งหมด</option>${[...new Set(bankRows.map((r) => r.topic))].map((t) => `<option>${esc(t)}</option>`).join("")}</select></div>
+        <div style="width:130px"><label>ชนิด</label><select id="e_fk"><option value="">ทั้งหมด</option>${Object.entries(KD).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></div>
+        <div style="width:80px"><label>สุ่มกี่ข้อ</label><input id="e_rn" type="number" min="1" value="10"></div>
+        <button class="btn ghost small" id="e_rand" type="button">🎲 สุ่มเพิ่มจากที่แสดง</button><button class="btn ghost small" id="e_all" type="button">เลือกทั้งหมดที่แสดง</button><button class="btn ghost small" id="e_none" type="button">ล้างที่เลือก</button></div>
+      <div class="scroll" style="max-height:280px"><table><tbody id="e_qs"></tbody></table></div>
       <div style="margin-top:10px"><button class="btn gold" id="e_save">💾 บันทึก</button></div>`;
     $("#e_gen", f).onclick = () => { $("#e_code", f).value = String(Math.floor(1000 + Math.random() * 9000)); };
     const cntUpd = () => { const pts = bankRows.filter((r) => picked.has(r.id)).reduce((a, r) => a + +r.points, 0); $("#e_cnt", f).textContent = `เลือก ${picked.size} ข้อ · รวม ${pts} คะแนน`; };
-    $("#e_qs", f).innerHTML = bankRows.map((r) => `<tr><td><input type="checkbox" data-q="${r.id}" ${picked.has(r.id) ? "checked" : ""}></td><td><small>${esc(r.topic)}</small></td><td><small>${KD[r.kind]}</small></td><td>${sub(r.q).slice(0, 110)}</td><td>${r.points}</td></tr>`).join("");
+    const visible = () => bankRows.filter((r) => (!$("#e_ft", f).value || r.topic === $("#e_ft", f).value) && (!$("#e_fk", f).value || r.kind === $("#e_fk", f).value));
+    const drawQs = () => { $("#e_qs", f).innerHTML = visible().map((r) => `<tr><td><input type="checkbox" data-q="${r.id}" ${picked.has(r.id) ? "checked" : ""}></td><td><small>${esc(r.topic)}</small></td><td><small>${KD[r.kind]}</small></td><td>${sub(r.q).slice(0, 110)}</td><td>${r.points}</td></tr>`).join(""); cntUpd(); };
+    $("#e_ft", f).onchange = $("#e_fk", f).onchange = drawQs;
+    $("#e_all", f).onclick = () => { visible().forEach((r) => picked.add(r.id)); drawQs(); };
+    $("#e_none", f).onclick = () => { picked.clear(); drawQs(); };
+    $("#e_rand", f).onclick = () => { const pool = visible().filter((r) => !picked.has(r.id)).sort(() => Math.random() - 0.5); pool.slice(0, Math.max(1, +$("#e_rn", f).value || 10)).forEach((r) => picked.add(r.id)); drawQs(); };
+    drawQs();
     $("#e_qs", f).onchange = (ev) => { const id = ev.target.dataset.q; if (!id) return; ev.target.checked ? picked.add(id) : picked.delete(id); cntUpd(); };
     cntUpd();
     $("#e_save", f).onclick = async () => {

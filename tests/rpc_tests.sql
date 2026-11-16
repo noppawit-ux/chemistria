@@ -1049,6 +1049,12 @@ select pg_temp.t('ชนะครั้งที่ 10: ได้ กรอบ�
 select pg_temp.t('ชนะช้า (400 วินาที) ไม่ได้สายฟ้าเคมี', not (select (r->'ach') @> '[{"name":"สายฟ้าเคมี"}]'::jsonb from _k10));
 select pg_temp.t('ซีดดิง: ฉายาและกรอบครูบุ๊คไม่ขายในร้าน', (select count(*) from decor_items where name in ('ผู้พิชิตครูบุ๊ค','กรอบแชมป์ครูบุ๊ค') and price is null) = 2);
 
+
+-- คลังข้อสอบเคมีอินทรีย์ 300 ข้อ (db/77)
+select pg_temp.t('คลัง 77: มี 300 ข้อใน 13 หัวข้อ', (select count(*) from exam_questions where explain is not null and topic in ('แอลเคนและการเรียกชื่อ','แอลคีนและแอลไคน์','อะโรมาติกไฮโดรคาร์บอน','ปฏิกิริยาและเชื้อเพลิงไฮโดรคาร์บอน','แอลกอฮอล์และอีเทอร์','แอลดีไฮด์และคีโตน','กรดคาร์บอกซิลิกและเอสเทอร์','เอมีนและเอไมด์','หมู่ฟังก์ชันและเฮโลแอลเคน','พอลิเมอร์','คาร์โบไฮเดรต','กรดอะมิโนและโปรตีน','ลิพิดและกรดนิวคลีอิก')) = 300);
+select pg_temp.t('คลัง 77: เฉลยของข้อเลือกตอบอยู่ในช่วงตัวเลือกทุกข้อ', (select bool_and((data->>'answer')::int between 0 and jsonb_array_length(data->'choices') - 1) from exam_questions where kind = 'mcq' and topic = 'พอลิเมอร์'));
+select pg_temp.t('คลัง 77: ข้อจับคู่และลากวางมีเฉลยครบ', (select bool_and(jsonb_array_length(data->'pairs') = jsonb_array_length(data->'left')) from exam_questions where kind = 'match' and topic = 'คาร์โบไฮเดรต')
+  and (select bool_and(jsonb_array_length(data->'answer') = jsonb_array_length(data->'items')) from exam_questions where kind = 'drag' and topic = 'หมู่ฟังก์ชันและเฮโลแอลเคน'));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
