@@ -1016,6 +1016,39 @@ select pg_temp.t('กันโกง: สลับครั้งที่ 3 (�
 select pg_temp.t('กันโกง: ส่งไปแล้วบันทึกคำตอบไม่ได้', pg_temp.fails($q$select exam_save((select tok from _gt where no=18), (select (p->'attempt'->>'id')::uuid from _exb), (select id from _ex where kind='mcq'), '{"i":0}')$q$));
 select pg_temp.t('กันโกง: คนอื่นนับสลับหน้าจอของเราไม่ได้', pg_temp.fails($q$select exam_blur((select tok from _gt where no=19), (select (p->'attempt'->>'id')::uuid from _exb))$q$));
 
+
+-- รางวัลชนะประลองครูบุ๊ค (db/76)
+set role anon;
+select game_begin((select tok from _gt where no=17), 'kb'); select pg_temp.bd(100);
+create temp table _kw1 as select kb_submit((select tok from _gt where no=17), 8, true, 100)::jsonb r;
+select game_begin((select tok from _gt where no=17), 'kb'); select pg_temp.bd(100);
+create temp table _kw2 as select kb_submit((select tok from _gt where no=17), 8, true, 100)::jsonb r;
+select game_begin((select tok from _gt where no=17), 'kb'); select pg_temp.bd(100);
+create temp table _kw3 as select kb_submit((select tok from _gt where no=17), 8, true, 100)::jsonb r;
+reset role;
+select pg_temp.t('ชนะครูบุ๊คครั้งแรก: ได้ฉายา ผู้พิชิตครูบุ๊ค', (select jsonb_array_length(r->'decors') = 1 from _kw1)
+  and exists (select 1 from student_decor sd join decor_items d on d.id = sd.item_id where sd.student_id = (select id from students where class_id=(select id from classes where code='T99') and no=17) and d.name = 'ผู้พิชิตครูบุ๊ค' and sd.source = 'kb'));
+select pg_temp.t('ชนะครั้งแรก: ได้ยา 1 + ม้วนอัปเกรด 1', (select jsonb_array_length(r->'drops') = 2 from _kw1)
+  and (select qty from student_items si join consumables c on c.id = si.item_id where c.key = 'scroll' and si.student_id = (select id from students where class_id=(select id from classes where code='T99') and no=17)) = 1);
+select pg_temp.t('ชนะครั้งแรก: ปลดล็อก ล้มครูบุ๊คได้ + กล้าท้าครู + ชนะเร็ว', (select (r->'ach') @> '[{"name":"ล้มครูบุ๊คได้!"}]'::jsonb and (r->'ach') @> '[{"name":"กล้าท้าครู"}]'::jsonb and (r->'ach') @> '[{"name":"สายฟ้าเคมี"}]'::jsonb from _kw1));
+select pg_temp.t('ชนะครั้งที่ 2: ได้ยาอย่างเดียว ไม่ได้ฉายาซ้ำ', (select jsonb_array_length(r->'drops') = 1 and jsonb_array_length(r->'decors') = 0 from _kw2));
+select pg_temp.t('ชนะนอกโควตารายวัน: ไม่มีดรอปและไม่นับความสำเร็จ', (select (r->>'no_reward')::boolean and jsonb_array_length(r->'drops') = 0 and jsonb_array_length(r->'ach') = 0 from _kw3));
+select pg_temp.t('นับชนะเฉพาะรอบที่ได้รางวัล (2 ครั้ง)', student_metric((select id from students where class_id=(select id from classes where code='T99') and no=17), 'kb_wins') = 2);
+set role anon;
+select game_begin((select tok from _gt where no=16), 'kb'); select pg_temp.bd(60);
+create temp table _kl as select kb_submit((select tok from _gt where no=16), 5, false, 40)::jsonb r;
+reset role;
+select pg_temp.t('แพ้แต่ผ่าน 5 รอบ: ได้ ผ่านครึ่งทาง ไม่ได้ดรอปหรือฉายา', (select (r->'ach') @> '[{"name":"ผ่านครึ่งทาง"}]'::jsonb and not (r->'ach') @> '[{"name":"ล้มครูบุ๊คได้!"}]'::jsonb and jsonb_array_length(r->'drops') = 0 and jsonb_array_length(r->'decors') = 0 from _kl));
+insert into game_plays (student_id, game, play_date, score, exp, coins, kb_secs)
+  select (select id from students where class_id=(select id from classes where code='T99') and no=15), 'kb', current_date - g, 100, 6, 5, 500 from generate_series(1, 9) g;
+set role anon;
+select game_begin((select tok from _gt where no=15), 'kb'); select pg_temp.bd(400);
+create temp table _k10 as select kb_submit((select tok from _gt where no=15), 8, true, 400)::jsonb r;
+reset role;
+select pg_temp.t('ชนะครั้งที่ 10: ได้ กรอบแชมป์ + ตำนานผู้พิชิต + ม้วน 2', (select (r->'decors') @> '[{"name":"กรอบแชมป์ครูบุ๊ค"}]'::jsonb and (r->'ach') @> '[{"name":"ตำนานผู้พิชิตครูบุ๊ค"}]'::jsonb and (r->'drops') @> '[{"qty":2}]'::jsonb from _k10));
+select pg_temp.t('ชนะช้า (400 วินาที) ไม่ได้สายฟ้าเคมี', not (select (r->'ach') @> '[{"name":"สายฟ้าเคมี"}]'::jsonb from _k10));
+select pg_temp.t('ซีดดิง: ฉายาและกรอบครูบุ๊คไม่ขายในร้าน', (select count(*) from decor_items where name in ('ผู้พิชิตครูบุ๊ค','กรอบแชมป์ครูบุ๊ค') and price is null) = 2);
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

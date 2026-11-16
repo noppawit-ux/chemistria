@@ -1359,3 +1359,11 @@ body.exlock{overflow:hidden}
 @keyframes popglow{50%{box-shadow:0 0 34px #ffd45ccc}}
 .cpemo{font-size:44px}
 .cityov{align-items:center}.cityov .eqbox{border-radius:18px;border-bottom:2px solid #ffe27a;max-width:420px;margin:0 12px}
+
+/* v2.15 รางวัลชนะครูบุ๊ค */
+.kb-rew{margin:10px auto;max-width:420px;text-align:left;border:1px solid rgba(255,200,80,.45);border-radius:12px;padding:10px 12px;background:rgba(255,200,80,.08)}
+.kb-rew h4{margin:0 0 6px;text-align:center}
+.kb-rw{display:grid;grid-template-columns:34px 1fr;grid-template-areas:"i b" "i s";column-gap:8px;align-items:center;padding:5px 0;animation:kbrw .5s ease both}
+.kb-rw span{grid-area:i;font-size:26px;text-align:center}.kb-rw b{grid-area:b}.kb-rw small{grid-area:s;opacity:.7}
+.kb-rw.gold b{color:#f5b301}
+@keyframes kbrw{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}

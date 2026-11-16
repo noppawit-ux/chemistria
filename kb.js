@@ -245,6 +245,19 @@ const KB = (() => {
   const KIMG = '<img class="kb-img" src="assets/chars/krubook.png" alt="" onerror="this.replaceWith(document.createTextNode(\'👨‍🏫\'))">';
   const ARENA = ["lab", "lab", "storm", "storm", "volcano", "volcano", "crystal", "crystal"];
   const TYPE = { quiz: ["🧠", "ควิซสุดโหด"], react: ["⚡", "ไวแสง"], memory: ["🧩", "จำลำดับ"], odd: ["🔍", "หาตัวแปลกแยก"], calc: ["🧮", "คำนวณเคมี"], balance: ["⚖️", "ดุลสมการ"], pairs: ["🔗", "จับคู่ธาตุ"], blitz: ["⚡", "จริง/เท็จ สายฟ้า"] };
+  function rewardCard(r) {
+    const dr = r.drops || [], dc = r.decors || [], ac = r.ach || [];
+    if (!dr.length && !dc.length && !ac.length) return "";
+    return `<div class="kb-rew"><h4>🎁 ของรางวัลจากครูบุ๊ค</h4>
+      ${dc.map((x) => `<div class="kb-rw gold"><span>${x.emoji}</span><b>ได้รับ ${esc(x.name)}!</b><small>ไปสวมใส่ได้ที่แท็บ ตกแต่ง</small></div>`).join("")}
+      ${dr.map((x) => `<div class="kb-rw"><span>${x.emoji}</span><b>${esc(x.name)} ×${x.qty}</b><small>ไอเทมเข้ากระเป๋าแล้ว</small></div>`).join("")}
+      ${ac.map((x) => `<div class="kb-rw gold"><span>${x.emoji}</span><b>ความสำเร็จ: ${esc(x.name)}</b><small>+${x.exp} EXP${x.coins ? ` +${x.coins} 🪙` : ""}</small></div>`).join("")}</div>`;
+  }
+  function achBox() {
+    const L = (typeof D !== "undefined" && D.achievements ? D.achievements : []).filter((a) => String(a.metric).startsWith("kb_"));
+    if (!L.length) return "";
+    return `<section><h4>🏅 ความสำเร็จ (ครูบุ๊ค)</h4><ul>${L.map((a) => `<li>${a.earned_at ? "✅" : "⬜"} ${a.emoji} <b>${esc(a.name)}</b> <span class="muted">— ${esc(a.description || "")}${a.earned_at ? "" : ` (${Math.min(a.progress, a.threshold)}/${a.threshold})`}</span></li>`).join("")}</ul></section>`;
+  }
   function view() {
     if (S.screen === "play") return playView();
     if (S.screen === "res") return resView();
@@ -253,7 +266,7 @@ const KB = (() => {
       <div class="run-info">
         <section><h4>🎮 วิธีเล่น</h4><ul><li>8 รอบ 8 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ</li><li>จริง/เท็จสายฟ้า · ไวแสง (วัดความเร็ว) · จำลำดับ · หาตัวแปลกแยก</li><li><b>เวลาลดลงทุกรอบ</b></li></ul></section>
         <section><h4>❤️ หัวใจ</h4><ul><li>มีหัวใจ 3 ดวง</li><li>พลาดหรือหมดเวลาเสีย 1 ดวง</li></ul></section>
-        ${t ? `<section><h4>🏆 รางวัล</h4><ul><li>ผ่านครบ 8 รอบได้ <b>+${t.per_round * 8 + t.win_exp} EXP</b> +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP)</li><li>รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays})</li>${t.wins ? `<li>ชนะแล้ว ${t.wins} ครั้ง 🏆</li>` : ""}</ul></section>` : ""}
+        ${t ? `<section><h4>🏆 รางวัล</h4><ul><li>ผ่านครบ 8 รอบได้ <b>+${t.per_round * 8 + t.win_exp} EXP</b> +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP)</li><li>รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays})</li>${t.wins ? `<li>ชนะแล้ว ${t.wins} ครั้ง 🏆</li>` : ""}<li>ชนะทุกครั้งได้ <b>ยาสุ่ม 1 ชิ้น</b> 🧪</li><li>ชนะครั้งแรก: ฉายา <b>🏆 ผู้พิชิตครูบุ๊ค</b> + 📜 ม้วนอัปเกรด · ชนะครบ 10 ครั้ง: <b>🥇 กรอบแชมป์</b></li><li class="muted">ของรางวัลและความสำเร็จนับเฉพาะรอบที่อยู่ในโควตารายวัน</li></ul></section>` : ""}${achBox()}
       </div>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าครูบุ๊ค!</button><button class="btn ghost" onclick="GAMES.home()">กลับ</button></div></div>`;
   }
@@ -290,7 +303,7 @@ const KB = (() => {
     const r = S.res;
     return `<div class="card center gm-res ${r.won ? "perfect" : ""}"><div class="kb-hero">${KIMG}</div><h2>${r.won ? "🏆 คุณชนะครูบุ๊ค!" : "💔 พ่ายแพ้ให้ครูบุ๊ค"}</h2><p class="kb-say">💬 ${S.say}</p>
       <p class="muted">ผ่าน ${r.cleared}/8 รอบ · ใช้เวลา ${r.secs} วินาที</p>
-      <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (ฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>${gsCard(r.gs)}
+      <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (ฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>${rewardCard(r)}${gsCard(r.gs)}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าอีกครั้ง</button><button class="btn ghost" onclick="KB.open()">เมนู</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
   return { open, view, start, quit, pick: pickOpt, tap, mem, bal, balCheck, pn: pairName, ps: pairSym, tf: (v) => blitzAns(v), go: advance };
