@@ -3,7 +3,7 @@ const app = $("#app");
 const S = { classes: [], cls: null, tab: "students", attDate: todayStr(), asg: null, item: null };
 const TABS = [
   ["all", "🏫 ทุกห้อง"], ["students", "👥 นักเรียน"], ["attend", "📋 เช็คชื่อ"], ["assign", "📝 งาน/การส่ง"], ["calendar", "📅 ปฏิทิน"],
-  ["scores", "🧮 คะแนน"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
+  ["scores", "🧮 คะแนน"], ["exam", "📝 ข้อสอบ"], ["quests", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["privs", "🎟️ สิทธิพิเศษ"],
   ["achv", "🏅 Achievement"], ["decor", "🎨 ตกแต่ง"], ["games", "🎮 มินิเกม"], ["teams", "🧪 ทีม"], ["boss", "👹 บอส"],
   ["board", "📢 บอร์ด"], ["news", "📣 ข่าว/อีเว้นท์"], ["timetable", "🕒 ตารางสอน"], ["digest", "📊 สรุปสัปดาห์"], ["export", "📤 ส่งออก Excel"], ["guild", "🏰 กิลด์"], ["gift", "🎁 ของขวัญ"], ["scan", "📷 สแกนตรวจงาน"], ["cards", "🃏 การ์ดสะสม"], ["security", "🛡️ ความปลอดภัย"], ["system", "🩺 ระบบ/สำรองข้อมูล"], ["settings", "⚙️ ตั้งค่า"],
 ];

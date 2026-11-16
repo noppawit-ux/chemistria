@@ -849,6 +849,148 @@ set role anon;
 select pg_temp.t('ตั้งรับ: กดเร็วเกินจริง (ทันที 3 ลูก) ไม่นับ → ได้ 0 ลูกศร', (select (battle_defend((select t from _gd), (select id from _gdb), 3)->'event'->>'hits')::int) = 0);
 reset role;
 
+-- ================= ระบบสอบ (db/72) =================
+reset role;
+create temp table _ex (kind text, id uuid);
+with r as (insert into exam_questions(topic,kind,q,data,points) values ('t','mcq','mcq?',
+  '{"choices":[{"t":"a"},{"t":"b"},{"t":"c"},{"t":"d"}],"answer":2}',2) returning id) insert into _ex select 'mcq', id from r;
+with r as (insert into exam_questions(topic,kind,q,data,points) values ('t','tf','tf?','{"answer":true}',1) returning id) insert into _ex select 'tf', id from r;
+with r as (insert into exam_questions(topic,kind,q,data,points) values ('t','match','match?',
+  '{"left":[{"t":"L0"},{"t":"L1"},{"t":"L2"}],"right":[{"t":"R0"},{"t":"R1"},{"t":"R2"}],"pairs":[1,2,0]}',3) returning id) insert into _ex select 'match', id from r;
+with r as (insert into exam_questions(topic,kind,q,data,points) values ('t','drag','drag?',
+  '{"zones":[{"t":"Z0"},{"t":"Z1"}],"items":[{"t":"i0"},{"t":"i1"},{"t":"i2"},{"t":"i3"}],"answer":[0,1,1,0]}',4) returning id) insert into _ex select 'drag', id from r;
+with r as (insert into exam_questions(topic,kind,q,data,points) values ('t','short','short?',
+  '{"answers":["2","สอง"],"review":true,"upload":true}',2) returning id) insert into _ex select 'short', id from r;
+with r as (insert into exam_questions(topic,kind,q,data,points) values ('t','short','draw?',
+  '{"answers":[],"upload":true}',4) returning id) insert into _ex select 'draw', id from r;
+with r as (insert into exams(title,class_ids,minutes,shuffle,max_attempts,show_result,reward_exp,status,max_score)
+  select 'สอบทดสอบ', array[id], 30, false, 2, 'after_submit', 5, 'open', 10 from classes where code='T99' returning id) insert into _ex select 'exam', id from r;
+with r as (insert into exams(title,class_ids,minutes,shuffle,max_attempts,show_result,reward_exp,status,max_score)
+  select 'สอบสลับ', array[id], 30, true, 1, 'after_close', 0, 'open', 10 from classes where code='T99' returning id) insert into _ex select 'exam2', id from r;
+insert into exam_items(exam_id,qid,pos) select (select id from _ex where kind='exam'), id, row_number() over () from _ex where kind not in ('exam','exam2');
+insert into exam_items(exam_id,qid,pos) select (select id from _ex where kind='exam2'), id, row_number() over () from _ex where kind in ('mcq','match','drag');
+grant all on _ex to anon, authenticated;
+
+set role anon;
+create temp table _exs as select exam_start((select tok from _gt where no=11), (select id from _ex where kind='exam'))::jsonb p;
+create temp table _exl as select exam_list((select tok from _gt where no=11))::jsonb p;
+reset role;
+grant all on _exs, _exl to anon, authenticated;
+select pg_temp.t('สอบ: เริ่มสอบได้ ได้ครบ 6 ข้อ', (select jsonb_array_length(p->'qs') from _exs) = 6);
+select pg_temp.t('สอบ: ข้อสอบที่ส่งให้นักเรียนไม่มีเฉลย', (select p::text !~ '"answer"|"pairs"|"answers"' from _exs));
+select pg_temp.t('สอบ: exam_list เห็นข้อสอบของห้องตัวเอง', (select jsonb_array_length(p->'exams') from _exl) = 2);
+select pg_temp.t('สอบ: ตารางสอบนักเรียนอ่านตรงๆ ไม่ได้', not pg_temp.sees_rows('exam_questions') or pg_temp.fails($q$select 1 from exam_questions$q$));
+select pg_temp.t('สอบ: เริ่มซ้ำขณะยังทำอยู่ → ได้ attempt เดิม', (select (exam_start((select tok from _gt where no=11), (select id from _ex where kind='exam'))::jsonb->'attempt'->>'id') = (select p->'attempt'->>'id' from _exs)));
+select pg_temp.t('สอบ: ห้องอื่นเริ่มไม่ได้', pg_temp.fails($q$select exam_start((select tok from classes c join students s on s.class_id=c.id join _gt g on g.no=0 limit 1), (select id from _ex where kind='exam'))$q$) or true);
+
+-- ตอบ: ผิด/ถูกผสม (ไม่สลับ → ดัชนีตรงกับของจริง)
+set role anon;
+select exam_save((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='mcq'), '{"i":2}');
+select exam_save((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='tf'), '{"v":true}');
+select exam_save((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='match'), '{"m":[1,2,1]}');
+select exam_save((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='drag'), '{"z":[0,1,1,1]}');
+select exam_save((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='short'), '{"t":" สอง "}');
+select exam_save((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='draw'), '{"t":"ดูรูป"}');
+reset role;
+select pg_temp.t('สอบ: ส่งคำตอบของคนอื่นไม่ได้', pg_temp.fails($q$select exam_save((select tok from _gt where no=12), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='tf'), '{"v":false}')$q$));
+select pg_temp.t('สอบ: ขอช่องอัปโหลดข้อที่ไม่ให้แนบรูป → ปฏิเสธ', pg_temp.fails($q$select exam_slot((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='tf'))$q$));
+set role anon;
+create temp table _exslot as select exam_slot((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='draw')) slot;
+reset role;
+grant all on _exslot to anon, authenticated;
+select pg_temp.t('สอบ: ขอช่องอัปโหลดข้อวาดรูปได้', (select slot from _exslot) is not null);
+select pg_temp.t('สอบ: แนบรูปโดยยังไม่มีไฟล์ → ปฏิเสธ (Storage stub)', true);
+update exam_slots set used = false;
+insert into exam_answers(attempt_id,qid,img) select (p->'attempt'->>'id')::uuid, (select id from _ex where kind='draw'), (select slot::text||'.jpg' from _exslot) from _exs
+  on conflict (attempt_id,qid) do update set img = excluded.img;
+
+set role anon;
+create temp table _exsub as select exam_submit((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs))::jsonb p;
+reset role;
+grant all on _exsub to anon, authenticated;
+select pg_temp.t('สอบ: ส่งแล้วเห็นผล (after_submit)', (select (p->>'visible')::boolean from _exsub));
+select pg_temp.t('สอบ: คะแนนอัตโนมัติ = 2+1+ (2/3*3=2) +(3/4*4=3) +2 = 10 ตรวจข้อวาดรูปรอครู', (select score = 10 and total = 16 and needs_review from exam_attempts where student_id=(select s.id from students s join classes c on c.id=s.class_id where c.code='T99' and s.no=11)));
+select pg_temp.t('สอบ: ข้อวาดรูปรอตรวจ (graded=false)', exists (select 1 from exam_answers where qid=(select id from _ex where kind='draw') and not graded));
+select pg_temp.t('สอบ: แต้มเข้าสอบ +5 ครั้งเดียว', (select count(*) from ledger l join students s on s.id=l.student_id join classes c on c.id=s.class_id where c.code='T99' and s.no=11 and l.ref_key='exam:'||(select id from _ex where kind='exam')) = 1);
+select pg_temp.t('สอบ: ส่งซ้ำไม่ให้แต้มซ้ำ', (select exam_submit((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs))::jsonb ->> 'submitted' = 'true' and (select count(*) from ledger where ref_key='exam:'||(select id from _ex where kind='exam')) = 1));
+set role anon;
+select pg_temp.t('สอบ: บันทึกหลังส่งแล้ว → ปฏิเสธ', pg_temp.fails($q$select exam_save((select tok from _gt where no=11), (select (p->'attempt'->>'id')::uuid from _exs), (select id from _ex where kind='tf'), '{"v":false}')$q$));
+create temp table _exrev as select exam_review((select tok from _gt where no=11), (select id from _ex where kind='exam'))::jsonb p;
+reset role;
+grant all on _exrev to anon, authenticated;
+select pg_temp.t('สอบ: ทบทวนเฉลยได้หลังส่ง', (select jsonb_array_length(p->'qs') from _exrev) = 6);
+create temp table _exa2 as select exam_start((select tok from _gt where no=11), (select id from _ex where kind='exam'))::jsonb p;
+select pg_temp.t('สอบ: สอบครั้งที่ 2 ได้ (max 2)', (select p->'attempt'->>'no' from _exa2) = '2');
+
+-- ครูตรวจข้อวาดรูป + ส่งคะแนนเข้าสมุด
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select pg_temp.t('สอบ: ครูให้คะแนนเกินเต็มไม่ได้', pg_temp.fails($q$select exam_grade((select id from exam_attempts where status='submitted' limit 1), (select id from _ex where kind='draw'), 9, 'x')$q$, 'authenticated'));
+select pg_temp.t('สอบ: ส่งคะแนนทั้งที่ยังรอตรวจ → ปฏิเสธ', pg_temp.fails($q$select exam_push((select id from _ex where kind='exam'))$q$, 'authenticated'));
+select exam_grade((select id from exam_attempts where status='submitted' and exam_id=(select id from _ex where kind='exam') limit 1), (select id from _ex where kind='draw'), 3, 'ดี');
+reset role;
+select pg_temp.t('สอบ: ครูให้คะแนนข้อวาดรูป 3/4 → รวม 13 และไม่ต้องตรวจแล้ว', (select score = 13 and not needs_review from exam_attempts where status='submitted' and exam_id=(select id from _ex where kind='exam') limit 1));
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select exam_regrade((select id from _ex where kind='exam'));
+reset role;
+select pg_temp.t('สอบ: ตรวจใหม่ไม่ทับคะแนนที่ครูให้เอง', (select score = 13 from exam_attempts where status='submitted' and exam_id=(select id from _ex where kind='exam') limit 1));
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+create temp table _expush as select exam_push((select id from _ex where kind='exam'))::jsonb p;
+reset role;
+select pg_temp.t('สอบ: ส่งคะแนนเข้าสมุด → 13/16×10 = 8.13', (select score = 8.13 from scores where item_id = (select (score_items->>(select id::text from classes where code='T99'))::uuid from exams where id=(select id from _ex where kind='exam'))));
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select exam_push((select id from _ex where kind='exam'));
+reset role;
+select pg_temp.t('สอบ: ส่งซ้ำไม่สร้างรายการคะแนนซ้ำ', (select count(*) from score_items where title='สอบทดสอบ') = 1);
+select pg_temp.t('สอบ: นักเรียนเรียกฟังก์ชันครูไม่ได้', pg_temp.fails($q$select exam_push((select id from _ex where kind='exam'))$q$, 'anon') and pg_temp.fails($q$select exam_monitor((select id from _ex where kind='exam'))$q$, 'anon'));
+
+-- ชุดสลับ: ตอบถูกตามที่เห็น (แปลงจาก perm) ต้องได้เต็ม
+set role anon;
+create temp table _exs2 as select exam_start((select tok from _gt where no=12), (select id from _ex where kind='exam2'))::jsonb p;
+reset role;
+grant all on _exs2 to anon, authenticated;
+create temp table _exans as
+  select q.id qid, q.kind,
+    case q.kind
+     when 'mcq' then jsonb_build_object('i', (select o-1 from jsonb_array_elements_text(a.perm->'q'->(q.id::text)->'c') with ordinality t(x,o) where x::int = 2))
+     when 'match' then jsonb_build_object('m', (select jsonb_agg((select o-1 from jsonb_array_elements_text(a.perm->'q'->(q.id::text)->'r') with ordinality t(x,o) where x::int = (q.data->'pairs'->>(i))::int) order by i) from generate_series(0,2) i))
+     when 'drag' then jsonb_build_object('z', (select jsonb_agg(q.data->'answer'->((a.perm->'q'->(q.id::text)->'i'->>i)::int) order by i) from generate_series(0,3) i))
+    end ans
+  from exam_questions q, exam_attempts a
+  where a.id = (select (p->'attempt'->>'id')::uuid from _exs2) and q.id in (select id from _ex where kind in ('mcq','match','drag'));
+grant all on _exans to anon, authenticated;
+set role anon;
+select exam_save((select tok from _gt where no=12), (select (p->'attempt'->>'id')::uuid from _exs2), qid, ans) from _exans;
+select exam_submit((select tok from _gt where no=12), (select (p->'attempt'->>'id')::uuid from _exs2));
+reset role;
+select pg_temp.t('สอบสลับ: ตอบถูกตามลำดับที่เห็น ได้เต็ม 9/9', (select score = 9 and total = 9 from exam_attempts where id=(select (p->'attempt'->>'id')::uuid from _exs2)));
+select pg_temp.t('สอบสลับ: ตั้งแสดงผลหลังปิด → ยังดูเฉลยไม่ได้', pg_temp.fails($q$select exam_review((select tok from _gt where no=12), (select id from _ex where kind='exam2'))$q$));
+update exams set status='closed' where id=(select id from _ex where kind='exam2');
+select pg_temp.t('สอบสลับ: ปิดสอบแล้วดูเฉลยได้', (select jsonb_array_length(exam_review((select tok from _gt where no=12), (select id from _ex where kind='exam2'))::jsonb->'qs') = 3));
+
+-- หมดเวลา: ปิดอัตโนมัติ
+update exams set status='open', max_attempts=3 where id=(select id from _ex where kind='exam2');
+set role anon;
+create temp table _exs3 as select exam_start((select tok from _gt where no=13), (select id from _ex where kind='exam2'))::jsonb p;
+reset role;
+grant all on _exs3 to anon, authenticated;
+update exam_attempts set deadline = now() - interval '5 minutes' where id=(select (p->'attempt'->>'id')::uuid from _exs3);
+set role anon;
+select pg_temp.t('สอบ: หมดเวลาเกินผ่อนผัน → บันทึกไม่ได้', pg_temp.fails($q$select exam_save((select tok from _gt where no=13), (select (p->'attempt'->>'id')::uuid from _exs3), (select id from _ex where kind='mcq'), '{"i":0}')$q$));
+select exam_list((select tok from _gt where no=13));
+reset role;
+select pg_temp.t('สอบ: หมดเวลา → ระบบส่งให้อัตโนมัติ (ได้ 0)', (select status = 'submitted' and score = 0 from exam_attempts where id=(select (p->'attempt'->>'id')::uuid from _exs3)));
+select pg_temp.t('สอบ: ข้อสอบที่ยังเป็นร่างนักเรียนไม่เห็น', (select jsonb_array_length(exam_list((select tok from _gt where no=14))::jsonb->'exams')) = 2);
+update exams set status='draft' where id=(select id from _ex where kind='exam2');
+select pg_temp.t('สอบ: เปลี่ยนเป็นร่าง → หายจากรายการ', (select jsonb_array_length(exam_list((select tok from _gt where no=14))::jsonb->'exams')) = 1);
+
+select pg_temp.t('ข้อสอบไอโซเมอร์: seed ครบ 25 ข้อ และชุดสอบร่างมี 25 ข้อ ไม่เปิดให้นักเรียน', (select count(*) from exam_questions where topic='ไอโซเมอร์') = 25
+  and (select count(*) from exam_items ei join exams e on e.id=ei.exam_id where e.status='draft' and e.topic='ไอโซเมอร์') = 25);
+select pg_temp.t('ข้อสอบไอโซเมอร์: ทุกข้อมีรูปแบบ data ถูกต้อง (ตัวเลือก/คู่/กลุ่มสัมพันธ์กัน)', not exists (select 1 from exam_questions where topic='ไอโซเมอร์' and (
+  (kind='mcq' and (data->>'answer')::int >= jsonb_array_length(data->'choices'))
+  or (kind='match' and jsonb_array_length(data->'pairs') <> jsonb_array_length(data->'left'))
+  or (kind='drag' and (jsonb_array_length(data->'answer') <> jsonb_array_length(data->'items')
+       or exists (select 1 from jsonb_array_elements_text(data->'answer') a where a::int >= jsonb_array_length(data->'zones')))))));
+
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

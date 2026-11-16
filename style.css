@@ -1279,3 +1279,51 @@ body.peeking .navwrap{top:34px}
 .bt-skill.guard{border-color:#5aa9ff88;background:linear-gradient(180deg,rgba(90,169,255,.14),rgba(90,169,255,.04))}
 .bt-skill.guard.hot:not(:disabled){animation:trialglow 1.2s ease-in-out infinite;border-color:#ffd166}
 .bt-warn{margin:0 0 8px;padding:6px 10px;border-radius:10px;background:rgba(255,120,60,.14);border:1px solid #ff8a4c88;font-weight:700;color:#ffb184}
+
+/* ===== v2.09 ระบบสอบ ===== */
+body.exlock{overflow:hidden}
+#exov{position:fixed;inset:0;z-index:9400;background:linear-gradient(160deg,#1b1340,#0f0a26);overflow:auto;-webkit-overflow-scrolling:touch}
+.exwrap{max-width:720px;margin:0 auto;padding:10px 12px 40px}
+.exbar{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:2;background:#160f33;padding:8px 4px;border-bottom:1px solid #3a2f70}
+.extimer{font-weight:700;font-variant-numeric:tabular-nums;padding:4px 10px;border-radius:999px;background:#2a2060;color:#f6c453}
+.extimer.low{background:#7a1d2a;color:#fff;animation:exblink 1s infinite}
+@keyframes exblink{50%{opacity:.55}}
+.exdots{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.exdot{min-width:34px;height:34px;border-radius:50%;border:1px solid #4a3f8a;background:#241a4a;color:#cfc6ff;font-weight:700}
+.exdot.done{background:#2a6b4a;border-color:#4fd08a;color:#fff}
+.exdot.cur{outline:2px solid #f6c453}
+.excard{background:#241a4a;border:1px solid #3a2f70;border-radius:14px;padding:14px;margin:8px 0}
+.exq{font-size:1.1em;line-height:1.6;white-space:pre-wrap;margin:6px 0}
+.exq sub,.exchip sub,.exc sub,.exm sub{font-size:.75em}
+.exim{display:block;max-width:100%;max-height:260px;margin:8px auto;border-radius:10px;background:#fff;cursor:zoom-in}
+.exim.chimg{max-height:110px;margin:4px 0}
+.exzoom{position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center}
+.exzoom img{max-width:96vw;max-height:94vh;background:#fff;border-radius:8px}
+.exch{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.exc{display:flex;align-items:center;gap:10px;text-align:left;padding:12px;border-radius:12px;border:2px solid #4a3f8a;background:#1a1338;color:#fff;font-size:1em;min-height:48px}
+.exc b{display:inline-flex;width:28px;height:28px;border-radius:50%;background:#3a2f70;align-items:center;justify-content:center;flex:none}
+.exc.on{border-color:#f6c453;background:#3b2f78}.exc.on b{background:#f6c453;color:#241a4a}
+.extf{display:flex;gap:10px;margin-top:10px}.extf .exc{flex:1;justify-content:center;font-size:1.1em}
+.exta{width:100%;box-sizing:border-box;background:#1a1338;color:#fff;border:2px solid #4a3f8a;border-radius:12px;padding:10px;font:inherit;margin-top:8px}
+.exup{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.exmt{display:grid;grid-template-columns:1fr 1fr;gap:10px}.excol{display:flex;flex-direction:column;gap:8px}
+.exm{position:relative;display:flex;align-items:center;gap:8px;text-align:left;padding:10px;border-radius:12px;border:2px solid #4a3f8a;background:#1a1338;color:#fff;min-height:48px}
+.exm i{font-style:normal;flex:none;width:24px;height:24px;border-radius:50%;background:#3a2f70;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.exm em{position:absolute;right:6px;top:4px;font-style:normal;font-size:.8em;color:#f6c453;font-weight:700}
+.exm.sel{border-color:#f6c453;box-shadow:0 0 0 2px #f6c45355}.exm.pair{border-color:#4fd08a}
+.expool,.exzone{border:2px dashed #4a3f8a;border-radius:12px;padding:8px;min-height:52px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#1a1338}
+.exzones{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
+.exzone{flex-direction:column;align-items:stretch}.exzt{font-weight:700;color:#f6c453;text-align:center}
+.exzi{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:40px}
+.exchip{display:inline-block;padding:8px 12px;border-radius:999px;background:#3b2f78;border:2px solid #6a5cc0;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.exchip.sel{border-color:#f6c453;background:#5a47b0}.exchip.lift{opacity:.35}
+.exghost{position:fixed;z-index:9900;pointer-events:none;transform:translate(-50%,-50%);opacity:.92;box-shadow:0 6px 18px #0008}
+.exnav{display:flex;justify-content:space-between;gap:10px;margin-top:12px}.exnav .btn{flex:1}
+.exres{margin-top:6px}
+.exrv.good{border-left:4px solid #4fd08a}.exrv.bad{border-left:4px solid #e0566b}.exrv.wait{border-left:4px solid #f6c453}
+
+.exchip .exim,.exm .exim,.exc .exim,.exzt .exim{width:120px;max-width:100%;max-height:95px;object-fit:contain;margin:2px auto 0;display:block;border-radius:6px;pointer-events:none}
+.exchip{padding:6px 10px;text-align:center}
+.exm span,.exc span{min-width:0}
+.exchip{border-radius:14px}
+.exzone .exchip,.expool .exchip{max-width:100%}
