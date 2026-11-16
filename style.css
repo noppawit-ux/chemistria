@@ -1346,11 +1346,12 @@ body.exlock{overflow:hidden}
 .citymap{position:relative;width:max(100%,760px);aspect-ratio:16/9;user-select:none;-webkit-user-select:none}
 .citybg,.climg{position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-user-drag:none}
 .citybg{filter:brightness(.82) saturate(.95)}
-.cl{position:absolute;inset:0;pointer-events:none;animation:clglow 2.6s ease-in-out infinite;animation-delay:var(--d)}
+.cl{position:absolute;inset:0;pointer-events:none;filter:drop-shadow(0 0 4px #ffe27a) drop-shadow(0 0 12px #ffcf4acc) brightness(1.1);will-change:opacity;animation:clglow 2.6s ease-in-out infinite;animation-delay:var(--d)}
 .climg{pointer-events:auto;cursor:pointer;transition:transform .18s}
 .cl:hover .climg,.cl:active .climg{transform:scale(1.025)}
-.cl.locked{animation:none;filter:grayscale(.7) brightness(.8)}
-@keyframes clglow{0%,100%{filter:drop-shadow(0 0 3px #ffe27a) drop-shadow(0 0 8px #f6c45388) brightness(1.02)}50%{filter:drop-shadow(0 0 9px #fff2a8) drop-shadow(0 0 22px #ffcf4acc) brightness(1.14)}}
+.cl.locked{animation:none;will-change:auto;opacity:1;filter:grayscale(.7) brightness(.8)}
+@keyframes clglow{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.cl{animation:none}}
 .clpin{position:absolute;transform:translate(-50%,-50%);pointer-events:none;white-space:nowrap}
 .clpin span{display:inline-block;padding:3px 9px;border-radius:999px;background:rgba(20,12,50,.82);border:1px solid #f6c453;color:#fff;font-size:.8em;font-weight:700;box-shadow:0 2px 8px #0008}
 .clpin.locked span{border-color:#777;color:#bbb}
