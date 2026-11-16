@@ -1332,3 +1332,11 @@ body.exlock{overflow:hidden}
 .exwarn .excard{max-width:420px}
 #exov,#exov *{-webkit-touch-callout:none}
 #exov .exq,#exov .exc,#exov .exm{-webkit-user-select:none;user-select:none}
+
+.expad{position:fixed;inset:0;z-index:9500;background:#0f0a26;display:flex;flex-direction:column;padding:8px;gap:6px}
+.padtop{display:flex;align-items:center;gap:8px}.padq{font-size:.9em;max-height:3.2em;overflow:auto;color:#cfc6ff}
+.padtools{display:flex;flex-wrap:wrap;gap:6px}.padtools button{min-height:40px;padding:0 10px;border-radius:10px;border:2px solid #4a3f8a;background:#241a4a;color:#fff}
+.padtools button.on{border-color:#f6c453}.padtools .clr{width:40px;padding:0;border-radius:50%}
+.padwrap{flex:1;min-height:0;background:#fff;border-radius:10px;overflow:hidden}
+#padcv{touch-action:none;display:block;cursor:crosshair}
+.padbot{display:flex;gap:10px}.padbot .btn{flex:1}

@@ -108,6 +108,7 @@ function exTick() {
   if (!EX || EX.done) return;
   const r = exRemain(), t = document.getElementById("extimer");
   if (t) { t.textContent = "⏱ " + exFmtT(r); t.classList.toggle("low", r < 60); }
+  const t2 = document.getElementById("extimer2"); if (t2) t2.textContent = "⏱ " + exFmtT(r);
   if (r <= 0 && !EX.sending) { toast("หมดเวลา — กำลังส่งข้อสอบ…", 4000); exSubmit(true); }
 }
 function exClose() {
@@ -158,7 +159,7 @@ function exBody(q) {
   if (q.kind === "tf") return `<div class="extf"><button class="exc ${a && a.v === true ? "on" : ""}" onclick="exTF(true)">✅ ถูก</button><button class="exc ${a && a.v === false ? "on" : ""}" onclick="exTF(false)">❌ ผิด</button></div>`;
   if (q.kind === "short") {
     const up = v.upload ? `<div class="exup"><label class="btn small ghost" onclick="EX.cam=Date.now()">📷 ${EX.photo[q.id] ? "เปลี่ยนรูป" : "ถ่าย/แนบรูปคำตอบ"}<input type="file" accept="image/*" hidden onchange="exPhoto(this)"></label>
-      <span class="${EX.photo[q.id] ? "tag ok" : "muted"}" id="exphs">${EX.photo[q.id] ? "แนบรูปแล้ว ✓" : "วาดบนกระดาษแล้วถ่ายรูป หรือพิมพ์คำตอบ"}</span></div>` : "";
+      <button class="btn small gold" onclick="padOpen()">✏️ วาดบนหน้าจอ</button><span class="${EX.photo[q.id] ? "tag ok" : "muted"}" id="exphs">${EX.photo[q.id] ? "แนบรูปแล้ว ✓" : "วาดบนหน้าจอ/ถ่ายรูปจากกระดาษ หรือพิมพ์คำตอบ"}</span></div>` : "";
     return `${v.hint ? `<p class="muted">💡 ${fm(v.hint)}</p>` : ""}<textarea id="exta" class="exta" spellcheck="false" autocorrect="off" autocomplete="off" rows="${v.upload ? 3 : 2}" placeholder="พิมพ์คำตอบที่นี่" oninput="exText(this.value)">${esc((a && a.t) || "")}</textarea>${up}`;
   }
   if (q.kind === "match") {
@@ -216,19 +217,87 @@ function exDragStart(ev, k) {
   };
   document.addEventListener("pointermove", mv, { passive: false }); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
 }
+async function exUpload(blob, q) {
+  if (!blob) throw new Error("อ่านรูปไม่สำเร็จ");
+  if (blob.size > 1500000) throw new Error("รูปใหญ่เกินไป ลองถ่ายใหม่");
+  const slot = await rpc("exam_slot", { p_token: tk(), p_attempt: EX.att.id, p_qid: q.id });
+  const up = await sb.storage.from("exam").upload(slot + ".jpg", blob, { contentType: "image/jpeg", upsert: false });
+  if (up.error) throw new Error("อัปโหลดไม่สำเร็จ: " + up.error.message);
+  await rpc("exam_attach", { p_token: tk(), p_attempt: EX.att.id, p_qid: q.id, p_slot: slot });
+  EX.photo[q.id] = true; exRedraw(); toast("บันทึกรูปแล้ว ✅");
+}
 async function exPhoto(input) {
   const f = input.files && input.files[0]; if (!f) return; const q = exCur(), s = document.getElementById("exphs");
   if (s) s.textContent = "กำลังอัปโหลด…";
-  try {
-    const blob = await shrink(f); if (!blob) throw new Error("อ่านรูปไม่สำเร็จ");
-    if (blob.size > 1500000) throw new Error("รูปใหญ่เกินไป ลองถ่ายใหม่");
-    const slot = await rpc("exam_slot", { p_token: tk(), p_attempt: EX.att.id, p_qid: q.id });
-    const up = await sb.storage.from("exam").upload(slot + ".jpg", blob, { contentType: "image/jpeg", upsert: false });
-    if (up.error) throw new Error("อัปโหลดไม่สำเร็จ: " + up.error.message);
-    await rpc("exam_attach", { p_token: tk(), p_attempt: EX.att.id, p_qid: q.id, p_slot: slot });
-    EX.photo[q.id] = true; exRedraw(); toast("แนบรูปแล้ว ✅");
-  } catch (e) { toast(e.message); if (s) s.textContent = "แนบรูปไม่สำเร็จ"; }
+  try { await exUpload(await shrink(f), q); } catch (e) { toast(e.message); if (s) s.textContent = "แนบรูปไม่สำเร็จ"; }
   input.value = "";
+}
+
+/* ---------- กระดานวาดบนหน้าจอ (นิ้ว/ปากกา) สำหรับข้อวาดโครงสร้าง ---------- */
+const PAD = { strokes: [], cur: null, tool: "pen", color: "#111111", w: 3, grid: true, pen: false, q: null };
+function padOpen() {
+  const q = exCur(); PAD.q = q; PAD.strokes = []; PAD.cur = null; PAD.tool = "pen"; PAD.color = "#111111"; PAD.w = 3; PAD.pen = false;
+  const d = document.createElement("div"); d.id = "expad"; d.className = "expad";
+  d.innerHTML = `<div class="padtop"><b class="grow">✏️ วาดคำตอบ — ข้อ ${EX.i + 1}</b><span id="extimer2" class="extimer">⏱ ${exFmtT(exRemain())}</span></div>
+    <div class="padq">${fm(q.q)}</div>
+    <div class="padtools">
+      <button class="on" data-t="pen" onclick="padTool('pen')">🖊️ ปากกา</button><button data-t="eraser" onclick="padTool('eraser')">🧽 ยางลบ</button>
+      ${["#111111", "#d12f2f", "#1f5fd1"].map((c) => `<button class="clr ${c === "#111111" ? "on" : ""}" data-c="${c}" style="background:${c}" onclick="padColor('${c}')" aria-label="สี"></button>`).join("")}
+      <button data-w="3" class="on" onclick="padW(3)">บาง</button><button data-w="6" onclick="padW(6)">หนา</button>
+      <button onclick="padUndo()">↩️ ย้อน</button><button onclick="padClear()">🗑️ ล้าง</button><button id="padgridbtn" onclick="padGrid()">▦ ตาราง</button></div>
+    <div class="padwrap"><canvas id="padcv"></canvas></div>
+    <div class="padbot"><button class="btn ghost" onclick="padClose()">ยกเลิก</button><button class="btn gold" id="padsave" onclick="padSave()">💾 บันทึกรูปคำตอบ</button></div>`;
+  document.getElementById("exov").appendChild(d);
+  const cv = $("#padcv"), r = cv.parentElement.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.style.width = r.width + "px"; cv.style.height = r.height + "px"; cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  PAD.dpr = dpr; PAD.W = r.width; PAD.H = r.height;
+  cv.addEventListener("pointerdown", padDown); cv.addEventListener("pointermove", padMove); cv.addEventListener("pointerup", padUp); cv.addEventListener("pointercancel", padUp);
+  padPaint();
+}
+function padClose() { document.getElementById("expad")?.remove(); }
+function padTool(t) { PAD.tool = t; document.querySelectorAll("#expad [data-t]").forEach((b) => b.classList.toggle("on", b.dataset.t === t)); }
+function padColor(c) { PAD.color = c; padTool("pen"); document.querySelectorAll("#expad [data-c]").forEach((b) => b.classList.toggle("on", b.dataset.c === c)); }
+function padW(w) { PAD.w = w; document.querySelectorAll("#expad [data-w]").forEach((b) => b.classList.toggle("on", +b.dataset.w === w)); }
+function padUndo() { PAD.strokes.pop(); padPaint(); }
+function padClear() { if (PAD.strokes.length && !confirm("ล้างทั้งหมด?")) return; PAD.strokes = []; padPaint(); }
+function padGrid() { PAD.grid = !PAD.grid; padPaint(); }
+function padPt(e) { const r = e.target.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; }
+function padDown(e) {
+  if (e.pointerType === "pen") PAD.pen = true;
+  if (PAD.pen && e.pointerType === "touch") return;            // ปากกา: ไม่รับฝ่ามือ
+  e.preventDefault(); e.target.setPointerCapture(e.pointerId);
+  PAD.cur = { tool: PAD.tool, color: PAD.color, w: PAD.tool === "eraser" ? PAD.w * 4 : PAD.w, pts: [padPt(e)] }; PAD.strokes.push(PAD.cur); padPaint();
+}
+function padMove(e) {
+  if (!PAD.cur) return; e.preventDefault();
+  const ev = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  (ev.length ? ev : [e]).forEach((x) => PAD.cur.pts.push(padPt({ target: e.target, clientX: x.clientX, clientY: x.clientY })));
+  padPaint();
+}
+function padUp() { PAD.cur = null; }
+function padDraw(ctx, W, H, withGrid) {
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  if (withGrid) { ctx.fillStyle = "#d8d8e4"; for (let x = 20; x < W; x += 24) for (let y = 20; y < H; y += 24) ctx.fillRect(x, y, 1.6, 1.6); }
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  PAD.strokes.forEach((s) => {
+    ctx.strokeStyle = s.tool === "eraser" ? "#fff" : s.color; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = s.w;
+    if (s.pts.length === 1) { ctx.beginPath(); ctx.arc(s.pts[0][0] * W, s.pts[0][1] * H, s.w / 2, 0, 7); ctx.fill(); return; }
+    ctx.beginPath(); s.pts.forEach((p, i) => (i ? ctx.lineTo(p[0] * W, p[1] * H) : ctx.moveTo(p[0] * W, p[1] * H))); ctx.stroke();
+  });
+}
+function padPaint() {
+  const cv = $("#padcv"); if (!cv) return; const ctx = cv.getContext("2d"); ctx.setTransform(PAD.dpr, 0, 0, PAD.dpr, 0, 0);
+  padDraw(ctx, PAD.W, PAD.H, PAD.grid);
+  const t = document.getElementById("extimer2"); if (t) t.textContent = "⏱ " + exFmtT(exRemain());
+}
+async function padSave() {
+  if (!PAD.strokes.length) return toast("ยังไม่ได้วาดอะไร");
+  const btn = $("#padsave"); btn.disabled = true; btn.textContent = "กำลังบันทึก…";
+  const out = document.createElement("canvas"), W = 1200, H = Math.round((W * PAD.H) / PAD.W); out.width = W; out.height = H;
+  const ctx = out.getContext("2d"); ctx.scale(W / PAD.W, W / PAD.W); padDraw(ctx, PAD.W, PAD.H, false);
+  const sc = W / PAD.W; ctx.setTransform(1, 0, 0, 1, 0, 0);
+  try { await exUpload(await new Promise((r) => out.toBlob(r, "image/jpeg", 0.8)), PAD.q); padClose(); }
+  catch (e) { toast(e.message); btn.disabled = false; btn.textContent = "💾 บันทึกรูปคำตอบ"; }
 }
 
 /* ---------- ตรวจทานก่อนส่ง ---------- */
