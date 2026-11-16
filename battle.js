@@ -49,7 +49,8 @@ const BATTLE = (() => {
     catch (e) { toast(e.message); }
     S.busy = false; paint();
   }
-  const QSECS = 20;
+  const QSECS_N = 20, QSECS_T = 15;   // ด่านบอสเลื่อนแรงค์เวลาสั้นลง
+  const qs = () => (S.trial ? QSECS_T : QSECS_N);
   const heavyNow = () => !!(S.bat && S.bat.turn % 3 === 0);   // เทิร์นที่ 3,6,9… มอนสเตอร์โจมตีหนัก ×1.5
   async function guard() {
     if (S.busy || !S.bat) return; S.busy = true; paint();
@@ -58,7 +59,7 @@ const BATTLE = (() => {
     S.busy = false; paint();
   }
   function armQ(el) { clearTimeout(S.qtimer); clearInterval(S.qint);
-    S.qint = setInterval(() => { const e = document.getElementById("bqt"); if (!e || !S.bat || S.bat.phase !== "question") return clearInterval(S.qint); e.textContent = "⏱️ " + Math.max(0, Math.ceil(QSECS - (Date.now() - S.qstart) / 1000)); }, 250); S.qtimer = setTimeout(() => answer(-1), Math.max(300, (QSECS - el) * 1000)); S.qstart = Date.now() - el * 1000; }
+    S.qint = setInterval(() => { const e = document.getElementById("bqt"); if (!e || !S.bat || S.bat.phase !== "question") return clearInterval(S.qint); e.textContent = "⏱️ " + Math.max(0, Math.ceil(qs() - (Date.now() - S.qstart) / 1000)); }, 250); S.qtimer = setTimeout(() => answer(-1), Math.max(300, (qs() - el) * 1000)); S.qstart = Date.now() - el * 1000; }
   async function answer(i) {
     if (S.busy || !S.bat || S.bat.phase !== "question") return; S.busy = true; clearTimeout(S.qtimer); paint();
     try {
@@ -199,7 +200,7 @@ const BATTLE = (() => {
     const [px, py] = ctr(PL, f), [mx, my] = ctr(MO, f), [fx0, fy0] = foot(PL, f);
     const killed = S.bat.status === "won";
     S.hpDelay = 520;
-    if (!ev.correct) { num("พลาด!", px, py - 60, "miss"); put('<span class="fizz">💨</span>', 900, px, py - 20); return; }
+    if (!ev.correct) { num("พลาด!", px, py - 60, "miss"); if (ev.regen > 0) num("👹 บอสฟื้น +" + ev.regen, mx, my - 50, "heal"); put('<span class="fizz">💨</span>', 900, px, py - 20); return; }
     if (sk.kind === "attack") {
       pop("lunge2", PL);
       const impact = (zx, zy) => {
@@ -289,14 +290,14 @@ const BATTLE = (() => {
         <em>${esc(s.descr || "")}</em></button>`).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
     return arena + `<div class="card">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
-      <p class="muted" style="margin:4px 0 8px">เลือกสกิล แล้วตอบคำถามให้ถูก (ภายใน 20 วิ) สกิลถึงจะออกผล · ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡ · มอนสเตอร์โจมตีเองอัตโนมัติ (รับ 70%) ทุกเทิร์นที่ 3 จะโจมตีหนัก</p><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
-      ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
+      <p class="muted" style="margin:4px 0 8px">เลือกสกิล แล้วตอบคำถามให้ถูก (ภายใน ${qs()} วิ) สกิลถึงจะออกผล · ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡ · มอนสเตอร์โจมตีเองอัตโนมัติ (รับ 70%) ทุกเทิร์นที่ 3 จะโจมตีหนัก</p><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
+      ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — HP ของคุณ 85% · เวลา 15 วิ · ตอบผิดบอสจะฟื้น HP 5% · ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }
 
   function questionView() {
     const q = S.bat.q, sk = S.bat.skills.find((s) => s.key === q.skill) || {};
-    const left = Math.max(0.5, QSECS - (q.elapsed || 0));
-    return `<div class="card gm-q"><div class="row"><span class="pill">${sk.emoji || ""} ${esc(sk.name || "")}</span><span class="muted grow">${esc(q.topic)}</span><span class="pill" id="bqt">⏱️ ${QSECS}</span></div>
+    const left = Math.max(0.5, qs() - (q.elapsed || 0));
+    return `<div class="card gm-q"><div class="row"><span class="pill">${sk.emoji || ""} ${esc(sk.name || "")}</span><span class="muted grow">${esc(q.topic)}</span><span class="pill" id="bqt">⏱️ ${qs()}</span></div>
       <div class="bt-timer"><i style="animation-duration:${left}s"></i></div>
       <h3 style="margin:12px 0">${esc(q.question)}</h3>
       <div class="gm-choices">${q.choices.map((c, i) => `<button class="gm-choice" ${S.busy ? "disabled" : ""} onclick="BATTLE.pick(${i})"><b>${"กขคง"[i]}</b> ${esc(c)}</button>`).join("")}</div></div>`;

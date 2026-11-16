@@ -1059,6 +1059,28 @@ select pg_temp.t('คลัง 77: ข้อจับคู่และลาก
 -- ข้อสอบเน้นจำ 300 ข้อสำหรับควิซประจำวัน (db/78)
 select pg_temp.t('คลังควิซ 78: เพิ่ม 300 ข้อ ใช้ได้กับทุกห้อง (class_id ว่าง) และเปิดใช้งาน', (select count(*) from quiz_questions where topic in ('สัญลักษณ์ธาตุ','เลขอะตอม','หมู่ของธาตุ','ไอออนและประจุ','สูตรและชื่อสาร','ไอออนอะตอมกลุ่ม','อินดิเคเตอร์','อุปกรณ์วิทยาศาสตร์','ความปลอดภัยในห้องปฏิบัติการ','หน่วยและการวัด','นักวิทยาศาสตร์และแบบจำลองอะตอม','สถานะและการเปลี่ยนสถานะ','การแยกสาร','สารในชีวิตประจำวัน','โมลและมวลโมเลกุล','สมบัติธาตุตามหมู่และคาบ','แก๊สและการทดสอบแก๊ส') and class_id is null and active and explain is not null) >= 286);
 select pg_temp.t('คลังควิซ 78: ตัวเลือกไม่ซ้ำและมีเฉลยถูกช่วงทุกข้อ', (select bool_and(answer between 0 and 3 and a <> b and a <> c and a <> d and b <> c and b <> d and c <> d) from quiz_questions where topic in ('เลขอะตอม','หมู่ของธาตุ','ไอออนและประจุ','สูตรและชื่อสาร','ไอออนอะตอมกลุ่ม','โมลและมวลโมเลกุล')));
+-- ด่านบอสเลื่อนแรงค์ยากขึ้น (db/79)
+select pg_temp.t('ด่านยากขึ้น 79: สถิติบอสใหม่ (Silver 220/21 · Challenger 1250/45)', (select hp=220 and atk=21 from monsters where key='trial_silver')
+  and (select hp=1250 and atk=45 from monsters where key='trial_challenger'));
+select pg_temp.t('ด่านยากขึ้น 79: ผู้เล่นเข้าด่านด้วย HP 85%', (select p_max = round((80 + 6 * level_for((select exp from students where id=(select s13 from _fr)))) * 0.85)
+  and p_hp = p_max from battles where student_id=(select s13 from _fr) and trial_rank='silver' and status='active'));
+update battles set m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now(), pend = null
+ where student_id=(select s13 from _fr) and trial_rank='silver' and status='active';
+create temp table _tb as select id, m_max from battles where student_id=(select s13 from _fr) and trial_rank='silver' and status='active';
+grant all on _tb to anon, authenticated;
+create temp table _tq as select (select answer from quiz_questions where id=(select cur_q from battles where id=(select id from _tb))) ans;
+grant all on _tq to anon, authenticated;
+set role anon;
+create temp table _tr as select battle_answer((select t13 from _fr), (select id from _tb), (select (ans + 1) % 4 from _tq)) r;
+reset role;
+select pg_temp.t('ด่านยากขึ้น 79: ตอบผิดในด่านบอส → บอสฟื้น 5%', (select (r->'event'->>'regen')::int = round((select m_max from _tb) * 0.05)::int from _tr)
+  and (select m_hp from battles where id=(select id from _tb)) = 100 + round((select m_max from _tb) * 0.05)::int);
+update battles set m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now() - interval '18 seconds', pend = null where id=(select id from _tb);
+update _tq set ans = (select answer from quiz_questions where id=(select cur_q from battles where id=(select id from _tb)));
+set role anon;
+create temp table _tr2 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
+reset role;
+select pg_temp.t('ด่านยากขึ้น 79: ตอบถูกแต่เกิน 17 วินาทีในด่านบอส = ไม่นับ', (select (r->'event'->>'correct')::boolean is false from _tr2));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
