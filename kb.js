@@ -14,6 +14,14 @@ const KB = (() => {
     win: ["ครู... ยอมแพ้ 😭 เก่งมาก!", "เธอชนะครูแล้ว! ภูมิใจจริงๆ 🏆"],
     lose: ["ไว้มาท้าใหม่นะ ครูรออยู่ 😎", "ฝึกอีกหน่อย แล้วกลับมา!"],
   };
+  /* ยิ่งชนะครูบุ๊คมาก ครูยิ่งเอาจริง: เวลาต่อรอบสั้นลง · ระดับ 2 ขึ้นไปเหลือหัวใจ 2 ดวง */
+  const TIERS = [
+    { n: "ปกติ", ic: "🙂", m: 1, h: 3, w: 0 },
+    { n: "ครูเอาจริง", ic: "😤", m: 0.85, h: 3, w: 1, start: ["เธอชนะครูได้ครั้งหนึ่งแล้วสินะ... รอบนี้ครูไม่ออมมือแล้ว 😤", "ครั้งก่อนครูประมาท! ครั้งนี้เวลาน้อยลงนะ ⏱"] },
+    { n: "ครูโหมดดุ", ic: "🔥", m: 0.72, h: 2, w: 3, start: ["ครูเอาจริงแล้วนะ! เหลือหัวใจแค่ 2 ดวง 🔥", "ชนะหลายครั้งแล้วใช่ไหม? ครูจะไม่ยอมอีกต่อไป!"] },
+    { n: "ครูร่างจริง", ic: "👹", m: 0.6, h: 2, w: 6, start: ["นี่คือร่างจริงของครูบุ๊ค... ขอให้โชคดี 👹", "ครูฝึกพิเศษมาเพื่อเธอโดยเฉพาะ! ไม่มีคำว่าออมมือ"] },
+  ];
+  const tierOf = (wins) => { let t = 0; TIERS.forEach((x, i) => { if ((wins || 0) >= x.w) t = i; }); return t; };
   const say = (k) => TAUNT[k][Math.floor(Math.random() * TAUNT[k].length)];
 
   /* ---------------- คลังโจทย์ ---------------- */
@@ -115,13 +123,13 @@ const KB = (() => {
     try { const b = await rpc("kb_bank", { p_token: tk() }); S.lv = b.level === "jr" ? "jr" : "hs"; S.bank = b.items || []; } catch (e) { S.lv = "hs"; S.bank = []; }
     paint();
   }
-  const M = () => (S.lv === "jr" ? 1.4 : 1);                       // ระดับ ม.ต้น ได้เวลามากขึ้น 40%
+  const M = () => (S.lv === "jr" ? 1.4 : 1) * TIERS[S.tier || 0].m;                       // ระดับ ม.ต้น ได้เวลามากขึ้น 40%
   const bk = (k) => (S.bank || []).filter((x) => x.kind === k);
   const mcq = (k) => bk(k).filter((x) => (x.wrong || []).length >= 3).map((x) => [x.question, x.answer, x.wrong[0], x.wrong[1], x.wrong[2], x.explain || ""]);
   const draw = (name, src) => { if (!S[name] || !S[name].length) S[name] = shuffle(src); return S[name].pop(); };
   function start() {
     GB("kb");
-    S.types = shuffle(["quiz", "calc", "balance", "pairs", "blitz", "react", "memory", "odd"]); S.r = 0; S.hearts = 3; S.hp = 100; S.cleared = 0; S.over = false; S.lock = false; S.t0 = Date.now(); S.msg = ""; S.say = say("start");
+    S.types = shuffle(["quiz", "calc", "balance", "pairs", "blitz", "react", "memory", "odd"]); S.tier = tierOf(S.st && S.st.wins); S.r = 0; S.hearts = TIERS[S.tier].h; S.hp = 100; S.cleared = 0; S.over = false; S.lock = false; S.t0 = Date.now(); S.msg = ""; S.say = S.tier && TIERS[S.tier].start ? TIERS[S.tier].start[Math.floor(Math.random() * TIERS[S.tier].start.length)] : say("start");
     const jr = S.lv === "jr";
     S.srcQ = jr ? mcq("quiz") : QZ.concat(mcq("quiz")); S.srcC = jr ? mcq("calc") : CL.concat(mcq("calc"));
     S.srcT = (jr ? [] : TF).concat(bk("tf").map((x) => [x.question, x.answer === "จริง" ? 1 : 0]));
@@ -235,7 +243,7 @@ const KB = (() => {
     S.say = say(won ? "win" : "lose");
     try {
       const r = await rpc("kb_submit", { p_token: tk(), p_cleared: S.cleared, p_won: won, p_seconds: sec });
-      S.res = { ...r, secs: sec }; S.res.gs = await gsRecord("kb", { cleared: S.cleared, secs: won ? sec : undefined, wins: won ? 1 : 0 }); S.screen = "res"; await load(); if (won) FX.victory();
+      if (won && S.st) S.st.wins = (S.st.wins || 0) + 1; S.res = { ...r, secs: sec, tierUp: won && tierOf(S.st && S.st.wins) > (S.tier || 0) }; S.res.gs = await gsRecord("kb", { cleared: S.cleared, secs: won ? sec : undefined, wins: won ? 1 : 0 }); S.screen = "res"; await load(); if (won) FX.victory();
     } catch (e) { toast(e.message); S.screen = "home"; }
     go("game");
   }
@@ -253,6 +261,10 @@ const KB = (() => {
       ${dr.map((x) => `<div class="kb-rw"><span>${x.emoji}</span><b>${esc(x.name)} ×${x.qty}</b><small>ไอเทมเข้ากระเป๋าแล้ว</small></div>`).join("")}
       ${ac.map((x) => `<div class="kb-rw gold"><span>${x.emoji}</span><b>ความสำเร็จ: ${esc(x.name)}</b><small>+${x.exp} EXP${x.coins ? ` +${x.coins} 🪙` : ""}</small></div>`).join("")}</div>`;
   }
+  function tierBox(t) {
+    const w = (t && t.wins) || 0, i = tierOf(w), nx = TIERS[i + 1];
+    return `<section><h4>${TIERS[i].ic} ความเอาจริงของครูบุ๊ค: ${TIERS[i].n}</h4><ul><li>ชนะแล้ว ${w} ครั้ง · เวลาต่อรอบ ${Math.round(TIERS[i].m * 100)}% ของปกติ · หัวใจ ${TIERS[i].h} ดวง</li>${nx ? `<li class="muted">ชนะอีก ${nx.w - w} ครั้ง → ${nx.ic} ${nx.n} (เวลา ${Math.round(nx.m * 100)}%${nx.h < TIERS[i].h ? " · หัวใจ " + nx.h + " ดวง" : ""})</li>` : '<li class="muted">ระดับสูงสุดแล้ว 👹</li>'}</ul></section>`;
+  }
   function achBox() {
     const L = (typeof D !== "undefined" && D.achievements ? D.achievements : []).filter((a) => String(a.metric).startsWith("kb_"));
     if (!L.length) return "";
@@ -265,13 +277,13 @@ const KB = (() => {
     return `<div class="card center"><div class="kb-hero big">${KIMG}</div><h3>⚔️ ประลองครูบุ๊ค ${S.lv === "jr" ? '<span class="pill" style="background:#1f7a4d">ระดับ ม.ต้น (เนื้อหา ม.1)</span>' : '<span class="pill" style="background:#7a1020">EXTREMELY HARD</span>'}</h3>
       <div class="run-info">
         <section><h4>🎮 วิธีเล่น</h4><ul><li>8 รอบ 8 แบบเกม: ควิซสุดโหด · คำนวณ · ดุลสมการ · จับคู่ธาตุ</li><li>จริง/เท็จสายฟ้า · ไวแสง (วัดความเร็ว) · จำลำดับ · หาตัวแปลกแยก</li><li><b>เวลาลดลงทุกรอบ</b></li></ul></section>
-        <section><h4>❤️ หัวใจ</h4><ul><li>มีหัวใจ 3 ดวง</li><li>พลาดหรือหมดเวลาเสีย 1 ดวง</li></ul></section>
-        ${t ? `<section><h4>🏆 รางวัล</h4><ul><li>ผ่านครบ 8 รอบได้ <b>+${t.per_round * 8 + t.win_exp} EXP</b> +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP)</li><li>รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays})</li>${t.wins ? `<li>ชนะแล้ว ${t.wins} ครั้ง 🏆</li>` : ""}<li>ชนะทุกครั้งได้ <b>ยาสุ่ม 1 ชิ้น</b> 🧪</li><li>ชนะครั้งแรก: ฉายา <b>🏆 ผู้พิชิตครูบุ๊ค</b> + 📜 ม้วนอัปเกรด · ชนะครบ 10 ครั้ง: <b>🥇 กรอบแชมป์</b></li><li class="muted">ของรางวัลและความสำเร็จนับเฉพาะรอบที่อยู่ในโควตารายวัน</li></ul></section>` : ""}${achBox()}
+        <section><h4>❤️ หัวใจ</h4><ul><li>มีหัวใจ ${TIERS[tierOf(t && t.wins)].h} ดวง</li><li>พลาดหรือหมดเวลาเสีย 1 ดวง</li></ul></section>
+        ${t ? `<section><h4>🏆 รางวัล</h4><ul><li>ผ่านครบ 8 รอบได้ <b>+${t.per_round * 8 + t.win_exp} EXP</b> +${t.win_coins} 🪙 (ผ่านรอบละ +${t.per_round} EXP)</li><li>รับรางวัลได้ ${t.max_plays} รอบ/วัน (เล่นแล้ว ${Math.min(t.plays, t.max_plays)}/${t.max_plays})</li>${t.wins ? `<li>ชนะแล้ว ${t.wins} ครั้ง 🏆</li>` : ""}<li>ชนะทุกครั้งได้ <b>ยาสุ่ม 1 ชิ้น</b> 🧪</li><li>ชนะครั้งแรก: ฉายา <b>🏆 ผู้พิชิตครูบุ๊ค</b> + 📜 ม้วนอัปเกรด · ชนะครบ 10 ครั้ง: <b>🥇 กรอบแชมป์</b></li><li class="muted">ของรางวัลและความสำเร็จนับเฉพาะรอบที่อยู่ในโควตารายวัน</li></ul></section>` : ""}${tierBox(t)}${achBox()}
       </div>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าครูบุ๊ค!</button><button class="btn ghost" onclick="GAMES.home()">กลับ</button></div></div>`;
   }
   function head() {
-    return `<div class="kb-top"><div class="kb-boss">${KIMG}</div><div class="kb-info"><div class="kb-name">👨‍🏫 ครูบุ๊ค <small>รอบ ${Math.min(S.r + 1, 8)}/8</small></div>
+    return `<div class="kb-top"><div class="kb-boss">${KIMG}</div><div class="kb-info"><div class="kb-name">👨‍🏫 ครูบุ๊ค ${S.tier ? `<span class="kb-tier t${S.tier}">${TIERS[S.tier].ic} ${TIERS[S.tier].n}</span>` : ""} <small>รอบ ${Math.min(S.r + 1, 8)}/8</small></div>
       <div class="kb-hp"><i style="width:${S.hp}%"></i></div><div class="kb-say">💬 ${S.say}</div></div>
       <div class="kb-hearts">${[0, 1, 2].map((i) => (i < S.hearts ? "❤️" : "🖤")).join("")}</div></div>`;
   }
@@ -302,7 +314,7 @@ const KB = (() => {
   function resView() {
     const r = S.res;
     return `<div class="card center gm-res ${r.won ? "perfect" : ""}"><div class="kb-hero">${KIMG}</div><h2>${r.won ? "🏆 คุณชนะครูบุ๊ค!" : "💔 พ่ายแพ้ให้ครูบุ๊ค"}</h2><p class="kb-say">💬 ${S.say}</p>
-      <p class="muted">ผ่าน ${r.cleared}/8 รอบ · ใช้เวลา ${r.secs} วินาที</p>
+      ${r.tierUp ? `<p class="kb-tierup">⚠️ ครูบุ๊คจะเอาจริงขึ้นในครั้งหน้า: ${TIERS[tierOf(S.st.wins)].ic} <b>${TIERS[tierOf(S.st.wins)].n}</b> (เวลาสั้นลง${TIERS[tierOf(S.st.wins)].h < 3 ? " · เหลือหัวใจ 2 ดวง" : ""})</p>` : ""}<p class="muted">ผ่าน ${r.cleared}/8 รอบ · ใช้เวลา ${r.secs} วินาที</p>
       <p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (ฝึกได้ไม่จำกัด)</span>' : `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}`}</p>${rewardCard(r)}${gsCard(r.gs)}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="KB.start()">ท้าอีกครั้ง</button><button class="btn ghost" onclick="KB.open()">เมนู</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }

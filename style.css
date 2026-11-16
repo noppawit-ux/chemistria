@@ -1367,3 +1367,6 @@ body.exlock{overflow:hidden}
 .kb-rw span{grid-area:i;font-size:26px;text-align:center}.kb-rw b{grid-area:b}.kb-rw small{grid-area:s;opacity:.7}
 .kb-rw.gold b{color:#f5b301}
 @keyframes kbrw{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
+.kb-tier{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:#c2410c;color:#fff;vertical-align:middle;margin-left:4px}
+.kb-tier.t2{background:#b91c1c}.kb-tier.t3{background:#581c87;box-shadow:0 0 8px #a855f7}
+.kb-tierup{color:#fb923c;font-weight:600}
