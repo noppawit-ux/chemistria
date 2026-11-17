@@ -1323,6 +1323,7 @@ set role anon;
 create temp table _cs3 as select camp_status((select tk from _gs))::jsonb r; grant all on _cs3 to anon;
 reset role;
 select pg_temp.t('แคมเปญ 89: camp_status ส่ง checked (3 วัน) และ today_date', (select jsonb_array_length(r->0->'checked') = 3 and (r->0->>'today_date')::date = today_th() from _cs3 where jsonb_array_length(r) >= 1));
+select pg_temp.t('ออร่า 90: เอฟเฟกต์ชุดราชันธาตุมี key = king (หน้าเว็บวาดออร่าทอง)', (select key from decor_items where set_key='lim_king1' and slot='fx') = 'king');
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

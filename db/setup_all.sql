@@ -11928,3 +11928,7 @@ begin
     ) order by c.end_day)
     from checkin_camps c where not c.closed and td between c.start_day and c.end_day), '[]'::json);
 end $$;
+-- =====================================================================
+-- 90: ออร่าชุดราชันธาตุให้มีเอฟเฟกต์ตอนสวมใส่ (รันซ้ำได้) — ตั้ง key = 'king' เพื่อให้หน้าเว็บวาดออร่าทองประกายรอบตัวละคร
+-- =====================================================================
+update decor_items set key = 'king' where set_key = 'lim_king1' and slot = 'fx' and key <> 'king';

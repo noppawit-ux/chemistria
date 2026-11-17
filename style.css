@@ -1448,3 +1448,10 @@ img[src*="assets/px/"]{image-rendering:pixelated}
 .chkshow img{filter:drop-shadow(0 0 3px #ffd54a) drop-shadow(0 0 7px #f5c84a);animation:chkglow 1.8s ease-in-out infinite}.chkshow img:nth-child(2){animation-delay:.3s}.chkshow img:nth-child(3){animation-delay:.6s}
 @keyframes chkshine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}@keyframes chktw{50%{opacity:.25}}@keyframes chkglow{50%{filter:drop-shadow(0 0 5px #fff3b0) drop-shadow(0 0 11px #ffd54a) brightness(1.2)}}
 @media(prefers-reduced-motion:reduce){.chkday.big::before,.chkday.big::after,.chkshow img{animation:none}}
+/* ชุดลิมิเต็ดราชันธาตุ เมื่อสวมใส่: ออร่าทองประกาย + ของที่สวมเรืองแสง */
+.fx-king::before{background:radial-gradient(circle at 50% 60%,#ffe27a55,#f5c84a22 45%,transparent 72%);animation:kinghalo 2.2s ease-in-out infinite}
+.fx-king::after{content:"";position:absolute;inset:6% 12%;border:2px solid #ffd54a88;border-radius:50%;box-shadow:0 0 14px #ffd54acc,inset 0 0 14px #ffd54a66;animation:kinghalo 2.2s ease-in-out infinite;pointer-events:none;z-index:2}
+.fx-king i{background:#fff6c4;box-shadow:0 0 7px 2px #ffd75a;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);border-radius:0;width:calc(var(--sz)*2.4);height:calc(var(--sz)*2.4)}
+@keyframes kinghalo{50%{opacity:.45;transform:scale(1.04)}}
+.avf.stg .av img.st-himg[src*="lim_"],.avf.stg .av img.st-item[src*="lim_"]{filter:drop-shadow(0 0 4px #ffd54a) drop-shadow(0 0 9px #f5c84a)!important}
+@media(prefers-reduced-motion:reduce){.fx-king::before,.fx-king::after{animation:none}}
