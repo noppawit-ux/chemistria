@@ -1338,6 +1338,27 @@ select pg_temp.t('สร้อย/แหวน 91: สวมใส่ได้ �
 select pg_temp.t('สร้อย/แหวน 91: ใส่ผิดช่อง/ของที่ไม่มี/ช่องไม่รู้จัก ถูกปฏิเสธ', pg_temp.fails($q$select equip_decor((select tk from _gs), 'neck', (select ring from _nid))$q$, 'anon') and pg_temp.fails($q$select equip_decor((select tk from _gs), 'ring', (select ring2 from _nid))$q$, 'anon') and pg_temp.fails($q$select equip_decor((select tk from _gs), 'finger', null)$q$, 'anon'));
 set role anon; select equip_decor((select tk from _gs), 'ring', null); reset role;
 select pg_temp.t('สร้อย/แหวน 91: ถอดแหวนออกได้', (select (decor->>'ring') is null from students where id=(select sid from _gs)));
+-- เควสตามวัน (db/93)
+insert into classes (code, name) values ('T93','ห้องทดสอบ 93');
+create temp table _qd as select (select id from classes where code='T93') cid, (today_th() + 400) d1;
+select pg_temp.t('เควสตามวัน 93: ยังไม่เช็คชื่อ/ไม่มีงาน → ไม่เห็น มาเรียน/ส่งงาน แต่ยังเห็นเควสอื่น (ล็อกอิน)',
+  not exists (select 1 from todays_quests((select cid from _qd),(select d1 from _qd)) where auto_trigger in ('attendance','submit'))
+  and exists (select 1 from todays_quests((select cid from _qd),(select d1 from _qd)) where auto_trigger = 'login'));
+insert into ch_assignments (class_id, title, due_date) values ((select cid from _qd), 'งานทดสอบ93', (select d1 from _qd) + 1);
+select pg_temp.t('เควสตามวัน 93: มีงานที่ยังไม่เลยกำหนด → เห็น ส่งงานวันนี้ แต่ยังไม่เห็น มาเรียน',
+  exists (select 1 from todays_quests((select cid from _qd),(select d1 from _qd)) where auto_trigger = 'submit')
+  and not exists (select 1 from todays_quests((select cid from _qd),(select d1 from _qd)) where auto_trigger = 'attendance'));
+select pg_temp.t('เควสตามวัน 93: เลยกำหนดส่งทุกงานแล้ว → ซ่อน ส่งงานวันนี้',
+  not exists (select 1 from todays_quests((select cid from _qd),(select d1 from _qd) + 5) where auto_trigger = 'submit'));
+insert into ch_attendance (class_id, student_id, att_date, status) select (select cid from _qd), (select sid from _gs), (select d1 from _qd), 'present';
+select pg_temp.t('เควสตามวัน 93: ครูเช็คชื่อแล้ว → เห็น มาเรียนวันนี้',
+  exists (select 1 from todays_quests((select cid from _qd),(select d1 from _qd)) where auto_trigger = 'attendance'));
+select pg_temp.t('เควสตามวัน 93: วันอื่นที่ไม่ได้เช็คชื่อ → ไม่เห็น มาเรียนวันนี้',
+  not exists (select 1 from todays_quests((select cid from _qd),(select d1 from _qd) + 1) where auto_trigger = 'attendance'));
+update app_settings set value='0' where key='quests_day_aware';
+select pg_temp.t('เควสตามวัน 93: ปิด quests_day_aware → กลับมาแสดงทุกวันเหมือนเดิม',
+  (select count(*) from todays_quests((select cid from _qd),(select d1 from _qd) + 9) where auto_trigger in ('attendance','submit')) = 2);
+update app_settings set value='1' where key='quests_day_aware';
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
