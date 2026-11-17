@@ -850,10 +850,10 @@ reset role;
 select pg_temp.t('ด่านแรงค์: การต่อสู้ติดป้าย silver และไม่ให้รางวัลปกติ',
   (select trial_rank = 'silver' and not rewarded from battles where student_id=(select s12 from _fr) order by created_at desc limit 1));
 select pg_temp.t('ด่านแรงค์: ยังไม่ชนะ → ยังไม่ผ่านด่าน', not exists (select 1 from rank_trial_pass where student_id=(select s12 from _fr)));
-create temp table _cb as select coins c0, (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select s12 from _fr) and a.key in (select key from _new84)) b0 from students where id=(select s12 from _fr);
+create temp table _cb as select coins c0, clock_timestamp() t0 from students where id=(select s12 from _fr);
 update battles set status='won', m_hp=0, finished_at=now() where student_id=(select s12 from _fr) and trial_rank='silver';
 select pg_temp.t('ด่านแรงค์: ชนะบอส → บันทึกผ่านด่าน Silver', exists (select 1 from rank_trial_pass where student_id=(select s12 from _fr) and rank_key='silver'));
-select pg_temp.t('ด่านแรงค์: ได้เหรียญรางวัลผ่านด่าน +50', (select coins from students where id=(select s12 from _fr)) - (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select s12 from _fr) and a.key in (select key from _new84)) + (select b0 from _cb) = (select c0 from _cb) + 50);
+select pg_temp.t('ด่านแรงค์: ได้เหรียญรางวัลผ่านด่าน +50', (select coins from students where id=(select s12 from _fr)) - (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select s12 from _fr) and sa.earned_at >= (select t0 from _cb)) = (select c0 from _cb) + 50);
 select pg_temp.t('ด่านแรงค์: เลื่อนเป็น Silver แล้ว ไม่ locked', (select (_rank_info_s((select s12 from _fr), 700)->>'key') = 'silver' and (_rank_info_s((select s12 from _fr), 700)->>'locked') is null));
 select pg_temp.t('ด่านแรงค์: มีประกาศเลื่อนแรงค์ในห้อง', exists (select 1 from celebrations where student_id=(select s12 from _fr) and kind='rank' and title='Silver'));
 update students set exp = 5000 where id = (select s12 from _fr);
@@ -1275,6 +1275,19 @@ update checkin_events set ends_at = now() - interval '1 minute' where id = (sele
 select pg_temp.t('เช็คอิน 85: หมดเวลาแล้วรับไม่ได้/ไม่อยู่ในรายการ', pg_temp.fails($q$select checkin_claim((select tk from _gs), (select eid from _ck))$q$, 'anon'));
 select pg_temp.t('เช็คอิน 85: anon อ่านตารางตรงไม่ได้ และเรียก admin_checkin_open ไม่ได้', pg_temp.fails($q$set role anon; select count(*) from checkin_events$q$) and pg_temp.fails($q$select admin_checkin_open('x','',1,5)$q$, 'anon'));
 reset role;
+-- ตัวตรวจ EXP พุ่งไม่นับรางวัลระบบ (db/86)
+delete from security_events where kind = 'exp_spike';
+delete from ledger where student_id = (select sid from _gs);
+insert into ledger(student_id, exp, coins, reason, ref_key) values ((select sid from _gs), 5000, 0, 'ตราย้อนหลัง', 'ach:fake86'), ((select sid from _gs), 5000, 0, 'เช็คอิน', 'checkin:fake86');
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select security_scan();
+reset role;
+select pg_temp.t('ความปลอดภัย 86: EXP จากตรา/เช็คอินไม่ถูกแจ้งว่าพุ่งผิดปกติ', not exists (select 1 from security_events where kind='exp_spike' and student_id=(select sid from _gs)));
+insert into ledger(student_id, exp, coins, reason, ref_key) values ((select sid from _gs), 5000, 0, 'พุ่งจริง', 'game:fake86');
+set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
+select security_scan();
+reset role;
+select pg_temp.t('ความปลอดภัย 86: EXP จากแหล่งอื่นยังถูกจับ', exists (select 1 from security_events where kind='exp_spike' and student_id=(select sid from _gs)));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
