@@ -4,3 +4,4 @@
 - **assets/px/** (ไอคอนพิกเซล ยา/ม้วน/เอฟเฟกต์/ดาบ/หมวก): จาก "Free - Raven Fantasy Icons" โดย Clockwork Raven Studios ปรับสีบางชิ้น (ยา) — ตรวจเงื่อนไขการเผยแพร่ซ้ำของผู้ขายก่อนใช้นอกห้องเรียน
 - ไอคอนอื่นที่ครูแนบมา (at-icons MIT, vector-emojis CC0, Shikashi, DEMO UI, SuperRetroRanch, Pixel Art Icon Pack ฯลฯ) ยังไม่ได้ใช้ในระบบ
 - **assets/medals/** (ตรา achievement 36 รูป): ประกอบกรอบสีบรอนซ์/เงิน/ทองด้วยสคริปต์ + ไอคอนพิกเซลจาก Raven Fantasy Icons (เงื่อนไขเหมือน assets/px)
+- **assets/px/lim_*.png** (ชุดลิมิเต็ดราชันธาตุ): ปรับสีจากไอคอน Raven Fantasy Icons (หมวก/ออร่า) + ดาบทองจากชุดเดียวกัน

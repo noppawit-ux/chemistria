@@ -1288,6 +1288,36 @@ set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th
 select security_scan();
 reset role;
 select pg_temp.t('ความปลอดภัย 86: EXP จากแหล่งอื่นยังถูกจับ', exists (select 1 from security_events where kind='exp_spike' and student_id=(select sid from _gs)));
+-- แคมเปญเช็คอินสะสมวัน + ชุดลิมิเต็ด (db/87)
+select pg_temp.t('แคมเปญ 87: ชุดลิมิเต็ด 3 ชิ้น ไม่ขาย ไม่อยู่ในกาชา', (select count(*) from decor_items where set_key='lim_king1' and price is null and image like 'assets/px/lim_%') = 3 and not exists (select 1 from gacha_items g join decor_items d on d.id=g.decor_id where d.set_key='lim_king1'));
+select set_config('request.jwt.claims','{"email":"t@x.th","role":"authenticated"}',false);
+create temp table _cp as select admin_camp_open('ทดสอบแคมเปญ','',7,'[{"need":1,"exp":10,"coins":5},{"need":2,"pulls":1},{"need":3,"set_key":"lim_king1"}]'::jsonb) cid; grant all on _cp to anon;
+select pg_temp.t('แคมเปญ 87: เปิดแคมเปญไม่ได้ถ้าไม่มีขั้นรางวัล/ไม่ใช่ครู', pg_temp.fails($q$select admin_camp_open('x','',7,'[]'::jsonb)$q$, 'authenticated') and pg_temp.fails($q$select admin_camp_open('x','',7,'[{"need":1,"exp":5}]'::jsonb)$q$, 'anon') and pg_temp.fails($q$select admin_camp_open('x','',3,'[{"need":9,"exp":5}]'::jsonb)$q$, 'authenticated'));
+create temp table _cq0 as select free_pulls p0, (select count(*) from student_decor where student_id=(select sid from _gs) and item_id in (select id from decor_items where set_key='lim_king1')) d0 from students where id=(select sid from _gs);
+set role anon;
+create temp table _cs1 as select camp_status((select tk from _gs))::jsonb r;
+create temp table _ci1 as select camp_checkin((select tk from _gs),(select cid from _cp))::jsonb r;
+create temp table _cs2 as select camp_status((select tk from _gs))::jsonb r;
+grant all on _cs1, _ci1, _cs2 to anon;
+reset role;
+select pg_temp.t('แคมเปญ 87: เห็นแคมเปญ 3 ขั้น ยังไม่เช็คอิน', (select jsonb_array_length(r->0->'miles') = 3 and (r->0->>'done')::int = 0 and not (r->0->>'today')::boolean from _cs1 where jsonb_array_length(r) >= 1));
+select pg_temp.t('แคมเปญ 87: เช็คอินวันแรก ได้ขั้น 1 (EXP/เหรียญ) ขั้นอื่นยังไม่ได้', (select (r->>'done')::int = 1 and jsonb_array_length(r->'rewards') = 1 and (r->'rewards'->0->>'exp')::int = 10 from _ci1) and (select (r->0->>'today')::boolean from _cs2));
+select pg_temp.t('แคมเปญ 87: วันเดียวกันเช็คอินซ้ำไม่ได้', pg_temp.fails($q$select camp_checkin((select tk from _gs),(select cid from _cp))$q$, 'anon'));
+-- ย้อนวันที่เช็คอินไปเมื่อวานเพื่อจำลองวันถัดไป
+update checkin_days set day = day - 1 where camp_id=(select cid from _cp) and student_id=(select sid from _gs);
+set role anon;
+create temp table _ci2 as select camp_checkin((select tk from _gs),(select cid from _cp))::jsonb r; grant all on _ci2 to anon;
+reset role;
+update checkin_days set day = day - 5 where camp_id=(select cid from _cp) and student_id=(select sid from _gs);
+set role anon;
+create temp table _ci3 as select camp_checkin((select tk from _gs),(select cid from _cp))::jsonb r; grant all on _ci3 to anon;
+reset role;
+select pg_temp.t('แคมเปญ 87: วันที่ 2 ได้ตั๋วฟรี 1 ใบ', (select (r->>'done')::int = 2 and (r->'rewards'->0->>'pulls')::int = 1 from _ci2));
+select pg_temp.t('แคมเปญ 87: วันที่ 3 ได้ชุดลิมิเต็ดครบ 3 ชิ้น + ตั๋วรวม 1 ใบ ไม่แจกซ้ำ', (select (r->>'done')::int = 3 and jsonb_array_length(r->'rewards'->0->'set') = 3 from _ci3)
+  and (select count(*) from student_decor where student_id=(select sid from _gs) and item_id in (select id from decor_items where set_key='lim_king1')) = 3 and (select free_pulls from students where id=(select sid from _gs)) = (select p0 from _cq0)+1
+  and (select count(*) from checkin_mclaims where student_id=(select sid from _gs)) = 3);
+select pg_temp.t('แคมเปญ 87: anon อ่านตาราง/เรียกฟังก์ชันภายในไม่ได้', pg_temp.fails($q$set role anon; select count(*) from checkin_days$q$) and not has_function_privilege('anon','_camp_grant(uuid,checkin_miles)','execute'));
+reset role;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
