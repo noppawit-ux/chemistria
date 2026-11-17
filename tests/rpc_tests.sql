@@ -1258,6 +1258,23 @@ select pg_temp.t('ตรา 84: ได้ไอเทมเพิ่ม (qty เ
 select pg_temp.t('ตรา 84: metric ที่ไม่รู้จัก = 0 และ anon เรียก student_metric ไม่ได้', student_metric((select sid from _gs), 'zzz') = 0 and not has_function_privilege('anon', 'student_metric(uuid,text)', 'execute'));
 select pg_temp.t('ตรา 84: anon อ่าน item_use_log ตรงไม่ได้', pg_temp.fails($q$set role anon; select count(*) from item_use_log$q$));
 reset role;
+-- อีเว้นท์เช็คอิน (db/85)
+select set_config('request.jwt.claims','{"email":"t@x.th","role":"authenticated"}',false);
+create temp table _ck as select admin_checkin_open('ทดสอบเช็คอิน','ยินดีต้อนรับ',2,40,15,2,(select id from decor_items limit 1),(select id from cards limit 1)) eid; grant all on _ck to anon;
+create temp table _ck0 as select s.coins c0, s.exp e0, s.free_pulls p0, (select count(*) from student_decor where student_id=s.id) d0, coalesce((select sum(qty) from student_cards where student_id=s.id),0) k0 from students s where id=(select sid from _gs);
+select pg_temp.t('เช็คอิน 85: ผู้ไม่ใช่ครูเปิดอีเว้นท์ไม่ได้ / ไม่ใส่รางวัลถูกปฏิเสธ', pg_temp.fails($q$select set_config('request.jwt.claims','{"email":"stranger@x.th"}',true); select admin_checkin_open('x','',1,5)$q$, 'authenticated') and pg_temp.fails($q$select admin_checkin_open('x','',1)$q$, 'authenticated'));
+set role anon;
+create temp table _cl1 as select checkin_list((select tk from _gs))::jsonb r;
+create temp table _cc1 as select checkin_claim((select tk from _gs), (select eid from _ck))::jsonb r;
+create temp table _cl2 as select checkin_list((select tk from _gs))::jsonb r;
+reset role;
+select pg_temp.t('เช็คอิน 85: นักเรียนเห็นอีเว้นท์ที่เปิด (ยังไม่รับ) แล้วรับแล้วขึ้น claimed', (select (r->0->>'claimed')::boolean is false from _cl1 where jsonb_array_length(r)>=1) and (select (r->0->>'claimed')::boolean from _cl2));
+select pg_temp.t('เช็คอิน 85: รับแล้วได้ EXP/เหรียญ/ตั๋ว/ไอเทม/การ์ดครบ', (select s.coins >= c.c0 + 15 and s.exp >= c.e0 + 40 and s.free_pulls = c.p0 + 2 and (select count(*) from student_cards where student_id=s.id) >= 0 and coalesce((select sum(qty) from student_cards where student_id=s.id),0) = c.k0 + 1 from students s, _ck0 c where s.id=(select sid from _gs)));
+select pg_temp.t('เช็คอิน 85: รับซ้ำไม่ได้ และไม่แจกซ้ำ', pg_temp.fails($q$select checkin_claim((select tk from _gs), (select eid from _ck))$q$, 'anon') and (select free_pulls from students where id=(select sid from _gs)) = (select p0 from _ck0)+2);
+update checkin_events set ends_at = now() - interval '1 minute' where id = (select eid from _ck);
+select pg_temp.t('เช็คอิน 85: หมดเวลาแล้วรับไม่ได้/ไม่อยู่ในรายการ', pg_temp.fails($q$select checkin_claim((select tk from _gs), (select eid from _ck))$q$, 'anon'));
+select pg_temp.t('เช็คอิน 85: anon อ่านตารางตรงไม่ได้ และเรียก admin_checkin_open ไม่ได้', pg_temp.fails($q$set role anon; select count(*) from checkin_events$q$) and pg_temp.fails($q$select admin_checkin_open('x','',1,5)$q$, 'anon'));
+reset role;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
