@@ -21,7 +21,7 @@ TAB.cards = async function (v) {
   hc.innerHTML = `<div class="row" style="margin-bottom:8px"><select id="cset">${sets.map((s) => `<option value="${s.id}" ${s.id === S.cset ? "selected" : ""}>${esc(s.emoji)} ${esc(s.title)}</option>`).join("")}</select><span class="muted">${by(S.cset)}</span></div><div id="chost"></div>`;
   const draw = () => crud($("#chost", hc), { table: "cards", order: "no", filter: { set_id: S.cset }, addLabel: "เพิ่มการ์ด", defaults: { rarity: "N", emoji: "🃏", active: true, no: 99 },
     cols: [{ k: "no", label: "#", t: "number", w: 45 }, { k: "emoji", label: "อีโมจิ", w: 50 }, { k: "symbol", label: "symbol", w: 70 }, { k: "name", label: "ชื่อ", w: 150 },
-      { k: "rarity", label: "ระดับ", t: "select", opts: () => [["N", "N"], ["R", "R"], ["SR", "SR"], ["SSR", "SSR"]] }, { k: "fact", label: "ข้อเท็จจริง", w: 320 }, { k: "image_url", label: "รูป (ไม่บังคับ)", w: 130 }, { k: "active", label: "เปิด", t: "bool" }] });
+      { k: "rarity", label: "ระดับ", t: "select", opts: () => [["N", "N"], ["R", "R"], ["SR", "SR"], ["SSR", "SSR"]] }, { k: "element", label: "ธาตุ", t: "select", opts: ELOPT }, { k: "fx_kind", label: "โบนัส", t: "select", opts: () => [["", "—"], ["atk", "⚔️ โจมตี"], ["def", "🛡️ ลดดาเมจ"], ["hp", "❤️ HP"]] }, { k: "fx_pct", label: "โบนัส %", t: "number", w: 60 }, { k: "fact", label: "ข้อเท็จจริง", w: 320 }, { k: "image_url", label: "รูป (ไม่บังคับ)", w: 130 }, { k: "active", label: "เปิด", t: "bool" }] });
   $("#cset", hc).onchange = (e) => { S.cset = e.target.value; draw(); };
   draw();
 };

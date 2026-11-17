@@ -26,7 +26,7 @@ const VIEWS = {
     return `${newsHtml()}${guildTopHtml()}<div class="card mychar"><h3 style="margin-bottom:6px">ตัวละครของฉัน <small class="muted" style="font-weight:400">แตะช่องอุปกรณ์เพื่อเปลี่ยน</small></h3>
       <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
         <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
-        <div class="radarcol">${radarHtml(me.decor)}</div></div></div>
+        <div class="radarcol">${radarHtml(me.decor)}${gearBox()}</div></div></div>
     ${alertsChip()}${relHomeHtml()}${todayLessonsHtml()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
@@ -182,7 +182,7 @@ const VIEWS = {
           : d.price != null ? `<button class="btn small" ${s.coins < d.price ? "disabled" : ""} onclick="buyDecor('${d.id}','${esc(d.name)}',${d.price})">ซื้อ ${d.price} 🪙</button>`
           : '<span class="muted">ล็อก · ได้จากกาชา</span>';
       return `<div class="dtile rar-${d.rarity} ${sel ? "worn" : ""} ${d.owned ? "" : "locked"}">
-        <div class="dprev">${prev}</div><b>${d.slot === "title" ? esc(d.emoji) + " " : ""}${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>${stBadge(d)}${act}</div>`;
+        <div class="dprev">${prev}</div><b>${d.slot === "title" ? esc(d.emoji) + " " : ""}${esc(d.name)}</b><span class="rar">${d.id === null ? "" : d.rarity}</span>${stBadge(d)}${gearItemFx(d)}${act}</div>`;
     };
     const slotBtn = ([k, ic, lb]) => { const it = DRAFT[k]; const ch = changed.includes(k);
       return `<button class="slotbtn ${k === decSlot ? "on" : ""} ${ch ? "chg" : ""}" onclick="decSlot='${k}';render()">
@@ -192,7 +192,7 @@ const VIEWS = {
         <div class="row" style="justify-content:center;gap:6px;margin-top:8px"><span class="muted">เพศ</span>
         ${[["m", "👦 ชาย"], ["f", "👧 หญิง"]].map(([g, l]) => `<button class="btn small ${gOf(s.char_class, eq) === g ? "gold" : "ghost"}" onclick="setGender('${g}')">${l}</button>`).join("")}</div>
         ${altGender(s.char_class, eq.gender) && DRAFT.outfit ? '<p class="muted" style="font-size:12px">* ชุดนี้ยังไม่มีภาพของเพศที่เลือก จึงแสดงตัวพื้นฐานแทนไปก่อน</p>' : ""}</div>
-        <div class="radarcol"><div class="muted center" style="margin-bottom:2px">📊 สเตตัสประกอบ${changed.length ? " (ตัวอย่างตามที่เลือก)" : ""}</div>${radarHtml(DRAFT)}</div></div>
+        <div class="radarcol"><div class="muted center" style="margin-bottom:2px">📊 สเตตัสประกอบ${changed.length ? " (ตัวอย่างตามที่เลือก)" : ""}</div>${radarHtml(DRAFT)}${gearBox()}</div></div>
       <div class="slotbar">${SLOTS.map(slotBtn).join("")}</div>
       <div class="savebar ${changed.length ? "on" : ""}"><span>${changed.length ? `✏️ เปลี่ยน ${changed.length} ช่อง ยังไม่ได้บันทึก` : "เลือกไอเทมด้านล่างเพื่อลองใส่ แล้วกดบันทึก"}</span>
         <span><button class="btn ghost small" ${changed.length ? "" : "disabled"} onclick="resetDraft()">↩︎ ยกเลิก</button>

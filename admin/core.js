@@ -144,3 +144,4 @@ const classOpts = (allLabel) => () => [["", allLabel], ...S.classes.map((c) => [
 
 /* ---------------- แต่ละแท็บ ---------------- */
 const TAB = {};
+const ELOPT = () => [["", "— ไม่มีธาตุ —"], ["fire", "🔥 ไฟ"], ["water", "💧 น้ำ"], ["plant", "🌿 พืช"], ["thunder", "⚡ ไฟฟ้า"], ["chem", "🧪 สารเคมี"]];

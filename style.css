@@ -1401,3 +1401,12 @@ body.gbplaying{overflow:hidden}
 .gbend{position:absolute;inset:0;display:grid;place-items:center;background:#0009;z-index:2}.gbendbox{background:var(--card);border:1px solid #ffd86b66;border-radius:18px;padding:20px 22px;max-width:340px}
 .gbbig{font-size:3.6rem;font-weight:900;color:#ffd75a;line-height:1}
 @media (prefers-reduced-motion:reduce){.gbfb.pf,.gbfb.gd,.gbfb.ms{animation:none;opacity:1}}
+/* v2.22 อุปกรณ์/การ์ด/ธาตุ */
+.elb{display:inline-block;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:700;margin:0 2px;color:#fff}
+.el-fire{background:#d9482b}.el-water{background:#2a7fd6}.el-plant{background:#2f9e4f}.el-thunder{background:#c9a400;color:#1b1238}.el-chem{background:#8b4fd0}
+.gearbox{margin-top:8px;padding:8px;border-radius:12px;background:rgba(155,107,255,.12)}
+.gslots{display:flex;gap:6px;justify-content:center}
+.gslot{flex:1;max-width:84px;min-height:46px;border:1px dashed #6a52c4;border-radius:10px;background:transparent;color:inherit;font-size:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gslot.on{border-style:solid;background:rgba(255,216,107,.15)}
+.gslot small{font-size:10px;opacity:.85;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu{display:inline-block;font-size:11px;margin-left:6px}.mu.good{color:#5fe08a}.mu.bad{color:#ff9b7a}

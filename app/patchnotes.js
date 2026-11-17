@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "2.21";
+const APP_VERSION = "2.22";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
@@ -43,6 +43,7 @@ const tk = () => PEEK || localStorage.getItem(TOKEN_KEY);
 async function load() {
   if (!tk()) return showLogin();
   try {
+    try { if (typeof PEEK === "undefined" || !PEEK) setTimeout(() => gearLoad(true), 0); } catch (e) {}
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
     const [dash, hof, ext, brd, nws, ttl, prm, gld, gft, gbs] = await Promise.all([

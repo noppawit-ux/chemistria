@@ -2,7 +2,7 @@
 let ALBUM = null, ALBUM_BUSY = false, CARDQ = [];
 const RAR_TH = { N: "ธรรมดา", R: "หายาก", SR: "หายากมาก", SSR: "ตำนาน" };
 async function cardAlbumLoad() {
-  if (ALBUM_BUSY) return; ALBUM_BUSY = true;
+  if (ALBUM_BUSY) return; ALBUM_BUSY = true; try { gearLoad(true); } catch (e) {}
   try { ALBUM = await rpc("card_album", { p_token: tk() }); }
   catch (e) { ALBUM = { error: PEEK ? "โหมดแอบดูไม่แสดงสมุดสะสม" : e.message, sets: [] }; }
   ALBUM_BUSY = false;
@@ -19,7 +19,7 @@ function albumHtml() {
   if (!A) return '<div class="card"><p class="muted center" style="padding:30px 0">กำลังโหลดสมุดสะสม…</p></div>';
   if (A.error) return `<div class="card"><p class="muted center" style="padding:30px 0">${esc(A.error)}</p></div>`;
   const tot = A.sets.reduce((a, s) => a + s.cards.length, 0), own = A.sets.reduce((a, s) => a + s.cards.filter((c) => c.own).length, 0);
-  return `<div class="card"><h3 style="margin:0 0 4px">📖 สมุดสะสมการ์ด</h3>
+  return `<div class="card"><h3 style="margin:0 0 4px">📖 สมุดสะสมการ์ด</h3>${gearBox()}
     <div class="row" style="gap:8px;flex-wrap:wrap"><span class="pill">🃏 สะสมแล้ว ${own}/${tot}</span><span class="pill">✨ เศษธาตุ ${A.shards}</span><span class="pill">🐲 ได้จากมอนสเตอร์วันนี้ ${A.used}/${A.cap}</span></div>
     <p class="muted" style="margin:8px 0 0">ชนะมอนสเตอร์มีโอกาสได้การ์ด (จำกัดวันละ ${A.cap} ใบ) · ใบซ้ำกลายเป็นเศษธาตุ · ซ้ำติดกัน ${A.pity_max - 1} ครั้ง ใบถัดไปได้ใบใหม่แน่นอน</p></div>
     ${A.sets.map((s, si) => { const n = s.cards.filter((c) => c.own).length, pc = s.cards.length ? Math.round((n / s.cards.length) * 100) : 0;
@@ -35,7 +35,7 @@ function cardDetail(si, ci) {
   const el = document.createElement("div"); el.id = "cardov"; el.className = "cardov";
   el.innerHTML = `<div class="np-bg" onclick="cardClose()"></div><div class="cbox">${cardFace(c, c.own)}
     <div class="cmeta"><b>${c.own ? esc(c.name) : "ยังไม่มีการ์ดใบนี้"}</b><div class="muted">${esc(s.emoji)} ${esc(s.title)} · #${c.no} · ${RAR_TH[c.rarity]}${c.qty > 1 ? ` · มี ${c.qty} ใบ` : ""}</div>
-    ${c.own ? `<p class="cfact">💡 ${esc(c.fact)}</p>` : '<p class="muted">เล่นเกมหรือสุ่มกาชาเพื่อสะสมให้ครบ!</p>'}</div><button class="btn ghost" onclick="cardClose()">ปิด</button></div>`;
+    ${c.own ? `<div style="margin:4px 0">${cardFxText(c.id)}</div>${(typeof PEEK !== "undefined" && PEEK) ? "" : `<div class="row" style="gap:4px;justify-content:center">${[1, 2, 3].map((n) => `<button class="btn small ${GEARS && (GEARS.slots || []).some((x) => x.slot === n && x.card === c.id) ? "gold" : "ghost"}" onclick="cardEquip(${n},'${c.id}')">ช่อง ${n}</button>`).join("")}${GEARS && (GEARS.slots || []).some((x) => x.card === c.id) ? `<button class="btn small ghost" onclick="cardEquip(${(GEARS.slots.find((x) => x.card === c.id) || {}).slot || 1},null)">ถอด</button>` : ""}</div>`}<p class="cfact">💡 ${esc(c.fact)}</p>` : '<p class="muted">เล่นเกมหรือสุ่มกาชาเพื่อสะสมให้ครบ!</p>'}</div><button class="btn ghost" onclick="cardClose()">ปิด</button></div>`;
   document.body.appendChild(el);
 }
 function cardClose() { document.getElementById("cardov")?.remove(); cardQueueShow(); }
