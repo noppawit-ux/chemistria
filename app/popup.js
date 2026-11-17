@@ -169,7 +169,7 @@ const slotIco = (k, it, cls) => !it ? "" : it.image ? `<img src="${esc(it.image)
   : k === "outfit" ? `<img src="assets/chars/${esc(cls || "novice")}_${esc(it.key)}.png" alt="" onerror="this.replaceWith(document.createTextNode('${esc(it.emoji || "👕")}'))">` : esc(it.emoji || "🎁");
 function eqPanel(me) {   // ช่องอุปกรณ์ทั้งหมดอยู่ฝั่งขวาของตัวละคร (2 คอลัมน์ × 4 แถว) · ช่องว่างใช้ไอคอนเทา
   return `<div class="eqcol">${SLOTS.map(([k, ic, lb]) => { const it = (me.decor || {})[k];
-    return `<button class="eqslot ${it ? "on rar-" + esc(it.rarity || "N") : ""}" onclick="eqOpen('${k}')" aria-label="${lb}${it ? ": " + esc(it.name) : ""}" title="${lb}${it ? ": " + esc(it.name) : ""}">${it ? `<i class="eqlv">Lv${it.lvl || 1}</i>` : ""}<span class="eqi">${it ? slotIco(k, it, me.char_class) : `<img class="eqgrey" src="assets/slots/${k}.png" alt="">`}</span><small>${lb}</small></button>`; }).join("")}</div>`;
+    return `<button class="eqslot ${it ? "on rar-" + esc(it.rarity || "N") : ""}" onclick="eqOpen('${k}')" aria-label="${lb}${it ? ": " + esc(it.name) : ""}" title="${lb}${it ? ": " + esc(it.name) : ""}">${it ? `<i class="eqlv">Lv${it.lvl || 1}</i>` : ""}<span class="eqi">${it ? slotIco(k, it, me.char_class) : `<img class="eqgrey" src="assets/slots/${k}.png" alt="">`}</span>${it ? eqElem(it) : ""}<small>${lb}</small></button>`; }).join("")}</div>`;
 }
 function eqClose() { document.getElementById("eqov")?.remove(); }
 function eqOpen(k) {

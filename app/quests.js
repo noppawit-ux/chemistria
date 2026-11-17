@@ -23,10 +23,11 @@ const VIEWS = {
   home() {
     const a = D.attendance_summary;
     const me = D.student;
-    return `${newsHtml()}${guildTopHtml()}${typeof PEEK !== "undefined" && PEEK ? "" : gbHold()}<div class="card mychar"><h3 style="margin-bottom:6px">ตัวละครของฉัน <small class="muted" style="font-weight:400">แตะช่องอุปกรณ์เพื่อเปลี่ยน</small></h3>
-      <div class="charrow"><div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>
-        <button class="btn small gold" style="margin-top:8px" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
-        <div class="radarcol">${radarHtml(me.decor)}${gearBox()}</div></div></div>
+    return `${newsHtml()}${guildTopHtml()}${typeof PEEK !== "undefined" && PEEK ? "" : gbHold()}<div class="card mychar"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h3 class="grow" style="margin:0">${esc(me.name)} <small class="muted" style="font-weight:400">${esc(rankName(D.rank_info))}</small></h3><button class="btn small gold" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
+      <div class="muted" style="font-size:12px;margin:2px 0 6px">แตะช่องอุปกรณ์เพื่อเปลี่ยน</div>
+      <div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div></div>
+      ${reactBox()}
+      <div class="charstats"><div class="radarcol">${radarHtml(me.decor)}</div><div>${gearBox()}</div></div></div>
     ${alertsChip()}${relHomeHtml()}${todayLessonsHtml()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>

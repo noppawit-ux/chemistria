@@ -1222,6 +1222,27 @@ select pg_temp.t('เกียร์ 81: _gear/_gear_battle ปิดจาก a
 -- ไอคอน/ไอเทมธาตุชุดใหม่ (db/82)
 select pg_temp.t('ไอคอน 82: ยา/ของใช้ทั้ง 8 ชนิดมีภาพ', (select count(*) from consumables where image like 'assets/px/%') = 8);
 select pg_temp.t('ไอคอน 82: ดาบ+หมวกธาตุใหม่ 10 ชิ้น มีธาตุและโบนัส', (select count(*) from decor_items where image like 'assets/px/%' and slot in ('item','hat') and element is not null and fx_atk + fx_def > 0) = 10);
+-- กดอิโมจิให้ตัวละครเพื่อน (db/83)
+set role anon;
+create temp table _rc1 as select char_react((select tk from _gs), 11, '❤️')::jsonb r;
+create temp table _rc2 as select char_react((select tk from _gs), 11, '❤️')::jsonb r;
+create temp table _rc3 as select char_react((select tk from _gs), 11, '🔥')::jsonb r;
+create temp table _rc4 as select char_view((select tk from _gs), 11)::jsonb r;
+create temp table _rc5 as select char_view((select tk from _gs))::jsonb r;
+reset role;
+select pg_temp.t('อิโมจิ 83: กดครั้งแรกบันทึก (mine ❤️ รวม 1)', (select r->>'mine' = '❤️' and (r->>'total')::int = 1 from _rc1));
+select pg_temp.t('อิโมจิ 83: กดซ้ำอิโมจิเดิม = ยกเลิก', (select r->>'mine' is null and (r->>'total')::int = 0 from _rc2));
+select pg_temp.t('อิโมจิ 83: เปลี่ยนอิโมจิในวันเดียวกัน = ยังนับ 1 (🔥)', (select r->>'mine' = '🔥' and (r->>'total')::int = 1 and (r->'totals'->>'🔥')::int = 1 from _rc3));
+select pg_temp.t('อิโมจิ 83: char_view ส่งตัวละคร/ยศ/ของสวม + ยอดอิโมจิ', (select r->>'name' is not null and r->'decor' is not null and r->'rank_info' is not null and (r->>'is_me')::boolean is false and (r->>'total')::int = 1 from _rc4));
+select pg_temp.t('อิโมจิ 83: ดูของตัวเอง (ไม่ระบุเลข) is_me = true', (select (r->>'is_me')::boolean from _rc5));
+select pg_temp.t('อิโมจิ 83: กดให้ตัวเองไม่ได้', pg_temp.fails($q$select char_react((select tk from _gs), 1, '❤️')$q$));
+select pg_temp.t('อิโมจิ 83: อิโมจิที่ไม่รองรับ/เลขที่ไม่มีในห้อง → error', pg_temp.fails($q$select char_react((select tk from _gs), 12, '💩')$q$) and pg_temp.fails($q$select char_react((select tk from _gs), 9999, '❤️')$q$));
+update app_settings set value = '1' where key = 'react_daily_max';
+select pg_temp.t('อิโมจิ 83: เกินโควตาเพื่อนต่อวัน → error (เปลี่ยนอิโมจิคนเดิมยังได้)', pg_temp.fails($q$select char_react((select tk from _gs), 12, '👍')$q$)
+  and not pg_temp.fails($q$select char_react((select tk from _gs), 11, '⭐')$q$));
+update app_settings set value = '15' where key = 'react_daily_max';
+select pg_temp.t('อิโมจิ 83: anon อ่านตารางตรงไม่ได้', pg_temp.fails($q$set role anon; select count(*) from char_reactions$q$));
+reset role;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

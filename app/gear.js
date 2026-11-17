@@ -37,3 +37,4 @@ function matchupNote(el) {
   const k = Object.keys(GEARS.gear.el || {}); const adv = k.filter((x) => ELEM_BEATS[x] === el).reduce((a, x) => a + GEARS.gear.el[x], 0), weak = k.filter((x) => ELEM_BEATS[el] === x).reduce((a, x) => a + GEARS.gear.el[x], 0);
   return (adv ? `<span class="mu good">👍 ธาตุของคุณได้เปรียบ ×${adv}</span>` : "") + (weak ? `<span class="mu bad">⚠️ ธาตุของคุณแพ้ทาง ×${weak}</span>` : "");
 }
+const eqElem = (it) => { const t = GEARS && GEARS.items && it && GEARS.items[it.id]; return t && t.el && ELEM[t.el] ? `<span class="eqel el-${t.el}" title="ธาตุ${ELEM[t.el][1]}">${ELEM[t.el][0]}</span>` : ""; };

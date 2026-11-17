@@ -23,7 +23,7 @@ function friendsHtml() {
   const mates = (FR.mates || []).map((m) => `<div class="card frrow" style="margin:6px 0">
       <div class="row" style="align-items:center;gap:8px"><b class="grow">${esc(m.name)} <small class="muted">เลขที่ ${m.no}</small></b>${m.rel ? `<span class="tag ok">${esc(m.rel_emoji)} ${esc(m.rel_name)}</span>` : ""}${m.pend ? `<span class="tag wait">${m.pend.by_me ? "รอเพื่อนตอบ" : "เพื่อนขอ"} ${esc(m.pend.emoji)}</span>` : ""}</div>
       ${frBar(m.rp)}
-      <div class="row" style="gap:6px;margin-top:6px"><button class="btn small gold" onclick="giftOpen(${m.no})">🎁 ส่งของขวัญ</button><button class="btn small ghost" onclick="relOpen(${m.no})">💞 ความสัมพันธ์</button></div></div>`).join("") || '<p class="muted">ยังไม่มีเพื่อนในห้อง</p>';
+      <div class="row" style="gap:6px;margin-top:6px"><button class="btn small gold" onclick="cvOpen(${m.no})">👀 ดูตัวละคร</button><button class="btn small gold" onclick="giftOpen(${m.no})">🎁 ส่งของขวัญ</button><button class="btn small ghost" onclick="relOpen(${m.no})">💞 ความสัมพันธ์</button></div></div>`).join("") || '<p class="muted">ยังไม่มีเพื่อนในห้อง</p>';
   return `<div class="card"><h3>💝 เพื่อนและของขวัญ</h3><p class="muted" style="margin:0">ส่งของขวัญให้เพื่อนในห้อง → ได้คะแนนมิตรภาพ (RP) ร่วมกัน · ครบเกณฑ์ปลดล็อกความสัมพันธ์ แล้วเลือกได้ว่าจะเป็นอะไรกัน<br>
       วันนี้ส่งแล้ว <b>${FR.sent_today}/${FR.send_limit}</b> ชิ้น · RP ต่อคู่ไม่เกิน ${FR.pair_cap}/วัน · เหรียญ <b>${D.student.coins}</b> 🪙</p></div>
     <div class="card"><h3>🎁 ของขวัญที่ได้รับ</h3>${inbox}</div>
