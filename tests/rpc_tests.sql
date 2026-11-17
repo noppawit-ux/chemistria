@@ -1,5 +1,7 @@
 -- ชุดทดสอบ: แต่ละข้อใช้ t(ชื่อ, เงื่อนไข) · ถ้าเงื่อนไขเป็นเท็จหรือ null = FAIL
 set search_path = public, extensions;
+create temp table _new84(key text);
+insert into _new84 values ('sub_1'),('sub_25'),('sub_50'),('exam_1'),('exam_5'),('exam_high_3'),('exam_full_1'),('mon_1'),('mon_10'),('mon_30'),('mon_kinds_8'),('trial_1'),('trial_4'),('run_1'),('run_20'),('run_800'),('run_2000'),('card_5'),('card_20'),('card_40'),('card_set_1'),('card_ssr_1'),('gear_5'),('gear_20'),('gear_rare_3'),('gear_lv3'),('use_1'),('use_10'),('use_30');
 create temp table _res(ok boolean, name text);
 create or replace function pg_temp.t(p_name text, p_ok boolean) returns void language plpgsql as $$
 begin insert into _res values (coalesce(p_ok,false), p_name); raise notice '%', case when coalesce(p_ok,false) then 'PASS  '||p_name else 'FAIL  '||p_name end; end $$;
@@ -544,7 +546,7 @@ create temp table _gr as select admin_gift(array[(select a from _gf),(select b f
 grant all on _gr to anon, authenticated;
 reset role;
 select pg_temp.t('ของขวัญ: ให้ 2 คน (ซ้ำนับครั้งเดียว)', (select (r->>'given')::int from _gr) = 2);
-select pg_temp.t('ของขวัญ: เหรียญ/EXP/ตั๋วเพิ่มถูกต้อง', (select coins from students where id=(select a from _gf)) = (select c0 from _gb)+25 and (select exp from students where id=(select a from _gf)) >= (select e0 from _gb)+40 and (select free_pulls from students where id=(select a from _gf)) = (select p0 from _gb)+3);
+select pg_temp.t('ของขวัญ: เหรียญ/EXP/ตั๋วเพิ่มถูกต้อง', (select coins from students where id=(select a from _gf)) - (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select a from _gf) and a.key in (select key from _new84)) = (select c0 from _gb)+25 and (select exp from students where id=(select a from _gf)) >= (select e0 from _gb)+40 and (select free_pulls from students where id=(select a from _gf)) = (select p0 from _gb)+3);
 select pg_temp.t('ของขวัญ: ได้ไอเทมตกแต่ง (source teacher) และสิทธิพิเศษ', exists (select 1 from student_decor where student_id=(select b from _gf) and item_id=(select d from _gf) and source='teacher') and (select count(*) from redemptions) = (select r0 from _gb)+2);
 set role authenticated; select set_config('request.jwt.claims','{"email":"t@x.th"}',true);
 create temp table _gr2 as select admin_gift(array[(select a from _gf)], 0, 0, 0, (select d from _gf)) r;
@@ -672,10 +674,10 @@ select pg_temp.t('การ์ด: pity — ซ้ำครบเกณฑ์แ
 -- ครบชุด
 create temp table _kb as select coins c0, free_pulls p0 from students where id=(select c from _ks);
 select _card_grant((select c from _ks), c.id, 'gift') from cards c join card_sets s on s.id=c.set_id where s.code='lab';
-select pg_temp.t('การ์ด: สะสมครบชุด → ได้เหรียญ + ตั๋ว + บันทึกการรับ', (select coins from students where id=(select c from _ks)) = (select c0 from _kb)+150
+select pg_temp.t('การ์ด: สะสมครบชุด → ได้เหรียญ + ตั๋ว + บันทึกการรับ', (select coins from students where id=(select c from _ks)) - (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select c from _ks) and a.key in (select key from _new84)) = (select c0 from _kb)+150
   and (select free_pulls from students where id=(select c from _ks)) = (select p0 from _kb)+2 and (select count(*) from student_set_claims where student_id=(select c from _ks)) = 1);
 select _card_grant((select c from _ks), c.id, 'gift') from cards c join card_sets s on s.id=c.set_id where s.code='lab' and c.no=1;
-select pg_temp.t('การ์ด: ได้ซ้ำหลังครบชุด ไม่แจกรางวัลซ้ำ', (select coins from students where id=(select c from _ks)) = (select c0 from _kb)+150 and (select count(*) from student_set_claims where student_id=(select c from _ks)) = 1);
+select pg_temp.t('การ์ด: ได้ซ้ำหลังครบชุด ไม่แจกรางวัลซ้ำ', (select coins from students where id=(select c from _ks)) - (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select c from _ks) and a.key in (select key from _new84)) = (select c0 from _kb)+150 and (select count(*) from student_set_claims where student_id=(select c from _ks)) = 1);
 -- สมุดสะสม
 set role anon;
 create temp table _kal as select card_album((select tok from _gt where no=19)) j;
@@ -848,10 +850,10 @@ reset role;
 select pg_temp.t('ด่านแรงค์: การต่อสู้ติดป้าย silver และไม่ให้รางวัลปกติ',
   (select trial_rank = 'silver' and not rewarded from battles where student_id=(select s12 from _fr) order by created_at desc limit 1));
 select pg_temp.t('ด่านแรงค์: ยังไม่ชนะ → ยังไม่ผ่านด่าน', not exists (select 1 from rank_trial_pass where student_id=(select s12 from _fr)));
-create temp table _cb as select coins c0 from students where id=(select s12 from _fr);
+create temp table _cb as select coins c0, (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select s12 from _fr) and a.key in (select key from _new84)) b0 from students where id=(select s12 from _fr);
 update battles set status='won', m_hp=0, finished_at=now() where student_id=(select s12 from _fr) and trial_rank='silver';
 select pg_temp.t('ด่านแรงค์: ชนะบอส → บันทึกผ่านด่าน Silver', exists (select 1 from rank_trial_pass where student_id=(select s12 from _fr) and rank_key='silver'));
-select pg_temp.t('ด่านแรงค์: ได้เหรียญรางวัลผ่านด่าน +50', (select coins from students where id=(select s12 from _fr)) = (select c0 from _cb) + 50);
+select pg_temp.t('ด่านแรงค์: ได้เหรียญรางวัลผ่านด่าน +50', (select coins from students where id=(select s12 from _fr)) - (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select s12 from _fr) and a.key in (select key from _new84)) + (select b0 from _cb) = (select c0 from _cb) + 50);
 select pg_temp.t('ด่านแรงค์: เลื่อนเป็น Silver แล้ว ไม่ locked', (select (_rank_info_s((select s12 from _fr), 700)->>'key') = 'silver' and (_rank_info_s((select s12 from _fr), 700)->>'locked') is null));
 select pg_temp.t('ด่านแรงค์: มีประกาศเลื่อนแรงค์ในห้อง', exists (select 1 from celebrations where student_id=(select s12 from _fr) and kind='rank' and title='Silver'));
 update students set exp = 5000 where id = (select s12 from _fr);
@@ -1242,6 +1244,19 @@ select pg_temp.t('อิโมจิ 83: เกินโควตาเพื่
   and not pg_temp.fails($q$select char_react((select tk from _gs), 11, '⭐')$q$));
 update app_settings set value = '15' where key = 'react_daily_max';
 select pg_temp.t('อิโมจิ 83: anon อ่านตารางตรงไม่ได้', pg_temp.fails($q$set role anon; select count(*) from char_reactions$q$));
+reset role;
+-- Achievement ชุดใหม่ (db/84)
+select pg_temp.t('ตรา 84: เพิ่มตราใหม่ 29 อัน และทุกตราที่เพิ่ม/ซ่อมมีภาพ', (select count(*) from achievements where key in ('sub_1','exam_full_1','mon_30','run_2000','card_set_1','gear_lv3','use_30')) = 7 and (select count(*) from achievements where image like 'assets/medals/%') >= 36);
+insert into game_plays (student_id, game, score) values ((select sid from _gs), 'run', 900);
+select pg_temp.t('ตรา 84: เล่นเคมีรัน 900 → run_plays=1, run_best=900', student_metric((select sid from _gs), 'run_plays') = 1 and student_metric((select sid from _gs), 'run_best') = 900);
+select pg_temp.t('ตรา 84: trigger มอบตรา run_1 และ run_800 ทันที', (select count(*) from student_achievements sa join achievements a on a.id = sa.achievement_id where sa.student_id = (select sid from _gs) and a.key in ('run_1','run_800')) = 2);
+insert into student_items (student_id, item_id, qty) select (select sid from _gs), id, 3 from consumables limit 1;
+update student_items set qty = qty - 1 where student_id = (select sid from _gs);
+select pg_temp.t('ตรา 84: ใช้ไอเทม (qty ลด) → บันทึก item_use_log และได้ตรา use_1', student_metric((select sid from _gs), 'items_used') = 1 and exists (select 1 from student_achievements sa join achievements a on a.id = sa.achievement_id where sa.student_id = (select sid from _gs) and a.key = 'use_1'));
+update student_items set qty = qty + 5 where student_id = (select sid from _gs);
+select pg_temp.t('ตรา 84: ได้ไอเทมเพิ่ม (qty เพิ่ม) ไม่นับเป็นการใช้', student_metric((select sid from _gs), 'items_used') = 1);
+select pg_temp.t('ตรา 84: metric ที่ไม่รู้จัก = 0 และ anon เรียก student_metric ไม่ได้', student_metric((select sid from _gs), 'zzz') = 0 and not has_function_privilege('anon', 'student_metric(uuid,text)', 'execute'));
+select pg_temp.t('ตรา 84: anon อ่าน item_use_log ตรงไม่ได้', pg_temp.fails($q$set role anon; select count(*) from item_use_log$q$));
 reset role;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

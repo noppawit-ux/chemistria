@@ -194,6 +194,14 @@ const BATTLE = (() => {
     see_dice: { span: "magic-missile", scale: 1.1 },
     gen_hit: { hit: ["blunt-hit", 1.7] },
   };
+  const ELFX = { fire: "small-explosion", water: "mana-burst", plant: "healing-bloom", thunder: "zap-hit", chem: "acid-splash" };
+  const ELB = { water: "fire", fire: "plant", plant: "chem", chem: "thunder", thunder: "water" };
+  function matchup() {   // นับของที่ใส่ที่ชนะ/แพ้ธาตุมอนสเตอร์ตัวนี้ (จาก gear_status)
+    const o = { adv: 0, weak: 0, top: null }; try {
+      const me = typeof monElem === "function" ? monElem(S.bat.monster.id) : null, el = GEARS && GEARS.gear && GEARS.gear.el; if (!me || !el) return o;
+      for (const [k, n] of Object.entries(el)) { if (ELB[k] === me) { o.adv += n; o.top = k; } else if (ELB[me] === k) o.weak += n; }
+    } catch (e) {} return o;
+  }
   const MONFX = { bubble: ["hit-spark", 1.5], rust: ["blunt-hit", 1.5], salt: ["hit-spark", 1.8], lemon: ["acid-splash", 1.4], fog: ["poison-cloud", 1.0] };
   function playSkill(ev) {
     const f = $f(); if (!f) return; const sk = ev.skill, col = COL[sk.key] || "#ffb347", root = f.parentNode, PL = root.querySelector(".bt-pl"), MO = root.querySelector(".bt-mo");
@@ -206,6 +214,8 @@ const BATTLE = (() => {
       const impact = (zx, zy) => {
         const fx = SKFX[sk.key] || SKFX.gen_hit; if (fx.hit) pfx(fx.hit[0], zx, zy, { scale: fx.hit[1] }); if (fx.extra) pfx(fx.extra[0], zx, zy, { scale: fx.extra[1] });
         if (ev.crit) pfx("crit-hit", zx, zy, { scale: 1.9 });
+        const mu = matchup();
+        if (mu.adv) { const E = ELFX[mu.top]; if (E) later(120, () => pfx(E, zx, zy, { scale: 1.8 })); num("ธาตุได้เปรียบ!", zx, zy - 112, "fast"); pop("shakebig", $f() && $f().parentNode); }
         pop("hurt", MO.querySelector(".bt-mimg,.bt-memo")); flash(ev.crit ? "flashbig" : "flash");
         num((ev.crit ? "💥 " : "") + "-" + ev.dmg, zx, zy - 50, ev.crit ? "crit" : "dmg");
         if (ev.fast) num("⚡ ตอบไว!", zx, zy - 86, "fast");
@@ -235,6 +245,7 @@ const BATTLE = (() => {
       else { const h = MONFX[key] || ["hit-spark", 1.5]; pfx(h[0], zx, zy, { scale: h[1] }); pop("hurt", PL.querySelector(".bt-spr")); flash("flashred"); num("-" + e.taken, zx, zy - 40, "dmg"); }
       if (e.guard && e.hits > 0 && e.taken > 0) num("🛡️ ลดดาเมจ " + Math.round((100 * e.hits) / e.n) + "%", zx, zy - 74, "fast");
       if (e.heavy && !e.guard) num("⚠️ โจมตีหนัก", zx, zy - 74, "dmg");
+      if (matchup().weak && e.taken > 0) num("ธาตุแพ้ทาง! โดนแรงขึ้น", zx, zy - 100, "dmg");
       if (e.perfect) { num("✨ ปัดป้องสมบูรณ์!", zx, zy - 74, "crit"); if (e.counter) setTimeout(() => { const t = document.querySelector(".bt-mo"); if (t) { const r = t.getBoundingClientRect(), fr = $f().getBoundingClientRect(); num("-" + e.counter, r.left - fr.left + r.width / 2, r.top - fr.top, "dmg"); } if (e.heal) num("+" + e.heal, zx, zy - 20, "heal"); }, 450); }
     });
   }

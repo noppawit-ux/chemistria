@@ -35,7 +35,7 @@ const RUN = (() => {
   /* ---------- ควบคุม ---------- */
   function jump() {
     const g = S.g; if (!g || g.over || g.cd > 0) return;
-    if (g.jumps < 2) { g.vy = g.jumps === 0 ? -830 : -760; g.jumps++; g.slide = 0; try { SFX.play("pop"); } catch (e) {} }
+    if (g.jumps < 2) { burst(g, PX + 34, g.y - 2, g.jumps === 0 ? "rgba(210,190,255,.7)" : ["#8bdcff", "#fff"], g.jumps === 0 ? 6 : 10, { arc: Math.PI / 2, spread: 2.4, sp: 130, gr: 120, r: 3, life: 0.4 }); if (g.jumps === 1) ring(g, PX + 34, g.y - 20, "#8bdcff", 44); g.vy = g.jumps === 0 ? -830 : -760; g.jumps++; g.slide = 0; try { SFX.play("pop"); } catch (e) {} }
   }
   function slide(on) { const g = S.g; if (!g || g.over) return; g.slideHold = on; if (on && g.y >= GY && g.cd <= 0) g.slide = Math.max(g.slide, 0.55); }
   let bound = false;
@@ -107,7 +107,7 @@ const RUN = (() => {
     if (g.hp <= 0) { g.hp = 0; g.over = true; }
     // ฟิสิกส์ผู้เล่น
     g.vy += 2500 * dt; g.y += g.vy * dt;
-    if (g.y >= GY) { if (g.vy > 400) g.shake = Math.max(g.shake, 2); g.y = GY; g.vy = 0; g.jumps = 0; }
+    if (g.y >= GY) { if (g.vy > 400) { g.shake = Math.max(g.shake, 2); burst(g, PX + 30, GY - 2, "rgba(210,190,255,.7)", 9, { arc: -Math.PI / 2, spread: 3.1, sp: 150, up: 40, gr: 260, r: 3.5, life: 0.45 }); } g.y = GY; g.vy = 0; g.jumps = 0; }
     if (g.slide > 0) { g.slide -= dt; if (g.slideHold) g.slide = Math.max(g.slide, 0.05); if (g.y < GY) g.slide = 0; }
     if (g.slow > 0) g.slow -= dt; if (g.mag > 0) g.mag -= dt; if (g.inv > 0) g.inv -= dt; if (g.hurt > 0) g.hurt = Math.max(0, g.hurt - dt); if (g.boost > 0) { g.boost -= dt; g.inv = Math.max(g.inv, 0.1); }
     if (g.shake > 0) g.shake = Math.max(0, g.shake - 20 * dt);
@@ -132,21 +132,46 @@ const RUN = (() => {
       const inter = ox < hb.x + hb.w && ox + o.w > hb.x && oy < hb.y + hb.h && oy + o.h > hb.y;
       if (!inter) continue;
       if (o.k === "drop" && o.splash) continue;
-      if (o.k === "coin") { o.dead = true; g.coins++; g.combo++; g.bestCombo = Math.max(g.bestCombo, g.combo); pop(g, ox, oy, "+10", "#ffd75a"); try { SFX.play("coin"); } catch (e) {}
-        if (g.combo % 10 === 0) { g.hp = Math.min(100, g.hp + 3); pop(g, PX, hb.y - 24, `คอมโบ x${g.combo}! +3HP`, "#9be21b"); } }
-      else if (o.k === "shield") { o.dead = true; g.shield = true; pop(g, ox, oy, "โล่!", "#7dd3fc"); try { SFX.play("rank"); } catch (e) {} }
-      else if (o.k === "slow") { o.dead = true; g.slow = 5; pop(g, ox, oy, "ชะลอเวลา!", "#c4b5fd"); try { SFX.play("rank"); } catch (e) {} }
-      else if (o.k === "mag") { o.dead = true; g.mag = 6; pop(g, ox, oy, "แม่เหล็ก!", "#fca5a5"); try { SFX.play("rank"); } catch (e) {} }
-      else if (o.k === "tile") { o.dead = true; g.tiles++; pop(g, ox, oy, "+25", "#7ee0b0"); try { SFX.play("ok"); } catch (e) {} }
-      else if (o.k === "pot") { o.dead = true; g.pots++; g.hp = Math.min(100, g.hp + 28); pop(g, ox, oy, "+HP", "#ff7a90"); try { SFX.play("levelup"); } catch (e) {} }
-      else if (o.k === "star") { o.dead = true; g.boost = 4; pop(g, ox, oy, "บูสต์!", "#fff3a0"); try { SFX.play("rank"); } catch (e) {} }
-      else if (g.inv <= 0 && g.shield) { g.shield = false; g.inv = 1.0; g.shake = 5; g.hurt = 0.5; pop(g, hb.x, hb.y - 10, "โล่แตก!", "#7dd3fc"); try { SFX.play("pop"); } catch (e) {} }
-      else if (g.inv <= 0) { g.hp -= 18; g.inv = 1.25; g.shake = 9; g.hurt = 0.6; g.hits++; g.combo = 0; g.speed = Math.max(300, g.speed - 60); g.time = Math.max(0, g.time - 4); pop(g, hb.x, hb.y - 10, "-18", "#ff6b81"); try { SFX.play("bad"); } catch (e) {} if (g.hp <= 0) { g.hp = 0; g.over = true; } }
+      if (o.k === "coin") { o.dead = true; g.coins++; g.combo++; g.bestCombo = Math.max(g.bestCombo, g.combo); pop(g, ox, oy, "+10", "#ffd75a"); burst(g, ox + 18, oy + 18, ["#ffd75a", "#fff3a0", "#ffb347"], 8, { sp: 190, up: 80, r: 2.8, life: 0.5 }); try { SFX.play("coin"); } catch (e) {}
+        if (g.combo % 10 === 0) { g.hp = Math.min(100, g.hp + 3); pop(g, PX, hb.y - 24, `คอมโบ x${g.combo}! +3HP`, "#9be21b"); ring(g, PX + 34, hb.y + hb.h / 2, "#9be21b", 80); burst(g, PX + 34, hb.y + hb.h / 2, ["#9be21b", "#d9f99d"], 14, { sp: 220, r: 3, life: 0.6 }); } }
+      else if (o.k === "shield") { o.dead = true; g.shield = true; pop(g, ox, oy, "โล่!", "#7dd3fc"); ring(g, PX + 34, hb.y + hb.h / 2, "#7dd3fc", 70); burst(g, ox + 20, oy + 20, ["#7dd3fc", "#e0f7ff"], 12, { sp: 200, r: 3, life: 0.6 }); try { SFX.play("rank"); } catch (e) {} }
+      else if (o.k === "slow") { o.dead = true; g.slow = 5; pop(g, ox, oy, "ชะลอเวลา!", "#c4b5fd"); ring(g, PX + 34, hb.y + hb.h / 2, "#c4b5fd", 90); burst(g, ox + 20, oy + 20, ["#c4b5fd", "#ede9fe"], 12, { sp: 180, gr: -60, r: 3, life: 0.8 }); try { SFX.play("rank"); } catch (e) {} }
+      else if (o.k === "mag") { o.dead = true; g.mag = 6; pop(g, ox, oy, "แม่เหล็ก!", "#fca5a5"); ring(g, PX + 34, hb.y + hb.h / 2, "#fca5a5", 100); burst(g, ox + 20, oy + 20, ["#fca5a5", "#fecaca"], 10, { sp: 170, r: 3, life: 0.6 }); try { SFX.play("rank"); } catch (e) {} }
+      else if (o.k === "tile") { o.dead = true; g.tiles++; pop(g, ox, oy, "+25", "#7ee0b0"); burst(g, ox + 18, oy + 18, ["#7ee0b0", "#d1fae5", "#fff"], 10, { sp: 200, up: 60, r: 3, life: 0.55, sq: true }); try { SFX.play("ok"); } catch (e) {} }
+      else if (o.k === "pot") { o.dead = true; g.pots++; g.hp = Math.min(100, g.hp + 28); pop(g, ox, oy, "+HP", "#ff7a90"); burst(g, ox + 20, oy + 20, ["#ff7a90", "#ffc2cc", "#fff"], 14, { sp: 120, up: 120, gr: -80, r: 3.5, life: 0.9 }); try { SFX.play("levelup"); } catch (e) {} }
+      else if (o.k === "star") { o.dead = true; g.boost = 4; pop(g, ox, oy, "บูสต์!", "#fff3a0"); ring(g, PX + 34, hb.y + hb.h / 2, "#ffe066", 120); burst(g, ox + 24, oy + 24, ["#fff3a0", "#ffe066", "#ff9f43"], 22, { sp: 280, r: 3.5, life: 0.7 }); try { SFX.play("rank"); } catch (e) {} }
+      else if (g.inv <= 0 && g.shield) { g.shield = false; g.inv = 1.0; g.shake = 5; g.hurt = 0.5; pop(g, hb.x, hb.y - 10, "โล่แตก!", "#7dd3fc"); ring(g, PX + 34, hb.y + hb.h / 2, "#7dd3fc", 90); burst(g, PX + 34, hb.y + hb.h / 2, ["#7dd3fc", "#e0f7ff"], 18, { sp: 260, r: 3.5, life: 0.6, sq: true }); try { SFX.play("pop"); } catch (e) {} }
+      else if (g.inv <= 0) { g.hp -= 18; g.inv = 1.25; g.shake = 9; g.hurt = 0.6; g.hits++; g.combo = 0; g.speed = Math.max(300, g.speed - 60); g.time = Math.max(0, g.time - 4); pop(g, hb.x, hb.y - 10, "-18", "#ff6b81"); burst(g, PX + 34, hb.y + hb.h / 2, ["#ff6b81", "#ffb3c0", "#fff"], 18, { sp: 280, up: 60, r: 3.5, life: 0.6, sq: true }); try { SFX.play("bad"); } catch (e) {} if (g.hp <= 0) { g.hp = 0; g.over = true; } }
     }
     g.things = g.things.filter((o) => !o.dead);
     g.fx = g.fx.filter((f) => (f.t += dt) < 0.8); g.fx.forEach((f) => { f.y -= 50 * dt; });
+    updFx(g, dt, hb);
   }
   const pop = (g, x, y, t, c) => g.fx.push({ x, y, t: 0, s: t, c });
+  /* ----- อนุภาค/วงแหวน (v2.26) ----- */
+  const REDUCED = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
+  function burst(g, x, y, c, n = 10, o = {}) {
+    if (REDUCED()) n = Math.ceil(n / 3); g.pt = g.pt || []; if (g.pt.length > 180) return;
+    for (let i = 0; i < n; i++) { const a = o.arc != null ? o.arc + (Math.random() - 0.5) * (o.spread || 1) : Math.random() * 6.283, sp = (o.sp || 170) * (0.35 + Math.random() * 0.75);
+      g.pt.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.up || 0), t: 0, life: (o.life || 0.6) * (0.7 + Math.random() * 0.6), c: Array.isArray(c) ? c[i % c.length] : c, r: (o.r || 3) * (0.6 + Math.random() * 0.9), gr: o.gr == null ? 420 : o.gr, sq: !!o.sq }); }
+  }
+  const ring = (g, x, y, c, r = 60) => { if (REDUCED()) return; g.rg = g.rg || []; g.rg.push({ x, y, t: 0, c, r }); };
+  function updFx(g, dt, hb) {
+    g.pt = g.pt || []; g.rg = g.rg || [];
+    for (const q of g.pt) { q.t += dt; q.vy += q.gr * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 1 - 1.5 * dt; }
+    g.pt = g.pt.filter((q) => q.t < q.life); g.rg.forEach((r) => (r.t += dt)); g.rg = g.rg.filter((r) => r.t < 0.5);
+    g.dust = (g.dust || 0) + dt;
+    if (g.dust > 0.08 && g.y >= GY - 1 && !g.over) { g.dust = 0; if (g.slide > 0) burst(g, PX + 20, GY - 2, ["#fff3a0", "#ffb347"], 2, { arc: 3.4, spread: 0.8, sp: 110, up: 40, gr: 200, r: 2, life: 0.35, sq: true }); else burst(g, PX + 10, GY - 2, "rgba(210,190,255,.6)", 1, { arc: 3.5, spread: 0.6, sp: 70, up: 30, gr: 80, r: 3, life: 0.4 }); }
+    if (g.boost > 0) burst(g, PX + 8, hb.y + hb.h * 0.55, ["#ffe066", "#ff9f43", "#fff"], 2, { arc: Math.PI, spread: 0.7, sp: 220, gr: 0, r: 3.5, life: 0.35 });
+    if (g.shield && !g.over && Math.random() < 0.15) burst(g, PX + 34 + Math.cos(g.time * 6) * 34, hb.y + hb.h / 2 + Math.sin(g.time * 6) * 44, "#8bdcff", 1, { sp: 20, gr: -30, r: 2.5, life: 0.4 });
+  }
+  function drawFx(ctx, g) {
+    for (const r of g.rg || []) { const k = r.t / 0.5; ctx.globalAlpha = 1 - k; ctx.strokeStyle = r.c; ctx.lineWidth = 5 * (1 - k) + 1; ctx.beginPath(); ctx.arc(r.x, r.y, 8 + r.r * k, 0, 7); ctx.stroke(); }
+    for (const q of g.pt || []) { const a = 1 - q.t / q.life; ctx.globalAlpha = Math.max(0, a); ctx.fillStyle = q.c; if (q.sq) ctx.fillRect(q.x - q.r, q.y - q.r, q.r * 2, q.r * 2); else { ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (0.5 + a * 0.5), 0, 7); ctx.fill(); } }
+    ctx.globalAlpha = 1;
+    if (g.hurt > 0) { const k = g.hurt / 0.6, gr = ctx.createRadialGradient(W / 2, H / 2, H * 0.25, W / 2, H / 2, H * 0.85); gr.addColorStop(0, "rgba(255,40,80,0)"); gr.addColorStop(1, `rgba(255,40,80,${0.55 * k})`); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); }
+    if (g.boost > 0) { const gr = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.9); gr.addColorStop(0, "rgba(255,220,100,0)"); gr.addColorStop(1, "rgba(255,200,80,.28)"); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); }
+  }
   const score = (g) => Math.floor(g.dist) + g.coins * 10 + g.tiles * 25;
 
   /* ---------- วาด ---------- */
@@ -189,6 +214,7 @@ const RUN = (() => {
     if (g.pet && g.pet.complete && g.pet.naturalWidth) ctx.drawImage(g.pet, PX - 52, GY - 46 - Math.abs(Math.sin(g.anim * 0.9)) * 8 - (GY - g.y) * 0.6, 42, 42);
     // ผู้เล่น
     player(ctx, g, now);
+    drawFx(ctx, g);
     // ข้อความลอย
     ctx.font = "800 22px Prompt, Sarabun, sans-serif"; ctx.textAlign = "center";
     for (const f of g.fx) { ctx.globalAlpha = 1 - f.t / 0.8; ctx.fillStyle = f.c; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 4; ctx.strokeText(f.s, f.x + 20, f.y); ctx.fillText(f.s, f.x + 20, f.y); }
