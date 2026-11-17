@@ -20,7 +20,7 @@ function scrollPick() {
   const sc = (ITM.items || []).find((i) => i.kind === "scroll"), sq = sc ? sc.qty : 0;
   const rows = (ITM.gear || []).map((g) => {
     const c = g.cost, maxed = g.lvl >= c.max, can = g.main && !maxed;
-    return `<div class="eqpick"><span style="font-size:26px">${esc(g.emoji)}</span><div class="grow"><b>${esc(g.name)}</b> <span class="tag">${esc(g.rarity)}</span> <span class="tag ${g.lvl > 1 ? "ok" : ""}">Lv ${g.lvl}/${c.max}</span>${g.equipped ? ' <span class="tag wait">สวมอยู่</span>' : ""}
+    return `<div class="eqpick"><span style="font-size:26px">${pxIco(g)}</span><div class="grow"><b>${esc(g.name)}</b> <span class="tag">${esc(g.rarity)}</span> <span class="tag ${g.lvl > 1 ? "ok" : ""}">Lv ${g.lvl}/${c.max}</span>${g.equipped ? ' <span class="tag wait">สวมอยู่</span>' : ""}
       <div class="muted" style="font-size:.85em">${g.main ? `+1 ${ST_LBL[g.main]} ต่อเลเวล` : "ไม่มีสเตตัส"}</div></div>
       ${!g.main ? "" : maxed ? '<span class="tag ok">สูงสุด</span>' : `<button class="btn small gold" onclick="scrollApply('${g.id}','${esc(g.name)}',${c.coins},${c.scrolls})">${c.coins}🪙 +📜${c.scrolls}</button>`}</div>`;
   }).join("") || '<p class="muted center">ยังไม่มีอุปกรณ์ — ซื้อจากแท็บ 🎨 ตกแต่ง หรือสุ่มกาชา</p>';
@@ -44,11 +44,11 @@ function itemsHtml() {
   const bag = own.map((i) => {
     const btn = i.kind === "heal" ? '<span class="muted">ใช้ในศึกมอนสเตอร์ (ปุ่ม 💚)</span>' : i.kind === "scroll" ? '<button class="btn small gold" onclick="scrollPick()">ใช้ → เลือกอุปกรณ์</button>'
       : i.active_until ? `<span class="tag wait">มีผลอยู่ ${minsLeft(i.active_until)} นาที</span>` : `<button class="btn small gold" onclick="itemUse('${i.id}','${esc(i.name)}')">ใช้</button>`;
-    return `<div class="item"><span style="font-size:26px">${esc(i.emoji)}</span><div class="grow"><b>${esc(i.name)}</b> <span class="tag">×${i.qty}</span><div class="muted">${esc(i.descr || "")}</div></div>${btn}</div>`;
+    return `<div class="item"><span style="font-size:26px">${pxIco(i)}</span><div class="grow"><b>${esc(i.name)}</b> <span class="tag">×${i.qty}</span><div class="muted">${esc(i.descr || "")}</div></div>${btn}</div>`;
   }).join("") || '<p class="muted">กระเป๋าว่าง — ซื้อไอเทมจากร้านด้านล่างได้เลย</p>';
   const shop = items.filter((i) => i.price != null).map((i) => {
     const left = Math.max(0, i.daily_buy - i.bought), ok = left > 0 && D.student.coins >= i.price;
-    return `<div class="item"><span style="font-size:26px">${esc(i.emoji)}</span><div class="grow"><b>${esc(i.name)}</b> <span class="tag">${esc(i.rarity)}</span><div class="muted">${esc(i.descr || "")}</div><small class="muted">วันนี้ซื้อได้อีก ${left}/${i.daily_buy}</small></div>
+    return `<div class="item"><span style="font-size:26px">${pxIco(i)}</span><div class="grow"><b>${esc(i.name)}</b> <span class="tag">${esc(i.rarity)}</span><div class="muted">${esc(i.descr || "")}</div><small class="muted">วันนี้ซื้อได้อีก ${left}/${i.daily_buy}</small></div>
       <button class="btn small ${ok ? "gold" : "ghost"}" ${left > 0 ? "" : "disabled"} onclick="itemBuy('${i.id}','${esc(i.name)}',${i.price})">${i.price} 🪙</button></div>`;
   }).join("");
   return `<div class="card"><h3>🧪 ไอเทมของฉัน</h3><p class="muted" style="margin:0 0 6px">บัฟมีผลตามเวลาที่กำหนด · ชนิดเดียวกันซ้อนไม่ได้ · เหรียญของคุณ <b>${D.student.coins}</b> 🪙</p><div>${chips}</div></div>
