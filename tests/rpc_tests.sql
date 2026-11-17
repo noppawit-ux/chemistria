@@ -1325,9 +1325,9 @@ reset role;
 select pg_temp.t('แคมเปญ 89: camp_status ส่ง checked (3 วัน) และ today_date', (select jsonb_array_length(r->0->'checked') = 3 and (r->0->>'today_date')::date = today_th() from _cs3 where jsonb_array_length(r) >= 1));
 select pg_temp.t('ออร่า 90: เอฟเฟกต์ชุดราชันธาตุมี key = king (หน้าเว็บวาดออร่าทอง)', (select key from decor_items where set_key='lim_king1' and slot='fx') = 'king');
 -- ช่องสร้อย/แหวน (db/91)
-select pg_temp.t('สร้อย/แหวน 91: มีไอเทมแหวน 6 และสร้อย 7 ชิ้น ทุกชิ้นมีภาพ', (select count(*) from decor_items where slot='ring' and image like 'assets/px/ring_%') = 6 and (select count(*) from decor_items where slot='neck' and image like 'assets/px/neck_%') = 7);
-insert into student_decor (student_id, item_id, source) select (select sid from _gs), id, 'teacher' from decor_items where name in ('แหวนทับทิมเพลิง','สร้อยลูกปัดสายน้ำ') on conflict do nothing;
-create temp table _nid as select (select id from decor_items where name='แหวนทับทิมเพลิง') ring, (select id from decor_items where name='สร้อยลูกปัดสายน้ำ') neck, (select id from decor_items where name='แหวนอเมทิสต์สารเคมี') ring2; grant all on _nid to anon;
+select pg_temp.t('สร้อย/แหวน 91: มีไอเทมแหวน 6 และสร้อย 7 ชิ้น ทุกชิ้นมีภาพ', (select count(*) from decor_items where slot='ring' and image like 'assets/px/%') = 6 and (select count(*) from decor_items where slot='neck' and image like 'assets/px/%') = 7 and (select count(*) from decor_items where slot in ('ring','neck') and ability like '%ขลัง%' or ability like '%ขวด%') >= 1);
+insert into student_decor (student_id, item_id, source) select (select sid from _gs), id, 'teacher' from decor_items where name in ('แหวนขวดไวไฟ ห้ามใกล้เปลวไฟ','สร้อยขวดน้ำมนต์ H₂O') on conflict do nothing;
+create temp table _nid as select (select id from decor_items where name='แหวนขวดไวไฟ ห้ามใกล้เปลวไฟ') ring, (select id from decor_items where name='สร้อยขวดน้ำมนต์ H₂O') neck, (select id from decor_items where name='แหวนขวดม่วงไอโอดีน') ring2; grant all on _nid to anon;
 create temp table _nr0 as select (select (_gear((select sid from _gs)))->>'atk')::numeric a0, (select (_gear((select sid from _gs)))->>'def')::numeric d0;
 set role anon;
 select equip_decor((select tk from _gs), 'ring', (select ring from _nid));

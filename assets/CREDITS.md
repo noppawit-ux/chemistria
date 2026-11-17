@@ -7,3 +7,4 @@
 - **assets/px/lim_*.png** (ชุดลิมิเต็ดราชันธาตุ): ปรับสีจากไอคอน Raven Fantasy Icons (หมวก/ออร่า) + ดาบทองจากชุดเดียวกัน
 - **assets/gi/ck_*.svg** (ไอคอนแบนเนอร์เช็คอิน): game-icons.net — Lorc, Delapouite, sbed — CC BY 3.0 ดัดแปลงสี · **assets/px/ck_*.png**: Raven Fantasy Icons (เงื่อนไขเหมือน assets/px)
 - **assets/px/ring_*.png, neck_*.png** (แหวน/สร้อย): Shikashi's Fantasy Icons Pack v2 (ใช้เชิงพาณิชย์/ดัดแปลงได้ตามไฟล์ README ของชุด; ต้นแบบบางส่วนอิงดีไซน์จาก game-icons.net CC BY 3.0) — ดัดแปลงสีพลอย/ลูกปัด · **assets/slots/ring.png, neck.png**: เส้นขอบเงาจากไอคอนเดียวกัน
+- **assets/px/rg_*.png, nk_*.png** (แหวนขวดจิ๋ว/สร้อยจี้ขวด-อะตอม-ตะกรุด): ประกอบจาก Shikashi's Fantasy Icons (ขวดยา/โซ่/แหวน) + ลายอะตอม/ตะกรุดที่วาดเอง

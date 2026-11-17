@@ -1456,6 +1456,6 @@ img[src*="assets/px/"]{image-rendering:pixelated}
 .avf.stg .av img.st-himg[src*="lim_"],.avf.stg .av img.st-item[src*="lim_"]{filter:drop-shadow(0 0 4px #ffd54a) drop-shadow(0 0 9px #f5c84a)!important}
 @media(prefers-reduced-motion:reduce){.fx-king::before,.fx-king::after{animation:none}}
 /* สร้อย/แหวน บนตัวละคร: สร้อยห้อยที่อกกลางตัว · แหวนลอยเรืองแสงข้างมือซ้าย */
-.avf.stg .av img.st-neck{position:absolute;top:39%;left:50%;width:calc(var(--s)*.17);height:auto;transform:translateX(-50%);z-index:4;image-rendering:pixelated;filter:drop-shadow(0 1px 2px #000a) drop-shadow(0 0 4px #ffd54a88)}
-.avf.stg .av img.st-ring{position:absolute;left:7%;bottom:34%;width:calc(var(--s)*.15);height:auto;z-index:4;image-rendering:pixelated;animation:bob 2.6s ease-in-out infinite;filter:drop-shadow(0 0 5px #fff7);}
+.avf.stg .av img.st-neck{position:absolute;top:38%;left:50%;width:calc(var(--s)*.21);height:auto;transform:translateX(-50%);z-index:4;image-rendering:pixelated;filter:drop-shadow(0 1px 2px #000a) drop-shadow(0 0 4px #ffd54a88)}
+.avf.stg .av img.st-ring{position:absolute;left:6%;bottom:33%;width:calc(var(--s)*.18);height:auto;z-index:4;image-rendering:pixelated;animation:bob 2.6s ease-in-out infinite;filter:drop-shadow(0 0 5px #fff7);}
 .st-neck,.st-ring{font-size:calc(var(--s)*.1)}
