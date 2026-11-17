@@ -5,3 +5,4 @@
 - ไอคอนอื่นที่ครูแนบมา (at-icons MIT, vector-emojis CC0, Shikashi, DEMO UI, SuperRetroRanch, Pixel Art Icon Pack ฯลฯ) ยังไม่ได้ใช้ในระบบ
 - **assets/medals/** (ตรา achievement 36 รูป): ประกอบกรอบสีบรอนซ์/เงิน/ทองด้วยสคริปต์ + ไอคอนพิกเซลจาก Raven Fantasy Icons (เงื่อนไขเหมือน assets/px)
 - **assets/px/lim_*.png** (ชุดลิมิเต็ดราชันธาตุ): ปรับสีจากไอคอน Raven Fantasy Icons (หมวก/ออร่า) + ดาบทองจากชุดเดียวกัน
+- **assets/gi/ck_*.svg** (ไอคอนแบนเนอร์เช็คอิน): game-icons.net — Lorc, Delapouite, sbed — CC BY 3.0 ดัดแปลงสี · **assets/px/ck_*.png**: Raven Fantasy Icons (เงื่อนไขเหมือน assets/px)
