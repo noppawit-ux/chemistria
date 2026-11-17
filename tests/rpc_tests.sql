@@ -1324,6 +1324,20 @@ create temp table _cs3 as select camp_status((select tk from _gs))::jsonb r; gra
 reset role;
 select pg_temp.t('แคมเปญ 89: camp_status ส่ง checked (3 วัน) และ today_date', (select jsonb_array_length(r->0->'checked') = 3 and (r->0->>'today_date')::date = today_th() from _cs3 where jsonb_array_length(r) >= 1));
 select pg_temp.t('ออร่า 90: เอฟเฟกต์ชุดราชันธาตุมี key = king (หน้าเว็บวาดออร่าทอง)', (select key from decor_items where set_key='lim_king1' and slot='fx') = 'king');
+-- ช่องสร้อย/แหวน (db/91)
+select pg_temp.t('สร้อย/แหวน 91: มีไอเทมแหวน 6 และสร้อย 7 ชิ้น ทุกชิ้นมีภาพ', (select count(*) from decor_items where slot='ring' and image like 'assets/px/ring_%') = 6 and (select count(*) from decor_items where slot='neck' and image like 'assets/px/neck_%') = 7);
+insert into student_decor (student_id, item_id, source) select (select sid from _gs), id, 'teacher' from decor_items where name in ('แหวนทับทิมเพลิง','สร้อยลูกปัดสายน้ำ') on conflict do nothing;
+create temp table _nid as select (select id from decor_items where name='แหวนทับทิมเพลิง') ring, (select id from decor_items where name='สร้อยลูกปัดสายน้ำ') neck, (select id from decor_items where name='แหวนอเมทิสต์สารเคมี') ring2; grant all on _nid to anon;
+create temp table _nr0 as select (select (_gear((select sid from _gs)))->>'atk')::numeric a0, (select (_gear((select sid from _gs)))->>'def')::numeric d0;
+set role anon;
+select equip_decor((select tk from _gs), 'ring', (select ring from _nid));
+select equip_decor((select tk from _gs), 'neck', (select neck from _nid));
+reset role;
+select pg_temp.t('สร้อย/แหวน 91: สวมใส่ได้ และโบนัสโจมตี/ป้องกันเพิ่มตามไอเทม', (select (decor->>'ring') is not null and (decor->>'neck') is not null from students where id=(select sid from _gs))
+  and (select (_gear((select sid from _gs)))->>'atk')::numeric >= (select a0 from _nr0) + 2 and (select (_gear((select sid from _gs)))->>'def')::numeric >= (select d0 from _nr0) + 1);
+select pg_temp.t('สร้อย/แหวน 91: ใส่ผิดช่อง/ของที่ไม่มี/ช่องไม่รู้จัก ถูกปฏิเสธ', pg_temp.fails($q$select equip_decor((select tk from _gs), 'neck', (select ring from _nid))$q$, 'anon') and pg_temp.fails($q$select equip_decor((select tk from _gs), 'ring', (select ring2 from _nid))$q$, 'anon') and pg_temp.fails($q$select equip_decor((select tk from _gs), 'finger', null)$q$, 'anon'));
+set role anon; select equip_decor((select tk from _gs), 'ring', null); reset role;
+select pg_temp.t('สร้อย/แหวน 91: ถอดแหวนออกได้', (select (decor->>'ring') is null from students where id=(select sid from _gs)));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

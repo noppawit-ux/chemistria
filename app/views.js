@@ -35,6 +35,7 @@ function stage(cls, ri, dc, sz) {
       ${fxHtml(dc.fx)}<div class="st-floor"></div>
       <img class="st-char" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">
       ${dc.hat ? (dc.hat.image ? `<img class="st-hat st-himg" src="${esc(dc.hat.image)}" alt="">` : `<span class="st-hat">${esc(dc.hat.emoji)}</span>`) : ""}${dc.pet ? (dc.pet.image ? `<img class="st-pet st-pimg" src="${esc(dc.pet.image)}" alt="">` : `<span class="st-pet">${esc(dc.pet.emoji)}</span>`) : ""}
+      ${dc.neck ? (dc.neck.image ? `<img class="st-neck" src="${esc(dc.neck.image)}" alt="">` : `<span class="st-neck">${esc(dc.neck.emoji)}</span>`) : ""}${dc.ring ? (dc.ring.image ? `<img class="st-ring" src="${esc(dc.ring.image)}" alt="">` : `<span class="st-ring">${esc(dc.ring.emoji)}</span>`) : ""}
       ${dc.item && dc.item.image ? `<img class="st-item" src="${esc(dc.item.image)}" alt="">` : ""}</div></div>`;
 }
 const itemImg = (img, emoji, cls = "ico") => img ? `<img class="${cls}" src="${esc(img)}" alt="">` : esc(emoji || "🎁");
