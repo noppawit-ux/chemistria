@@ -13,14 +13,25 @@ function campPrize(m) {
   if (m.set && m.set.length) t.push(`👑 ชุดลิมิเต็ด ${m.set.map((x) => (x.image ? `<img src="${esc(x.image)}" alt="" style="width:18px;height:18px;image-rendering:pixelated;vertical-align:-4px">` : esc(x.emoji || ""))).join("")}`);
   return t;
 }
+function campIcons(m) {   // ไอคอนรางวัลแบบย่อสำหรับช่องรายวัน
+  const a = []; if (m.set && m.set.length) a.push("👑"); if (m.card) a.push("🃏"); if (m.decor) a.push("🎨"); if (m.pulls) a.push("🎟️"); if (m.coins) a.push("🪙"); if (m.exp) a.push("⭐");
+  return a.slice(0, 3).join("");
+}
 function campHtml() {
   return (CAMP || []).map((c) => {
-    const pct = Math.min(100, Math.round((c.done / Math.max(1, c.miles[c.miles.length - 1].need)) * 100));
-    return `<div class="card chkcard"><div class="row" style="align-items:center;gap:10px;flex-wrap:wrap"><div class="chkbig">📅</div>
+    const start = new Date(c.start_day + "T00:00:00"), chk = new Set(c.checked || []), td = c.today_date || "";
+    const cells = Array.from({ length: c.days_total }, (_, i) => {
+      const d = new Date(start); d.setDate(d.getDate() + i); const ds = d.toISOString ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : "";
+      const done = chk.has(ds), isToday = ds === td, past = ds < td, ms = c.miles.filter((m) => m.need === i + 1);
+      const st = done ? "ok" : isToday ? "now" : past ? "miss" : "next", ico = done ? "✅" : isToday ? "⭐" : past ? "💤" : "🔒";
+      const tip = ms.map((m) => `ครบ ${m.need} วัน: ` + campPrize(m).join(" ").replace(/<[^>]+>/g, "")).join(" | ");
+      return `<div class="chkday ${st} ${ms.length ? "ms" : ""}" title="${esc(tip)}"><small>วัน ${i + 1}</small><span class="chkico">${ico}</span><span class="chkpz">${ms.length ? (ms[0].got ? "🎁✔" : "🎁" + campIcons(ms[0])) : "&nbsp;"}</span></div>`;
+    }).join("");
+    const set = c.miles.find((m) => m.set && m.set.length), prizes = c.miles.map((m) => `<span class="ghchip ${m.got ? "gotchip" : ""}">${m.got ? "✅" : "🎁"} ${m.need} วัน: ${campPrize(m).join(" ")}</span>`).join("");
+    return `<div class="card chkcard"><div class="row" style="align-items:center;gap:10px;flex-wrap:wrap"><div class="chkbig">🎟️</div>
       <div class="grow"><b>${esc(c.title)}</b> <small class="muted">· เช็คอินแล้ว ${c.done}/${c.days_total} วัน · เหลือ ${c.days_left + 1} วัน</small>${c.message ? `<div class="muted" style="font-size:.82rem">${esc(c.message)}</div>` : ""}</div>
       ${c.today ? `<span class="pill ok">✔ เช็คอินวันนี้แล้ว</span>` : `<button class="btn gold" onclick="campGo('${c.id}')">เช็คอินวันนี้</button>`}</div>
-      <div class="chkbar"><i style="width:${pct}%"></i></div>
-      <div class="chkmiles">${c.miles.map((m) => `<div class="chkm ${m.got ? "got" : c.done >= m.need ? "got" : ""}"><b>${m.got ? "✅" : "🎁"} ${m.need} วัน</b><div class="giftchips">${campPrize(m).map((x) => `<span class="ghchip">${x}</span>`).join("")}</div></div>`).join("")}</div></div>`;
+      <div class="chkrow">${cells}</div><div class="giftchips" style="margin-top:6px">${prizes}</div>${set ? `<div class="muted" style="font-size:.78rem;margin-top:4px">👑 ชุดลิมิเต็ด: ${set.set.map((x) => esc(x.name)).join(" · ")}</div>` : ""}</div>`;
   }).join("");
 }
 async function campGo(id) {
@@ -29,7 +40,7 @@ async function campGo(id) {
     const r = await rpc("camp_checkin", { p_token: tk(), p_camp: id });
     const rw = r.rewards || [];
     const ov = document.createElement("div"); ov.id = "giftov"; ov.className = "giftov"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
-    ov.innerHTML = `<div class="giftbox"><div class="giftbig">📅</div><h2>เช็คอินวันที่ ${r.done}!</h2><p class="giftmsg">${esc(r.title)}</p>
+    ov.innerHTML = `<div class="giftbox"><div class="giftbig">🎟️</div><h2>เช็คอินวันที่ ${r.done}!</h2><p class="giftmsg">${esc(r.title)}</p>
       ${rw.length ? rw.map((m) => `<div class="giftitem"><b>🎉 ครบ ${m.need} วัน!</b><div class="giftchips">${campPrize({ exp: m.exp, coins: m.coins, pulls: m.pulls, decor: m.decor, card: m.card, set: (m.set || []).map((x) => ({ emoji: x.emoji })) }).map((c) => `<span class="ghchip">${c}</span>`).join("")}</div>${m.set ? `<div class="muted" style="font-size:.82rem">ได้ชุด: ${m.set.map((x) => esc(x.name)).join(" · ")}</div>` : ""}</div>`).join("") : `<p class="muted">สะสมต่อเนื่องไปเรื่อยๆ รางวัลใหญ่รออยู่!</p>`}
       <button class="btn gold" onclick="document.getElementById('giftov')?.remove();load()">ไปต่อ 🎉</button></div>`;
     document.body.appendChild(ov); try { FX.victory(); } catch (e) {} try { SFX.play(rw.length ? "levelup" : "coin"); } catch (e) {}

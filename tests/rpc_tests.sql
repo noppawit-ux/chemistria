@@ -1318,6 +1318,11 @@ select pg_temp.t('แคมเปญ 87: วันที่ 3 ได้ชุด
   and (select count(*) from checkin_mclaims where student_id=(select sid from _gs)) = 3);
 select pg_temp.t('แคมเปญ 87: anon อ่านตาราง/เรียกฟังก์ชันภายในไม่ได้', pg_temp.fails($q$set role anon; select count(*) from checkin_days$q$) and not has_function_privilege('anon','_camp_grant(uuid,checkin_miles)','execute'));
 reset role;
+-- camp_status ส่งรายการวันที่เช็คอินแล้ว (db/89)
+set role anon;
+create temp table _cs3 as select camp_status((select tk from _gs))::jsonb r; grant all on _cs3 to anon;
+reset role;
+select pg_temp.t('แคมเปญ 89: camp_status ส่ง checked (3 วัน) และ today_date', (select jsonb_array_length(r->0->'checked') = 3 and (r->0->>'today_date')::date = today_th() from _cs3 where jsonb_array_length(r) >= 1));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
