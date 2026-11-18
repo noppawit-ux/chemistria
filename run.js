@@ -6,7 +6,12 @@ const RUN = (() => {
   const IMGS = {};
   const need = ["icons/coin", "icons/star", "icons/heart", "items/tile", "items/potion_red", "items/burner", "items/rack", "items/shield", "items/hourglass", "items/flask",
     "arenas/lab", "arenas/storm", "arenas/volcano", "arenas/crystal", "arenas/ice", "arenas/swamp"];
-  const img = (k) => { if (!IMGS[k]) { const i = new Image(); i.src = `assets/${k}.${k.startsWith("arenas/") ? "jpg" : "png"}`; IMGS[k] = i; } return IMGS[k]; };
+  const img = (k) => { if (!IMGS[k]) { const i = new Image(); i.src = `assets/${k}.${k.startsWith("arenas/") ? "jpg" : k.startsWith("run/") ? "webp" : "png"}`; IMGS[k] = i; } return IMGS[k]; };
+  /* ---- ด่าน (v2.40): เลือกเองหรือสุ่ม ---- */
+  const stGet = () => { try { const v = localStorage.getItem("ch_run_stage"); return v === "rand" || RUNST.byId[v] ? v : "rand"; } catch (e) { return "rand"; } };
+  const stSet = (v) => { try { localStorage.setItem("ch_run_stage", v); } catch (e) {} };
+  const pick = (v) => { stSet(v); GAMES.paint(); };
+  const setStage = (g, st, vk) => { g.st = st; g.vk = vk; RUNST.need(vk).forEach(img); };
   const ARENAS = ["lab", "storm", "volcano", "crystal", "ice", "swamp"];
   const S = { screen: "home", st: null, res: null, g: null, raf: 0, keys: {} };
 
@@ -26,8 +31,10 @@ const RUN = (() => {
     cancelAnimationFrame(S.raf); need.forEach(img);
     const me = new Image(); me.src = spriteSrc(); me.onerror = () => { me.onerror = null; me.src = "assets/chars/" + (D.student.char_class || "novice") + ".png"; };
     const dc = D.student.decor || {}; let pet = null; if (dc.pet && dc.pet.image) { pet = new Image(); pet.src = dc.pet.image; }
-    S.g = { me, pet, t0: 0, last: 0, cd: 3, cdT: performance.now(), over: false, x: 0, dist: 0, speed: 300, hp: 100,
+    const mode = stGet(), first = mode === "rand" ? RUNST.pickRand(null) : { st: RUNST.byId[mode], vk: RUNST.byId[mode].vars[Math.floor(Math.random() * RUNST.byId[mode].vars.length)] };
+    S.g = { mode, seg: 0, banner: 3.2, fade: 1, prev: null, nxt: null, me, pet, t0: 0, last: 0, cd: 3, cdT: performance.now(), over: false, x: 0, dist: 0, speed: 300, hp: 100,
       y: GY, vy: 0, jumps: 0, slide: 0, slideHold: false, inv: 0, boost: 0, shield: false, slow: 0, mag: 0, combo: 0, bestCombo: 0, warnT: 0, coins: 0, tiles: 0, hits: 0, hurt: 0, pots: 0, nextX: 700, things: [], fx: [], shake: 0, anim: 0, time: 0 };
+    setStage(S.g, first.st, first.vk);
     S.screen = "play"; paint();
     requestAnimationFrame(() => { bind(); S.raf = requestAnimationFrame(loop); });
   }
@@ -51,7 +58,7 @@ const RUN = (() => {
 
   /* ---------- สร้างด่าน ---------- */
   function spawn(g) {
-    const x = g.nextX, r = Math.random(), L = g.things;
+    const x = g.nextX, r = Math.random(), L = g.things, n0 = L.length;
     const coinRow = (n, y, dx = 44) => { for (let i = 0; i < n; i++) L.push({ k: Math.random() < 0.12 ? "tile" : "coin", x: x + i * dx, y, w: 34, h: 34 }); };
     if (r < 0.22) { coinRow(6, GY - 50); g.nextX += 520; }
     else if (r < 0.46) {      // เตาไฟเตี้ย + เหรียญโค้งเหนือ
@@ -69,16 +76,19 @@ const RUN = (() => {
     else if (r < 0.93) { L.push({ k: "star", x: x + 40, y: GY - 130, w: 44, h: 44 }); coinRow(5, GY - 50); g.nextX += 520; }
     else { L.push({ k: "low", x: x + 80, y: GY - 46, w: 46, h: 46 }); L.push({ k: "low", x: x + 360, y: GY - 46, w: 46, h: 46 }); coinRow(4, GY - 160, 60); g.nextX += 620; }
     if (g.hp < 55 && Math.random() < 0.25) L.push({ k: "pot", x: x + 260, y: GY - 120, w: 38, h: 44 });
-    // ===== อุปสรรคชุดใหม่ (เริ่มหลังวิ่งไป 120 เมตร) + ไอเทมพิเศษ =====
+    // ===== อุปสรรคชุดใหม่ (เริ่มหลังวิ่งไป 120 เมตร) — น้ำหนักสุ่มตามด่าน =====
     if (g.dist > 120 && Math.random() < Math.min(0.55, 0.25 + g.dist / 3000)) {
-      const hx = g.nextX + 60, q = Math.random();
-      if (q < 0.25) { L.push({ k: "drop", x: hx + 40, y: -50, w: 26, h: 40, fall: false }); L.push({ k: "drop", x: hx + 190, y: -50, w: 26, h: 40, fall: false }); }
-      else if (q < 0.5) { L.push({ k: "roll", x: hx + 260, y: GY - 40, w: 40, h: 40 }); coinRow(4, GY - 150, 46); }
-      else if (q < 0.75) { L.push({ k: "gas", x: hx + 40, y: GY - 28, w: 160, h: 28 }); for (let i = 0; i < 5; i++) L.push({ k: "coin", x: hx + 40 + i * 34, y: GY - 130 - Math.sin((i / 4) * Math.PI) * 50, w: 34, h: 34 }); }
-      else { L.push({ k: "orb", x: hx + 120, y: GY - 120, by: GY - 120, ph: Math.random() * 6, w: 36, h: 36 }); L.push({ k: "orb", x: hx + 330, y: GY - 120, by: GY - 120, ph: Math.random() * 6 + 2, w: 36, h: 36 }); }
+      const hx = g.nextX + 60, hz = g.st.hz; let tot = 0; for (const k in hz) tot += hz[k]; let q = Math.random() * tot, pk = "drop"; for (const k in hz) { if ((q -= hz[k]) < 0) { pk = k; break; } }
+      if (pk === "drop") { L.push({ k: "drop", x: hx + 40, y: -50, w: 26, h: 40, fall: false }); L.push({ k: "drop", x: hx + 190, y: -50, w: 26, h: 40, fall: false }); }
+      else if (pk === "roll") { L.push({ k: "roll", x: hx + 260, y: GY - 40, w: 40, h: 40, rv: g.st.rv }); coinRow(4, GY - 150, 46); }
+      else if (pk === "gas") { L.push({ k: "gas", x: hx + 40, y: GY - 28, w: 160, h: 28 }); for (let i = 0; i < 5; i++) L.push({ k: "coin", x: hx + 40 + i * 34, y: GY - 130 - Math.sin((i / 4) * Math.PI) * 50, w: 34, h: 34 }); }
+      else if (pk === "orb") { L.push({ k: "orb", x: hx + 120, y: GY - 120, by: GY - 120, ph: Math.random() * 6, w: 36, h: 36 }); L.push({ k: "orb", x: hx + 330, y: GY - 120, by: GY - 120, ph: Math.random() * 6 + 2, w: 36, h: 36 }); }
+      else if (pk === "geyser") { L.push({ k: "geyser", x: hx + 120, y: GY - 110, w: 44, h: 110, ph: Math.random() * 2.4 }); for (let i = 0; i < 5; i++) L.push({ k: "coin", x: hx + 60 + i * 44, y: GY - 160 - Math.sin((i / 4) * Math.PI) * 40, w: 34, h: 34 }); }
+      else if (pk === "laser") { L.push({ k: "laser", x: hx + 100, y: GY - 70, w: 110, h: 16, ph: Math.random() * 2.2 }); for (let i = 0; i < 4; i++) L.push({ k: "coin", x: hx + 110 + i * 26, y: GY - 34, w: 30, h: 30 }); }
       g.nextX += 520;
     }
     if (Math.random() < 0.09) { const kk = ["shield", "slow", "mag"][Math.floor(Math.random() * 3)]; L.push({ k: kk, x: x + 300, y: GY - 120, w: 40, h: 40 }); }
+    for (let i = n0; i < L.length; i++) L[i].st = g.st.id;      // จำสกินของด่านตอนสร้าง (ด่านเปลี่ยนแล้วของเก่ายังหน้าตาเดิม)
   }
 
   /* ---------- วนเกม ---------- */
@@ -112,13 +122,14 @@ const RUN = (() => {
     if (g.slow > 0) g.slow -= dt; if (g.mag > 0) g.mag -= dt; if (g.inv > 0) g.inv -= dt; if (g.hurt > 0) g.hurt = Math.max(0, g.hurt - dt); if (g.boost > 0) { g.boost -= dt; g.inv = Math.max(g.inv, 0.1); }
     if (g.shake > 0) g.shake = Math.max(0, g.shake - 20 * dt);
     g.anim += dt * (8 + sp / 90);
+    stageStep(g, dt);
     // สร้างด่านล่วงหน้า
     while (g.nextX < g.x + W + 300) spawn(g);
     // ชน/เก็บ
     const hb = hitbox(g), magnet = g.boost > 0 || g.mag > 0;
     for (const o of g.things) {
       if (o.dead) continue;
-      if (o.k === "roll") o.x -= 200 * dt * ts;
+      if (o.k === "roll") o.x -= (o.rv || 200) * dt * ts;
       else if (o.k === "orb") o.y = o.by + Math.sin(g.time * 3 + o.ph) * 70;
       else if (o.k === "drop") {
         if (!o.fall && o.x - g.x < 430) o.fall = true;
@@ -131,6 +142,7 @@ const RUN = (() => {
       if (magnet && (o.k === "coin" || o.k === "tile") && sx < 360) { o.x -= (sx - 60) * 4 * dt; o.y += (hb.y + 30 - o.y) * 4 * dt; ox = o.x - g.x; oy = o.y; }
       const inter = ox < hb.x + hb.w && ox + o.w > hb.x && oy < hb.y + hb.h && oy + o.h > hb.y;
       if (!inter) continue;
+      if ((o.k === "laser" || o.k === "geyser") && !RUNST.active(o, g.time)) continue;
       if (o.k === "drop" && o.splash) continue;
       if (o.k === "coin") { o.dead = true; g.coins++; g.combo++; g.bestCombo = Math.max(g.bestCombo, g.combo); pop(g, ox, oy, "+10", "#ffd75a"); burst(g, ox + 18, oy + 18, ["#ffd75a", "#fff3a0", "#ffb347"], 8, { sp: 190, up: 80, r: 2.8, life: 0.5 }); try { SFX.play("coin"); } catch (e) {}
         if (g.combo % 10 === 0) { g.hp = Math.min(100, g.hp + 3); pop(g, PX, hb.y - 24, `คอมโบ x${g.combo}! +3HP`, "#9be21b"); ring(g, PX + 34, hb.y + hb.h / 2, "#9be21b", 80); burst(g, PX + 34, hb.y + hb.h / 2, ["#9be21b", "#d9f99d"], 14, { sp: 220, r: 3, life: 0.6 }); } }
@@ -146,6 +158,14 @@ const RUN = (() => {
     g.things = g.things.filter((o) => !o.dead);
     g.fx = g.fx.filter((f) => (f.t += dt) < 0.8); g.fx.forEach((f) => { f.y -= 50 * dt; });
     updFx(g, dt, hb);
+  }
+  /* ----- สลับด่าน (โหมดสุ่ม: ทุก 1,000 เมตร · เตรียมภาพล่วงหน้าที่ 800 เมตร) ----- */
+  function stageStep(g, dt) {
+    if (g.banner > 0) g.banner -= dt; if (g.fade < 1) g.fade = Math.min(1, g.fade + dt / 1.3); else g.prev = null;
+    if (g.mode !== "rand") return;
+    const seg = Math.floor(g.dist / 1000);
+    if (!g.nxt && g.dist - seg * 1000 > 800) { g.nxt = RUNST.pickRand(g.st.id); RUNST.need(g.nxt.vk).forEach(img); }
+    if (seg > g.seg) { g.seg = seg; const nx = g.nxt || RUNST.pickRand(g.st.id); g.nxt = null; g.prev = { st: g.st, vk: g.vk }; g.fade = 0; g.banner = 3.2; setStage(g, nx.st, nx.vk); }
   }
   const pop = (g, x, y, t, c) => g.fx.push({ x, y, t: 0, s: t, c });
   /* ----- อนุภาค/วงแหวน (v2.26) ----- */
@@ -178,24 +198,29 @@ const RUN = (() => {
   function draw(ctx, g, now) {
     ctx.save(); ctx.clearRect(0, 0, W, H);
     if (g.shake > 0) ctx.translate((Math.random() - 0.5) * g.shake, (Math.random() - 0.5) * g.shake);
-    // ฉากหลัง: เปลี่ยนสนามทุก 800 เมตร พร้อมเลื่อนแบบพาราแลกซ์
-    const ai = Math.floor(g.dist / 800) % ARENAS.length, bg = img("arenas/" + ARENAS[ai]);
-    if (bg.complete && bg.naturalWidth) {
-      const sc = H / bg.naturalHeight, bw = bg.naturalWidth * sc, off = (g.x * 0.18) % bw;
-      for (let x = -off; x < W; x += bw) ctx.drawImage(bg, x, 0, bw + 1, H);
-    } else { ctx.fillStyle = "#241254"; ctx.fillRect(0, 0, W, H); }
-    ctx.fillStyle = "rgba(10,5,30,.35)"; ctx.fillRect(0, 0, W, H);
+    // ฉากหลัง: ด่านปัจจุบัน (ห้องแล็บ = สนามเดิมเปลี่ยนทุก 800 ม.; ด่านอื่น = พาราแลกซ์หลายชั้น) ครอสเฟดตอนเปลี่ยนด่าน
+    const layer = (st, vk, a) => {
+      if (st.id === "lab") { const ai = Math.floor(g.dist / 800) % ARENAS.length, bg = img("arenas/" + ARENAS[ai]);
+        if (bg.complete && bg.naturalWidth) { ctx.save(); ctx.globalAlpha = a; const sc = H / bg.naturalHeight, bw = bg.naturalWidth * sc, off = (g.x * 0.18) % bw; for (let x = -off; x < W; x += bw) ctx.drawImage(bg, x, 0, bw + 1, H); ctx.restore(); }
+        else { ctx.fillStyle = "#241254"; ctx.fillRect(0, 0, W, H); } }
+      else RUNST.paintBg(ctx, vk, g.x, img, W, a);
+    };
+    ctx.fillStyle = "#241254"; ctx.fillRect(0, 0, W, H);
+    if (g.prev) layer(g.prev.st, g.prev.vk, 1);
+    layer(g.st, g.vk, g.prev ? g.fade : 1);
+    ctx.fillStyle = `rgba(10,5,30,${g.st.tint})`; ctx.fillRect(0, 0, W, H);
     // พื้น
-    const gr = ctx.createLinearGradient(0, GY, 0, H); gr.addColorStop(0, "#4a2f8f"); gr.addColorStop(1, "#1a0f3a");
+    const fl = g.st.floor, gr = ctx.createLinearGradient(0, GY, 0, H); gr.addColorStop(0, fl[0]); gr.addColorStop(1, fl[1]);
     ctx.fillStyle = gr; ctx.fillRect(0, GY, W, H - GY);
-    ctx.fillStyle = "#b08cff"; ctx.fillRect(0, GY, W, 4);
+    ctx.fillStyle = fl[2]; ctx.fillRect(0, GY, W, 4);
     ctx.strokeStyle = "rgba(255,255,255,.12)"; ctx.lineWidth = 2; const so = (g.x % 80);
     for (let x = -so; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x, GY + 4); ctx.lineTo(x - 30, H); ctx.stroke(); }
     if (g.boost > 0) { ctx.fillStyle = "rgba(255,230,120,.16)"; ctx.fillRect(0, 0, W, H); for (let i = 0; i < 8; i++) { const y = (i * 53 + now * 0.9) % GY; ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect((W - ((now * 1.6 + i * 97) % W)), y, 70, 2); } }
     // ของในด่าน
     for (const o of g.things) {
       const x = o.x - g.x; if (x > W + 60 || x < -160) continue;
-      if (o.k === "coin") { const b = Math.sin(now / 160 + o.x) * 3; ctx.drawImage(img("icons/coin"), x, o.y + b, o.w, o.h); }
+      if (RUNST.drawThing(ctx, o, x, now, g)) { /* วาดตามสกินของด่าน */ }
+      else if (o.k === "coin") { const b = Math.sin(now / 160 + o.x) * 3; ctx.drawImage(img("icons/coin"), x, o.y + b, o.w, o.h); }
       else if (o.k === "tile") { const b = Math.sin(now / 150 + o.x) * 3; ctx.drawImage(img("items/tile"), x, o.y + b, o.w, o.h); }
       else if (o.k === "pot") ctx.drawImage(img("items/potion_red"), x, o.y + Math.sin(now / 200) * 4, o.w, o.h);
       else if (o.k === "star") { ctx.save(); ctx.translate(x + 22, o.y + 22); ctx.rotate(now / 600); ctx.drawImage(img("icons/star"), -26, -26, 52, 52); ctx.restore(); }
@@ -236,7 +261,9 @@ const RUN = (() => {
   function drop(ctx, x, o, now) {
     ctx.save();
     if (!o.fall) { const a = 0.5 + Math.sin(now / 90) * 0.4; ctx.globalAlpha = a; ctx.fillStyle = "#ff6b81"; ctx.beginPath(); ctx.moveTo(x + 13, GY - 30); ctx.lineTo(x + 28, GY - 4); ctx.lineTo(x - 2, GY - 4); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = "#fff"; ctx.font = "800 14px Prompt, sans-serif"; ctx.textAlign = "center"; ctx.fillText("!", x + 13, GY - 8); ctx.restore(); return; }
-    if (o.splash) { ctx.fillStyle = "rgba(160,255,60,.7)"; ctx.beginPath(); ctx.ellipse(x + 13, GY - 3, 28 * (1 + o.splash * 2), 7, 0, 0, 7); ctx.fill(); ctx.restore(); return; }
+    const sk = (RUNST.byId[o.st] || { sk: {} }).sk.drop, DR = sk && RUNST.drop[sk];
+    if (o.splash) { ctx.fillStyle = RUNST.dropSplash(sk); ctx.beginPath(); ctx.ellipse(x + 13, GY - 3, 28 * (1 + o.splash * 2), 7, 0, 0, 7); ctx.fill(); ctx.restore(); return; }
+    if (DR) { DR(ctx, x, o, now); ctx.restore(); return; }
     ctx.fillStyle = "#a3e635"; ctx.shadowColor = "#a3e635"; ctx.shadowBlur = 14; ctx.beginPath(); ctx.moveTo(x + 13, o.y); ctx.quadraticCurveTo(x + 32, o.y + 26, x + 13, o.y + 40); ctx.quadraticCurveTo(x - 6, o.y + 26, x + 13, o.y); ctx.fill(); ctx.restore();
   }
   function cloud(ctx, x, o, now) {
@@ -281,6 +308,7 @@ const RUN = (() => {
       ctx.textAlign = "left"; ctx.font = "800 15px Prompt, Sarabun, sans-serif"; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 4;
       eff.forEach((t) => { ctx.strokeText(t, 14, ey + 14); ctx.fillStyle = "#fff"; ctx.fillText(t, 14, ey + 14); ey += 20; });
       if (g.boost > 0) { ctx.fillStyle = "#fff3a0"; ctx.strokeText(`⚡ บูสต์ ${g.boost.toFixed(1)}`, 14, ey + 14); ctx.fillText(`⚡ บูสต์ ${g.boost.toFixed(1)}`, 14, ey + 14); } }
+    if (g.banner > 0 && g.cd <= 0) { const a = Math.min(1, g.banner / 0.6, (3.2 - g.banner) / 0.3 + 0.2); ctx.globalAlpha = Math.max(0, a); ctx.textAlign = "center"; ctx.font = "800 28px Prompt, Sarabun, sans-serif"; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 6; const bt = `${g.st.e} ด่าน: ${g.st.n}`; ctx.strokeText(bt, W / 2, 96); ctx.fillStyle = "#fff"; ctx.fillText(bt, W / 2, 96); ctx.globalAlpha = 1; }
     if (g.cd > 0) { ctx.textAlign = "center"; ctx.font = "800 96px Prompt, Sarabun, sans-serif"; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 10; const n = Math.ceil(g.cd); ctx.strokeText(n, W / 2, H / 2 - 20); ctx.fillStyle = "#ffe48a"; ctx.fillText(n, W / 2, H / 2 - 20); }
     ctx.restore();
   }
@@ -314,7 +342,16 @@ const RUN = (() => {
       </div>
       <div class="run-how"><div><b>⬆ กระโดด</b><small>แตะซ้ำ = กระโดด 2 ชั้น (ข้ามชั้นหลอดทดลอง)</small></div><div><b>⬇ สไลด์</b><small>ลอดใต้เมฆพิษ (กดค้างได้)</small></div></div>
       ${s ? `<div class="run-info"><section><h4>🏆 รางวัล</h4><ul><li>EXP สูงสุด <b>+${s.max_exp}</b> เมื่อได้ ${s.target} คะแนน</li><li>เล่นรับรางวัลแล้ว ${Math.min(s.plays, s.max_plays)}/${s.max_plays} รอบวันนี้</li>${s.best != null ? `<li>คะแนนดีที่สุด <b>${s.best}</b></li>` : ""}</ul></section></div>` : '<p class="muted">กำลังโหลด...</p>'}
+      ${stagePicker()}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="RUN.start()">▶ เริ่มวิ่ง</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
+  }
+  function stagePicker() {
+    const cur = stGet(), sel = cur === "rand" ? null : RUNST.byId[cur];
+    const chip = (id, th, n, e) => `<button class="run-st ${cur === id ? "on" : ""}" onclick="RUN.pick('${id}')"><span class="th" style="background-image:url(assets/run/th_${th}.jpg)">${e}</span><b>${n}</b></button>`;
+    return `<div class="run-stages"><h4>🗺️ เลือกด่าน</h4><div class="run-stl">
+      <button class="run-st ${cur === "rand" ? "on" : ""}" onclick="RUN.pick('rand')"><span class="th rnd">🎲</span><b>สุ่ม</b></button>
+      ${RUNST.STAGES.map((t) => chip(t.id, t.th, t.n, t.e)).join("")}</div>
+      <p class="muted run-stinfo">${sel ? `<b>${sel.e} ${sel.n}</b> — ${sel.info}` : "<b>🎲 สุ่มด่าน</b> — เปลี่ยนด่านใหม่ทุก 1,000 เมตร พร้อมพื้นหลังและอุปสรรคชุดใหม่ (ไม่ซ้ำด่านเดิมติดกัน)"}</p></div>`;
   }
   function playView() {
     return `<div class="card run-card"><div class="row" style="margin-bottom:6px"><b class="grow">🏃 เคมีรัน</b><button class="btn ghost small" onclick="RUN.quit()">ออก</button></div>
@@ -333,5 +370,5 @@ const RUN = (() => {
       <div class="row" style="justify-content:center"><button class="btn gold" ${r.busy ? "disabled" : ""} onclick="RUN.again()">วิ่งอีกครั้ง</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }
   async function again() { try { S.st = await rpc("run_status", { p_token: tk() }); } catch (e) {} start(); }
-  return { open, view, start, jump, slide, quit, again };
+  return { open, view, start, jump, slide, quit, again, pick };
 })();

@@ -8,3 +8,9 @@
 - **assets/gi/ck_*.svg** (ไอคอนแบนเนอร์เช็คอิน): game-icons.net — Lorc, Delapouite, sbed — CC BY 3.0 ดัดแปลงสี · **assets/px/ck_*.png**: Raven Fantasy Icons (เงื่อนไขเหมือน assets/px)
 - **assets/px/ring_*.png, neck_*.png** (แหวน/สร้อย): Shikashi's Fantasy Icons Pack v2 (ใช้เชิงพาณิชย์/ดัดแปลงได้ตามไฟล์ README ของชุด; ต้นแบบบางส่วนอิงดีไซน์จาก game-icons.net CC BY 3.0) — ดัดแปลงสีพลอย/ลูกปัด · **assets/slots/ring.png, neck.png**: เส้นขอบเงาจากไอคอนเดียวกัน
 - **assets/px/rg_*.png, nk_*.png** (แหวนขวดจิ๋ว/สร้อยจี้ขวด-อะตอม-ตะกรุด): ประกอบจาก Shikashi's Fantasy Icons (ขวดยา/โซ่/แหวน) + ลายอะตอม/ตะกรุดที่วาดเอง
+- **assets/run/** (ฉากหลังด่านเคมีรัน v2.40 — ปรับขนาด/แปลงเป็น webp เท่านั้น ไม่ได้แก้ภาพ):
+  - ด่าน "ภูเขายามเช้า" "ป่าเงียบยามค่ำ" "น้ำตกเวทมนตร์": *Free Horizontal Game Backgrounds* — Craftpix (ใบอนุญาตฟรีของ Craftpix; ตรวจเงื่อนไขก่อนเผยแพร่นอกห้องเรียน)
+  - ด่าน "ธารน้ำแข็ง": *Glacial Mountains Parallax Background* — Pixel Art created by Vicente Nitti (@vnitti) — CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/) — มีการปรับขนาดภาพ
+  - ด่าน "ทะเลหลากสี": *Ocean and Clouds Free Pixel Art Backgrounds* — Craftpix (ใบอนุญาตฟรีของ Craftpix)
+  - ด่าน "อวกาศ": *Space Background Pack* — Ansimuz — CC0
+  - ภาพย่อ th_*.jpg ตัดจากภาพชุดข้างต้น · สิ่งกีดขวางของทุกด่านวาดด้วยโค้ดแคนวาสเอง (runstages.js)

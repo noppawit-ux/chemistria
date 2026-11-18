@@ -1467,3 +1467,13 @@ img[src*="assets/px/"]{image-rendering:pixelated}
 .btsbonus{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px}
 .btsx{background:rgba(255,255,255,.06);border-radius:999px;padding:2px 8px;font-size:.78em;display:inline-flex;align-items:center;gap:3px}
 .btsx .up{color:#7dffb0;font-weight:700}.btsx .dn{color:#ff8a8a;font-weight:700}.btsx .gi{width:1.1em;height:1.1em}
+
+/* เลือกด่านเคมีรัน (v2.40) */
+.run-stages{margin:10px 0;text-align:left}.run-stages h4{margin:0 0 6px}
+.run-stl{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch}
+.run-st{flex:0 0 84px;border:2px solid var(--line,#3a2d6b);background:rgba(255,255,255,.04);border-radius:12px;padding:4px;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:center;font:inherit}
+.run-st .th{display:flex;width:100%;aspect-ratio:16/9;border-radius:8px;background-size:cover;background-position:center;align-items:flex-end;justify-content:flex-end;padding:2px 4px;font-size:1rem;box-sizing:border-box}
+.run-st .th.rnd{background:linear-gradient(135deg,#6d3bd9,#e879f9,#38bdf8);align-items:center;justify-content:center;font-size:1.6rem}
+.run-st b{font-size:.72rem;line-height:1.15;text-align:center}
+.run-st.on{border-color:var(--gold2,#ffd75a);box-shadow:0 0 0 2px rgba(255,215,90,.35);background:rgba(255,215,90,.1)}
+.run-stinfo{font-size:.82rem;margin:2px 0 0}
