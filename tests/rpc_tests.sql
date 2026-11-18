@@ -659,7 +659,7 @@ update app_settings set value='5' where key='card_daily_cap';
 -- ซ้ำ → เศษธาตุ
 create temp table _ksh as select shards s0 from students where id=(select a from _ks);
 select _card_grant((select a from _ks), (select card_id from student_cards where student_id=(select a from _ks) limit 1), 'gift');
-select pg_temp.t('การ์ด: ซ้ำได้เศษธาตุตามระดับ + qty เพิ่ม', (select shards from students where id=(select a from _ks)) > (select s0 from _ksh)
+select pg_temp.t('การ์ด: ซ้ำเป็นใบสำรอง (qty เพิ่ม) ไม่ได้เศษอัตโนมัติ (ต้องย่อยเอง db/94)', (select shards from students where id=(select a from _ks)) = (select s0 from _ksh)
   and (select qty from student_cards where student_id=(select a from _ks) limit 1) = 2);
 -- pity: ซ้ำติดกัน 3 ครั้ง (เกณฑ์ 4) → ใบถัดไปเป็นใบใหม่
 update students set card_pity = 3 where id=(select b from _ks);
@@ -1359,6 +1359,48 @@ update app_settings set value='0' where key='quests_day_aware';
 select pg_temp.t('เควสตามวัน 93: ปิด quests_day_aware → กลับมาแสดงทุกวันเหมือนเดิม',
   (select count(*) from todays_quests((select cid from _qd),(select d1 from _qd) + 9) where auto_trigger in ('attendance','submit')) = 2);
 update app_settings set value='1' where key='quests_day_aware';
+-- ย่อยการ์ดซ้ำ / หลอมการ์ด (db/94)
+reset role;
+create temp table _fg as select (select id from students where class_id=(select id from classes where code='T99') and no=16) sid, (select tok from _gt where no=16) tk,
+  (select c.id from cards c where c.rarity='N' and c.active order by c.no, c.id limit 1) ncard, (select c.id from cards c where c.rarity='R' and c.active order by c.no, c.id limit 1) rcard;
+grant all on _fg to anon, authenticated;
+delete from student_cards where student_id=(select sid from _fg); update students set shards=0, card_pity=0 where id=(select sid from _fg);
+select _card_grant((select sid from _fg), (select ncard from _fg), 'gift');
+select _card_grant((select sid from _fg), (select ncard from _fg), 'gift');
+select _card_grant((select sid from _fg), (select rcard from _fg), 'gift');
+select _card_grant((select sid from _fg), (select rcard from _fg), 'gift');
+select _card_grant((select sid from _fg), (select rcard from _fg), 'gift');
+select pg_temp.t('หลอม 94: การ์ดซ้ำไม่แปลงเป็นเศษอัตโนมัติ (เก็บเป็นใบสำรอง)', (select shards from students where id=(select sid from _fg)) = 0
+  and (select qty from student_cards where student_id=(select sid from _fg) and card_id=(select ncard from _fg)) = 2);
+set role anon;
+create temp table _fa as select card_album((select tk from _fg))::jsonb j; grant all on _fa to anon;
+reset role;
+select pg_temp.t('หลอม 94: สมุดสะสมแสดงใบสำรอง 3 ใบ (=1+2) มูลค่า 7 เศษ และตารางราคาหลอม 4 ระดับ', (select (j->>'spare_total')::int = 3 and (j->>'spare_shards')::int = 1 + 2*3 and jsonb_array_length(j->'forge') = 4 and (j->'forge'->0->>'cost')::int = 5 from _fa));
+set role anon;
+create temp table _fd1 as select card_dismantle((select tk from _fg), (select ncard from _fg), 1)::jsonb j; grant all on _fd1 to anon;
+reset role;
+select pg_temp.t('หลอม 94: ย่อยใบสำรอง N 1 ใบ ได้ 1 เศษ และเหลือ 1 ใบ (ไม่ย่อยใบสุดท้าย)', (select (j->>'gained')::int = 1 and (j->>'shards')::int = 1 from _fd1)
+  and (select qty from student_cards where student_id=(select sid from _fg) and card_id=(select ncard from _fg)) = 1);
+select pg_temp.t('หลอม 94: ย่อยใบ N ที่เหลือ (ไม่มีสำรอง) ถูกปฏิเสธ', pg_temp.fails($q$select card_dismantle((select tk from _fg), (select ncard from _fg), 1)$q$, 'anon'));
+set role anon;
+create temp table _fd2 as select card_dismantle((select tk from _fg))::jsonb j; grant all on _fd2 to anon;
+reset role;
+select pg_temp.t('หลอม 94: ย่อยทั้งหมด ได้เศษจากใบ R สำรอง 2 ใบ (+6) รวม 7 และเหลือใบละ 1', (select (j->>'gained')::int = 6 and (j->>'shards')::int = 7 from _fd2)
+  and (select count(*) from student_cards where student_id=(select sid from _fg) and qty = 1) = 2);
+select pg_temp.t('หลอม 94: ย่อยซ้ำเมื่อไม่มีสำรองถูกปฏิเสธ', pg_temp.fails($q$select card_dismantle((select tk from _fg))$q$, 'anon'));
+select pg_temp.t('หลอม 94: เศษไม่พอ/ระดับผิด ถูกปฏิเสธ และเศษไม่ถูกหัก', pg_temp.fails($q$select card_forge((select tk from _fg), 'SSR')$q$, 'anon') and pg_temp.fails($q$select card_forge((select tk from _fg), 'X')$q$, 'anon') and (select shards from students where id=(select sid from _fg)) = 7);
+set role anon;
+create temp table _ff1 as select card_forge((select tk from _fg), 'N')::jsonb j; grant all on _ff1 to anon;
+reset role;
+select pg_temp.t('หลอม 94: หลอมระดับ N ราคา 5 ได้การ์ดใหม่ที่ไม่เคยมี หักเศษเหลือ 2 และบันทึก drop แบบ forge',
+  (select j->'card'->>'rarity' = 'N' and (j->'card'->>'is_new')::boolean and (j->>'shards')::int = 2 from _ff1)
+  and (select shards from students where id=(select sid from _fg)) = 2
+  and exists (select 1 from student_cards where student_id=(select sid from _fg) and card_id=((select j from _ff1)->'card'->>'id')::uuid and qty = 1)
+  and (select count(*) from card_drops where student_id=(select sid from _fg) and source='forge') = 1);
+select pg_temp.t('หลอม 94: anon เรียกฟังก์ชันภายในไม่ได้', not has_function_privilege('anon','_card_grant(uuid,uuid,text,text)','execute') and not has_function_privilege('anon','_forge_cost(text)','execute'));
+insert into student_cards (student_id, card_id) select (select sid from _fg), c.id from cards c where c.rarity='N' and c.active on conflict do nothing;
+update students set shards = 99 where id=(select sid from _fg);
+select pg_temp.t('หลอม 94: มีการ์ดระดับนั้นครบแล้ว หลอมไม่ได้ และเศษไม่ถูกหัก', pg_temp.fails($q$select card_forge((select tk from _fg), 'N')$q$, 'anon') and (select shards from students where id=(select sid from _fg)) = 99);
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
