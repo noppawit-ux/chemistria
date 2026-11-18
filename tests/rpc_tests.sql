@@ -794,6 +794,7 @@ create temp table _fr as select (select tok from _gt where no=12) t12, (select t
   (select id from gift_items where key='candy') candy, (select id from gift_items where key='crystal') crystal, (select id from gift_items where key='bear') bear;
 grant all on _fr to anon, authenticated;
 update students set coins = 1000 where id in (select s12 from _fr union select s13 from _fr);
+update app_settings set value='0' where key='gift_free_daily';
 select pg_temp.t('เพื่อน: มีของขวัญ 5 ชิ้น และชนิดความสัมพันธ์ 10 แบบ', (select count(*) from gift_items) = 5 and (select count(*) from relation_types) = 10);
 select pg_temp.t('เพื่อน: นักเรียนเรียกฟังก์ชันภายในไม่ได้', pg_temp.fails($q$select _rel_home((select s12 from _fr))$q$) and pg_temp.fails($q$select _student_extras((select t12 from _fr))$q$));
 set role anon;
@@ -827,6 +828,57 @@ select pg_temp.t('เพื่อน: เกินโควตาส่งต่
 reset role;
 update app_settings set value='5' where key='gift_daily_limit';
 select pg_temp.t('เพื่อน: ครูดูบันทึกของขวัญได้ นักเรียนดูไม่ได้', pg_temp.fails($q$select admin_gift_log()$q$));
+
+-- ส่งของขวัญฟรีรายวัน (db/95)
+update app_settings set value='1' where key='gift_free_daily';
+reset role;
+create temp table _gfx as select (select tok from _gt where no=14) t14, (select id from students where class_id=(select id from classes where code='T99') and no=14) s14, (select id from gift_items where key='candy') candy, (select id from gift_items where key='crystal') crystal;
+grant all on _gfx to anon, authenticated;
+delete from gift_log where from_id=(select s14 from _gfx); update students set coins = 500 where id=(select s14 from _gfx);
+set role anon;
+create temp table _gfx0 as select friend_list((select t14 from _gfx))::jsonb j; grant all on _gfx0 to anon;
+reset role;
+select pg_temp.t('ส่งฟรี 95: friend_list แจ้งสิทธิ์ส่งฟรีเหลือ 1 และราคาสูงสุดที่ฟรี 30', (select (j->>'free_left')::int = 1 and (j->>'free_max_price')::int = 30 and (j->>'free_daily')::int = 1 from _gfx0));
+set role anon;
+create temp table _gfx1 as select gift_send((select t14 from _gfx), 15, (select crystal from _gfx))::jsonb j; grant all on _gfx1 to anon;
+reset role;
+select pg_temp.t('ส่งฟรี 95: ของขวัญราคาเกินเพดาน (ผลึก 150) ไม่ฟรี หักเหรียญ และไม่ใช้สิทธิ์ฟรี', (select not (j->>'free')::boolean from _gfx1) and (select coins from students where id=(select s14 from _gfx)) = 350 and (select count(*) from gift_log where from_id=(select s14 from _gfx) and free) = 0);
+set role anon;
+create temp table _gfx2 as select gift_send((select t14 from _gfx), 11, (select candy from _gfx))::jsonb j; grant all on _gfx2 to anon;
+reset role;
+select pg_temp.t('ส่งฟรี 95: ลูกอมครั้งแรกของวันฟรี ไม่หักเหรียญ ยังได้ RP', (select (j->>'free')::boolean and (j->>'points')::int = 3 from _gfx2) and (select coins from students where id=(select s14 from _gfx)) = 350);
+set role anon;
+create temp table _gfx3 as select gift_send((select t14 from _gfx), 16, (select candy from _gfx))::jsonb j; grant all on _gfx3 to anon;
+reset role;
+select pg_temp.t('ส่งฟรี 95: ครั้งที่สองของวันหักเหรียญตามปกติ (สิทธิ์ฟรีหมดแล้ว)', (select not (j->>'free')::boolean from _gfx3) and (select coins from students where id=(select s14 from _gfx)) = 335);
+set role anon;
+create temp table _gfx4 as select friend_list((select t14 from _gfx))::jsonb j; grant all on _gfx4 to anon;
+reset role;
+select pg_temp.t('ส่งฟรี 95: friend_list แสดงสิทธิ์ฟรีเหลือ 0', (select (j->>'free_left')::int = 0 from _gfx4));
+update app_settings set value='0' where key='gift_free_daily';
+set role anon;
+create temp table _gfx5 as select gift_send((select t14 from _gfx), 11, (select candy from _gfx))::jsonb j; grant all on _gfx5 to anon;
+reset role;
+select pg_temp.t('ส่งฟรี 95: ปิดฟีเจอร์ (gift_free_daily=0) → ของขวัญหักเหรียญทุกชิ้น', (select not (j->>'free')::boolean from _gfx5) and (select coins from students where id=(select s14 from _gfx)) = 320);
+update app_settings set value='1' where key='gift_free_daily';
+delete from gift_log where from_id=(select s14 from _gfx);
+
+-- คลีนระบบ (db/96)
+insert into login_attempts (at, ip, acct) values (now() - interval '10 days', '9.9.9.9', 'x'), (now(), '9.9.9.9', 'y');
+insert into security_events (at, kind, seen) values (now() - interval '120 days', 'test_old', true), (now() - interval '120 days', 'test_old_unseen', false);
+insert into celebrations (class_id, student_id, kind, title, created_at) select (select id from classes where code='T99'), (select s14 from _gfx), 'ssr', 'old', now() - interval '45 days';
+create temp table _clz0 as select (select count(*) from ledger) l, (select count(*) from game_plays) g, (select count(*) from battles) b, (select count(*) from student_cards) c;
+create temp table _clz1 as select admin_cleanup(false)::jsonb j;
+select pg_temp.t('คลีน 96: ดูก่อนไม่ลบ — นับของเก่าได้ แต่ข้อมูลยังอยู่ครบ', (select not (j->>'applied')::boolean and (j->>'total')::int >= 3 from _clz1)
+  and exists (select 1 from login_attempts where acct='x') and exists (select 1 from celebrations where title='old'));
+create temp table _clz2 as select admin_cleanup(true)::jsonb j;
+select pg_temp.t('คลีน 96: ลบจริง — ล็อกอินเก่า/เหตุที่ดูแล้ว/ข่าวเก่า หาย แต่ของใหม่และเหตุที่ยังไม่ได้ดูอยู่', (select (j->>'applied')::boolean from _clz2)
+  and not exists (select 1 from login_attempts where acct='x') and exists (select 1 from login_attempts where acct='y')
+  and not exists (select 1 from security_events where kind='test_old') and exists (select 1 from security_events where kind='test_old_unseen')
+  and not exists (select 1 from celebrations where title='old'));
+select pg_temp.t('คลีน 96: ไม่แตะบัญชี EXP/ประวัติเล่น/ศึก/การ์ด', (select l = (select count(*) from ledger) and g = (select count(*) from game_plays) and b = (select count(*) from battles) and c = (select count(*) from student_cards) from _clz0));
+select pg_temp.t('คลีน 96: รันซ้ำไม่เหลืออะไรให้ลบ และ anon เรียกไม่ได้', (select (admin_cleanup(false)->>'total')::int = 0) and pg_temp.fails($q$select admin_cleanup(false)$q$, 'anon'));
+delete from login_attempts where ip='9.9.9.9'; delete from security_events where kind='test_old_unseen';
 
 -- ================= ด่านบอสเลื่อนแรงค์ (69) =================
 update students set exp = 700 where id in (select s12 from _fr union select s13 from _fr);

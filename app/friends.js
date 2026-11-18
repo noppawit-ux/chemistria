@@ -25,7 +25,7 @@ function friendsHtml() {
       ${frBar(m.rp)}
       <div class="row" style="gap:6px;margin-top:6px"><button class="btn small gold" onclick="cvOpen(${m.no})">👀 ดูตัวละคร</button><button class="btn small gold" onclick="giftOpen(${m.no})">🎁 ส่งของขวัญ</button><button class="btn small ghost" onclick="relOpen(${m.no})">💞 ความสัมพันธ์</button></div></div>`).join("") || '<p class="muted">ยังไม่มีเพื่อนในห้อง</p>';
   return `<div class="card"><h3>💝 เพื่อนและของขวัญ</h3><p class="muted" style="margin:0">ส่งของขวัญให้เพื่อนในห้อง → ได้คะแนนมิตรภาพ (RP) ร่วมกัน · ครบเกณฑ์ปลดล็อกความสัมพันธ์ แล้วเลือกได้ว่าจะเป็นอะไรกัน<br>
-      วันนี้ส่งแล้ว <b>${FR.sent_today}/${FR.send_limit}</b> ชิ้น · RP ต่อคู่ไม่เกิน ${FR.pair_cap}/วัน · เหรียญ <b>${D.student.coins}</b> 🪙</p></div>
+      วันนี้ส่งแล้ว <b>${FR.sent_today}/${FR.send_limit}</b> ชิ้น · ${FR.free_left > 0 ? `🎁 ส่งฟรีได้อีก <b>${FR.free_left}</b> ครั้ง (ของขวัญไม่เกิน ${FR.free_max_price} 🪙)` : FR.free_daily > 0 ? "🎁 ใช้สิทธิ์ส่งฟรีวันนี้แล้ว" : ""} · RP ต่อคู่ไม่เกิน ${FR.pair_cap}/วัน · เหรียญ <b>${D.student.coins}</b> 🪙</p></div>
     <div class="card"><h3>🎁 ของขวัญที่ได้รับ</h3>${inbox}</div>
     <div class="card"><h3>👥 เพื่อนในห้อง</h3>${mates}</div>`;
 }
@@ -40,7 +40,7 @@ let GIFT_PICK = null;
 function giftOpen(no) {
   const m = (FR.mates || []).find((x) => x.no === no); if (!m) return; GIFT_PICK = null;
   frModal(`<h3>🎁 ส่งของขวัญให้ ${esc(m.name)}</h3><p class="muted" style="margin:0 0 6px">วันนี้ให้คู่นี้ได้อีก ${m.day_left} RP · เหรียญ ${D.student.coins} 🪙</p>
-    <div class="eqgrid">${(FR.gifts || []).map((g) => `<button class="eqt rar-${esc(g.rarity)}" id="gp${g.id}" onclick="giftPick('${g.id}')"><span class="eqi">${esc(g.emoji)}</span><small><b>${esc(g.name)}</b><br>${g.price}🪙 · +${g.points} RP</small></button>`).join("")}</div>
+    <div class="eqgrid">${(FR.gifts || []).map((g) => `<button class="eqt rar-${esc(g.rarity)}" id="gp${g.id}" onclick="giftPick('${g.id}')"><span class="eqi">${esc(g.emoji)}</span><small><b>${esc(g.name)}</b><br>${FR.free_left > 0 && g.price <= FR.free_max_price ? '<span class="tag ok">🎁 ฟรี</span>' : g.price + "🪙"} · +${g.points} RP</small></button>`).join("")}</div>
     <input id="giftmsg" maxlength="60" placeholder="ข้อความถึงเพื่อน (ไม่บังคับ ไม่เกิน 60 ตัวอักษร)" style="width:100%;margin:4px 0 8px">
     <div class="row" style="justify-content:center"><button class="btn gold" onclick="giftSend(${no})">ส่งของขวัญ 💝</button></div>`);
 }
@@ -48,9 +48,10 @@ const giftPick = (id) => { GIFT_PICK = id; document.querySelectorAll("#eqov .eqt
 function giftSend(no) {
   if (!GIFT_PICK) return toast("เลือกของขวัญก่อน");
   const g = (FR.gifts || []).find((x) => x.id === GIFT_PICK), msg = ($("#giftmsg") || {}).value || "";
-  if (!confirm(`ส่ง ${g.name} (${g.price} เหรียญ) ?`)) return;
+  const free = FR.free_left > 0 && g.price <= FR.free_max_price;
+  if (!confirm(free ? `ส่ง ${g.name} ฟรี (ใช้สิทธิ์ส่งฟรีวันนี้) ?` : `ส่ง ${g.name} (${g.price} เหรียญ) ?`)) return;
   eqClose();
-  frAct(() => rpc("gift_send", { p_token: tk(), p_to_no: no, p_gift: GIFT_PICK, p_msg: msg }).then((r) => { toast(`ส่งให้ ${r.to} แล้ว +${r.points} RP 💝`); return r; }));
+  frAct(() => rpc("gift_send", { p_token: tk(), p_to_no: no, p_gift: GIFT_PICK, p_msg: msg }).then((r) => { toast(`ส่งให้ ${r.to} แล้ว +${r.points} RP 💝${r.free ? " (ฟรี)" : ""}`); return r; }));
 }
 function relOpen(no) {
   const m = (FR.mates || []).find((x) => x.no === no); if (!m) return;

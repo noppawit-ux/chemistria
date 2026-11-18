@@ -4,7 +4,7 @@ TAB.system = async function (v) {
   const lastBk = (() => { try { return localStorage.getItem("ch_last_backup") || ""; } catch (e) { return ""; } })();
   const days = lastBk ? Math.floor((Date.now() - new Date(lastBk).getTime()) / 864e5) : null;
   v.innerHTML = `<div class="card"><h3>🩺 ตรวจสุขภาพระบบ</h3><div id="hc" class="muted">กำลังตรวจ…</div>
-    <div class="row" style="margin-top:8px"><button class="btn ghost small" id="hcRe">🔄 ตรวจอีกครั้ง</button><button class="btn ghost small" id="hcPurge">🧹 ล้างเซสชันเก่า</button></div></div>
+    <div class="row" style="margin-top:8px"><button class="btn ghost small" id="hcRe">🔄 ตรวจอีกครั้ง</button><button class="btn ghost small" id="hcPurge">🧹 ล้างเซสชันเก่า</button><button class="btn gold small" id="hcClean">✨ คลีนระบบให้คล่อง</button></div><div id="hcCleanBox" class="muted" style="margin-top:8px"></div></div>
     <div class="card"><h3>📊 สถิติเกมและรางวัล</h3><div class="row" style="margin-bottom:8px"><button class="btn small" data-d="7">7 วัน</button><button class="btn ghost small" data-d="30">30 วัน</button><button class="btn ghost small" data-d="90">90 วัน</button></div><div id="gst" class="muted">กำลังโหลด…</div></div>
     <div class="card"><h3>💾 สำรองข้อมูล</h3>
     <p class="muted">ข้อมูลทั้งหมดอยู่ที่ Supabase ที่เดียว แนะนำให้ดาวน์โหลดสำรองทุกสัปดาห์ (ไฟล์ .json ไม่มี PIN) เก็บไว้ใน Google Drive ของคุณเอง ห้ามอัปโหลดขึ้น GitHub เพราะมีข้อมูลนักเรียน</p>
@@ -34,6 +34,16 @@ TAB.system = async function (v) {
   stat(7);
   $("#hcRe").onclick = check;
   $("#hcPurge").onclick = async () => { const n = await run(() => rpc("admin_purge_sessions")); toast("ล้างเซสชันเก่า " + n + " รายการ"); check(); };
+  $("#hcClean").onclick = async () => {
+    const box = $("#hcCleanBox"); box.textContent = "กำลังตรวจข้อมูลเก่า…";
+    try {
+      const r = await run(() => rpc("admin_cleanup", { p_apply: false })), rows = r.items.map((i) => `<tr><td>${esc(i.label)}</td><td style="text-align:right"><b>${i.n}</b></td></tr>`).join("");
+      box.innerHTML = `<table style="width:100%;font-size:.9em">${rows}</table><div style="margin:6px 0">รวมที่จะลบ <b>${r.total}</b> แถว · ไม่แตะ EXP/เหรียญ/ความสำเร็จ/สถิติ/ประวัติการเล่น</div>
+        ${r.total ? '<button class="btn gold small" id="hcCleanGo">🗑️ ลบทั้งหมดนี้</button>' : "<b>✅ ระบบสะอาดแล้ว ไม่มีอะไรต้องลบ</b>"}`;
+      const go = $("#hcCleanGo"); if (go) go.onclick = async () => { if (!confirm(`ลบข้อมูลเก่า ${r.total} แถว? (ย้อนกลับไม่ได้ — แนะนำสำรองข้อมูลก่อน)`)) return;
+        const d = await run(() => rpc("admin_cleanup", { p_apply: true })); box.innerHTML = `✅ ลบแล้ว ${d.total} แถว`; toast("คลีนระบบเรียบร้อย"); check(); };
+    } catch (e) { box.innerHTML = `<span style="color:var(--red)">${esc(e.message)}<br>ถ้าเพิ่งอัปเดต ให้รัน SQL 96_cleanup.sql ก่อน</span>`; }
+  };
   check();
   const TABLES = [["classes", "*"], ["students", "id,class_id,no,name,avatar,exp,coins,gacha_pity,char_class,class_changes,decor,free_pulls,team_id,gender,is_gm,stat_pts,last_login,created_at"],
     ["ledger", "*"], ["score_items", "*"], ["scores", "*"], ["ch_attendance", "*"], ["ch_assignments", "*"], ["ch_submissions", "*"],

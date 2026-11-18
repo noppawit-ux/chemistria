@@ -272,13 +272,29 @@ const BATTLE = (() => {
       <div class="run-info"><section><h4>🎮 วิธีเล่น</h4><ul><li>ตอบคำถามเพื่อใช้สกิล</li><li>มอนสเตอร์โจมตีกลับ ให้กดลูกศรลดดาเมจ</li></ul></section><section><h4>🏆 รางวัล</h4><ul><li>ชนะได้ EXP + เหรียญ</li><li>สุ่มดรอปไอเทม</li></ul></section></div>
       <p>${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${d.limit}</span>` : '<span class="pill">รอบที่ได้รางวัลวันนี้หมดแล้ว — เล่นฝึกได้ไม่จำกัด (ไม่ได้รางวัล)</span>'} <span class="pill">❤️ HP ${d.p_max}</span></p>
       <div class="bt-skills">${d.skills.map((s) => `<span class="bt-sk ${s.kind}" title="${esc(s.descr || "")}">${s.emoji} <b>${esc(s.name)}</b> <small>${KIND[s.kind][1]}</small></span>`).join("")}</div></div>
-      ${arenaPicker()}
+      ${statsPanel(true)}${arenaPicker()}
       <div class="bt-mgrid">${d.monsters.filter((m) => !d.arenas || !d.arenas.length || (m.arena || "lab") === (arNow() || {}).key).map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small> ${elBadge(monElem(m.id))}</h3>
         <p class="muted" style="margin:2px 0">${esc(m.descr || "")}</p><p style="margin:4px 0"><span class="pill">❤️ ${m.hp}</span> <span class="pill">🗡️ ${m.atk}</span></p>
         <p class="muted" style="margin:2px 0 8px">รางวัล +${m.exp} EXP · +${m.coins} 🪙 · ดรอปไอเทม</p>
         <button class="btn gold" onclick="BATTLE.start('${m.id}')">⚔️ ท้าสู้</button></div>`).join("") || '<div class="card"><p class="muted">ยังไม่มีมอนสเตอร์ในระบบ</p></div>'}</div>`;
   }
 
+  /* แผงสเตตัสในศึก: สเตตัส 4 ค่า + ผลจริงต่อการต่อสู้ + โบนัสอุปกรณ์/การ์ด + ธาตุเทียบกับมอนสเตอร์ตัวนี้ (อ่านจากข้อมูลที่โหลดไว้แล้ว ไม่เรียกเซิร์ฟเวอร์เพิ่ม) */
+  function statsPanel(full) {
+    try {
+      const X_ = typeof X !== "undefined" ? X : null, T = X_ && X_.stats ? statTotals(D.student.decor) : null, g = GEARS && GEARS.gear, ef = (X_ && X_.stats && X_.stats.effects) || {};
+      if (!T && !g) return "";
+      const intl = T ? T.int.total : 0, luk = T ? T.luk.total : 0, cfg = (GEARS && GEARS.cfg) || { adv: 4, weak: 4, cap: 20 };
+      const inF = S.screen === "fight" && S.bat, mu = inF ? matchup() : { adv: 0, weak: 0 }, advP = Math.min(cfg.cap, mu.adv * cfg.adv), weakP = Math.min(cfg.cap, mu.weak * cfg.weak);
+      const chip = (ic, label, val, tip) => `<span class="btsc" title="${esc(tip || "")}"><i>${ic}</i><small>${label}</small><b>${val}</b></span>`;
+      const row1 = T ? [chip("🧠", "ปัญญา", T.int.total, `ดาเมจโจมตี +${Math.floor(intl / 2)} ต่อครั้ง`), chip("💪", "ขยัน", T.dil.total, "EXP จากกิจกรรม"), chip("⚔️", "พลัง", T.str.total, `ดาเมจต่อบอส +${ef.boss_pct || 0}%`), chip("🍀", "โชค", T.luk.total, `คริติคอล ~${Math.min(30, luk)}% (สกิลคริ ${Math.min(85, 30 + luk * 3)}%)`)].join("") : "";
+      const bonus = (T ? `<span class="btsx">⚔️ ดาเมจ +${ef.boss_pct || 0}% · +${Math.floor(intl / 2)} ต่อครั้ง</span><span class="btsx">💥 คริติคอล ~${Math.min(30, luk)}%</span>` : "")
+        + (g ? `<span class="btsx">${gi("atk")} โจมตี +${g.atk}%</span><span class="btsx">${gi("def")} ลดดาเมจ −${g.def}%</span><span class="btsx">${gi("hp")} HP +${g.hp}%</span>` : "");
+      const m = inF ? S.bat.monster : null, me = m && typeof monElem === "function" ? monElem(m.id) : null;
+      const el = me ? `<span class="btsx">${elBadge(me)} มอนสเตอร์ตัวนี้${advP ? ` · เรา<span class="up">ได้เปรียบ +${advP}% ดาเมจ</span>` : ""}${weakP ? ` · เรา<span class="dn">แพ้ทาง โดนแรงขึ้น +${weakP}%</span>` : ""}${!advP && !weakP ? " · ธาตุเสมอ" : ""}</span>` : "";
+      return `<div class="card btstat"><div class="btsrow">${row1}</div><div class="btsbonus">${bonus}${el}</div>${full ? `<p class="muted" style="margin:6px 0 0;font-size:12px">เพิ่มสเตตัสได้ที่หน้าตัวละคร · ใส่ไอเทม/การ์ดที่มีโบนัสโจมตี ป้องกัน และธาตุ เพื่อสู้มอนสเตอร์ง่ายขึ้น</p>` : ""}</div>`;
+    } catch (e) { return ""; }
+  }
   function fightView() {
     const b = S.bat, m = b.monster, me = D.student;
     const buffs = Object.entries(b.buffs || {}).filter(([, v]) => v > 0).map(([k, v]) => `<span class="bt-buff">${BUFF[k] || k} ×${v}</span>`).join("");
@@ -300,7 +316,7 @@ const BATTLE = (() => {
         <span class="bt-sico">${s.emoji}</span><b>${esc(s.name)}</b><small>${KIND[s.kind][1]}${s.kind !== "buff" ? ` ${s.power}` : ""}${s.left > 0 ? ` · รอ ${s.left} เทิร์น` : s.cd ? ` · CD ${s.cd}` : ""}</small>
         <em>${esc(s.descr || "")}</em></button>`).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
-    return arena + `<div class="card">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
+    return arena + statsPanel(false) + `<div class="card">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <p class="muted" style="margin:4px 0 8px">เลือกสกิล แล้วตอบคำถามให้ถูก (ภายใน ${qs()} วิ) สกิลถึงจะออกผล · ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡ · มอนสเตอร์โจมตีเองอัตโนมัติ (รับ 70%) ทุกเทิร์นที่ 3 จะโจมตีหนัก</p><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
       ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — HP ของคุณ 85% · เวลา 15 วิ · ตอบผิดบอสจะฟื้น HP 5% · ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }
