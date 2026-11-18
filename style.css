@@ -1477,3 +1477,24 @@ img[src*="assets/px/"]{image-rendering:pixelated}
 .run-st b{font-size:.72rem;line-height:1.15;text-align:center}
 .run-st.on{border-color:var(--gold2,#ffd75a);box-shadow:0 0 0 2px rgba(255,215,90,.35);background:rgba(255,215,90,.1)}
 .run-stinfo{font-size:.82rem;margin:2px 0 0}
+
+/* แถบล่างแบบเกมมือถือ (v2.41) */
+.navbtn.static{cursor:default}.navbtn.static:hover{background:none}
+.subtabs{display:flex;gap:6px;overflow-x:auto;padding:8px 2px 0;-webkit-overflow-scrolling:touch}
+.subtabs button{flex:0 0 auto;display:flex;align-items:center;gap:5px;border:1px solid #4a3a86;background:#1f1540;color:var(--text);border-radius:999px;padding:6px 12px;font:inherit;font-size:.85rem;cursor:pointer;position:relative}
+.subtabs button .ico{width:18px;height:18px}.subtabs button.on{background:linear-gradient(180deg,#b389ff,#7b4dff);border-color:#d4bbff}
+body{padding-bottom:84px}
+.botbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:center;gap:4px;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#241a4d,#150d33);border-top:1px solid #4a3a86;box-shadow:0 -6px 24px #000a}
+.bb{position:relative;flex:1;max-width:110px;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;color:#cbbff0;font:inherit;font-size:.72rem;padding:5px 2px;border-radius:12px;cursor:pointer;touch-action:manipulation}
+.bb .ico{width:28px;height:28px;transition:transform .15s}.bb span{font-weight:600}
+.bb.on{color:#fff;background:linear-gradient(180deg,#7b4dff55,#7b4dff22)}.bb.on .ico{transform:translateY(-3px) scale(1.12);filter:drop-shadow(0 0 6px #b389ff)}
+.bb .bdg,.gs-t .bdg,.subtabs .bdg{position:absolute;top:2px;right:18%}
+.gsheet-bg{position:fixed;inset:0;z-index:55;background:#0008;opacity:0;pointer-events:none;transition:opacity .2s}.gsheet-bg.show{opacity:1;pointer-events:auto}
+.gsheet{position:fixed;left:0;right:0;bottom:0;z-index:58;padding:14px 14px calc(92px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;background:#190f3a;border:1px solid #4a3a86;box-shadow:0 -12px 30px #000a;transform:translateY(105%);transition:transform .22s;max-width:640px;margin:0 auto}.gsheet.show{transform:none}
+.gs-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:1.05rem}.gs-h button{border:0;background:#ffffff18;color:#fff;border-radius:50%;width:30px;height:30px;cursor:pointer}
+.gs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.gs-t{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border-radius:16px;border:1px solid #4a3a86;background:linear-gradient(180deg,#2e2158,#1f1540);color:var(--text);font:inherit;cursor:pointer;touch-action:manipulation}
+.gs-t .ico{width:40px;height:40px}.gs-t b{font-size:.85rem}.gs-t.on{background:linear-gradient(180deg,#b389ff,#7b4dff);border-color:#d4bbff}
+@media(min-width:900px){.botbar{max-width:640px;margin:0 auto;border-radius:18px 18px 0 0}}
+body.peeking .botbar{bottom:0}
+#toast{bottom:96px}.bgm-btn{bottom:92px}.bgm-panel{bottom:142px}.kbpop{bottom:92px}

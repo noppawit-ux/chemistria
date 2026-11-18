@@ -78,15 +78,27 @@ function render() {
         <span class="hc coinc">${ic("coin", "sm")}<b>${s.coins}</b></span>
       </div>
       <div class="navbar">
-        <button class="navbtn" onclick="toggleNav()">☰ <b>${tabHtml(TABS.find((t) => t[0] === tab) || ["home", ""])}</b> <span class="car">▾</span></button>
+        <span class="navbtn static">${tabHtml(TABS.find((t) => t[0] === tab) || ["home", ""])}</span>
         <span class="grow"></span>
         <button class="bellbtn" onclick="openNotif()" aria-label="การแจ้งเตือน">${ic("bell")}${notifCount() ? `<i class="bdg">${notifCount()}</i>` : ""}</button>
       </div>
-      <div class="navgrid">${TABS.map(([k, l]) => `<button class="tab ${k === tab ? "on" : ""}" onclick="go('${k}')">${tabHtml([k, l])}${k === "board" && B.unread ? `<i class="bdg">${B.unread}</i>` : ""}</button>`).join("")}</div>
+      ${(() => { const g = NAVG.find((x) => x.items.includes(tab)); return g && g.items.length > 1 ? `<div class="subtabs">${g.items.map((k) => `<button class="${k === tab ? "on" : ""}" onclick="go('${k}')">${tabHtml(TABS.find((t) => t[0] === k))}${k === "board" && B.unread ? `<i class="bdg">${B.unread}</i>` : ""}</button>`).join("")}</div>` : ""; })()}
     </div>
-    <div id="view"></div>`;
+    <div id="view"></div>
+    <div class="gsheet-bg" id="gsbg" onclick="closeSheet()"></div><div class="gsheet" id="gsheet"></div>
+    <nav class="botbar" aria-label="เมนูหลัก">${NAVG.map((g) => { const on = g.items.includes(tab), bd = g.items.includes("board") ? B.unread : 0; return `<button class="bb ${on ? "on" : ""}" onclick="navTap('${g.k}')">${ic(g.ic)}<span>${g.n}</span>${bd ? `<i class="bdg">${bd}</i>` : ""}</button>`; }).join("")}</nav>`;
   $("#view").innerHTML = VIEWS[tab]();
   newsInit();
 }
 const go = (k) => { tab = k; NAVOPEN = false; closeNotif(); render(); window.scrollTo({ top: 0 }); };
-const toggleNav = () => { NAVOPEN = !NAVOPEN; $("#nav").classList.toggle("open", NAVOPEN); };
+const toggleNav = () => {};
+/* แถบล่าง 5 ปุ่ม: แตะกลุ่ม → แผ่นเมนูไอคอนใหญ่ของหน้าในกลุ่มนั้น */
+function navTap(k) {
+  const g = NAVG.find((x) => x.k === k); if (!g) return;
+  if (g.items.length === 1) return go(g.items[0]);
+  const sh = $("#gsheet"); if (sh.classList.contains("show") && sh.dataset.k === k) return closeSheet();
+  sh.dataset.k = k;
+  sh.innerHTML = `<div class="gs-h"><b>${g.e} ${g.n}</b><button onclick="closeSheet()" aria-label="ปิด">✕</button></div><div class="gs-grid">${g.items.map((i) => `<button class="gs-t ${i === tab ? "on" : ""}" onclick="go('${i}')">${ic(i)}<b>${esc(TABS.find((t) => t[0] === i)[1].replace(/^\S+\s/, ""))}</b>${i === "board" && B.unread ? `<i class="bdg">${B.unread}</i>` : ""}</button>`).join("")}</div>`;
+  sh.classList.add("show"); $("#gsbg").classList.add("show");
+}
+const closeSheet = () => { const a = $("#gsheet"), b = $("#gsbg"); if (a) a.classList.remove("show"); if (b) b.classList.remove("show"); };

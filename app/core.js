@@ -3,6 +3,14 @@ const TABS = [
   ["home", "🏠 หน้าหลัก"], ["att", "📋 เช็คชื่อ/งาน"], ["cal", "📅 ปฏิทิน"], ["score", "🧮 คะแนน"],
   ["class", "⚔️ คลาส"], ["decor", "🎨 ตกแต่ง"], ["game", "🎮 เกม"], ["quest", "🗺️ เควส"], ["gacha", "🎰 กาชา"], ["bag", "🎒 คลัง"], ["items", "🧪 ไอเทม"], ["friends", "💝 เพื่อน"], ["cards", "📖 สมุดสะสม"], ["shop", "🛒 ร้านค้า"], ["rank", "🏆 อันดับ"], ["guild", "🏰 กิลด์"], ["exam", "📝 สอบ"], ["board", "📢 บอร์ด"],
 ];
+/* กลุ่มเมนูแถบล่าง (ทุกหน้าใน TABS ต้องอยู่ในกลุ่มใดกลุ่มหนึ่ง) */
+const NAVG = [
+  { k: "home", n: "หน้าหลัก", e: "🏠", ic: "home", items: ["home"] },
+  { k: "learn", n: "เรียน", e: "📚", ic: "att", items: ["att", "cal", "score", "exam", "board"] },
+  { k: "play", n: "เล่น", e: "🎮", ic: "game", items: ["game", "quest", "class", "guild", "rank"] },
+  { k: "mine", n: "ของฉัน", e: "🎒", ic: "bag", items: ["decor", "bag", "items", "cards"] },
+  { k: "shop", n: "ร้าน/เพื่อน", e: "🛍️", ic: "shop", items: ["gacha", "shop", "friends"] },
+];
 let PROMO = { active: false }, TT = [], NEWS = [], D = null, X = {}, B = { posts: [], unread: 0 }, NAVOPEN = false, HOF = [], DRAFT = null, decSlot = "outfit", tab = "home", calMonth = new Date(), calSel = todayStr();
 const TOKEN_KEY = "kb_token";
 /* โหมดส่องนักเรียน (ครูเปิดจากหน้าครู): ใช้โทเคนใน sessionStorage อ่านอย่างเดียว ไม่แตะ login จริง */
