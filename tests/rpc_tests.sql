@@ -908,6 +908,25 @@ select pg_temp.t('ด่านแรงค์: ชนะบอส → บัน�
 select pg_temp.t('ด่านแรงค์: ได้เหรียญรางวัลผ่านด่าน +50', (select coins from students where id=(select s12 from _fr)) - (select coalesce(sum(a.reward_coins),0) from student_achievements sa join achievements a on a.id=sa.achievement_id where sa.student_id=(select s12 from _fr) and sa.earned_at >= (select t0 from _cb)) = (select c0 from _cb) + 50);
 select pg_temp.t('ด่านแรงค์: เลื่อนเป็น Silver แล้ว ไม่ locked', (select (_rank_info_s((select s12 from _fr), 700)->>'key') = 'silver' and (_rank_info_s((select s12 from _fr), 700)->>'locked') is null));
 select pg_temp.t('ด่านแรงค์: มีประกาศเลื่อนแรงค์ในห้อง', exists (select 1 from celebrations where student_id=(select s12 from _fr) and kind='rank' and title='Silver'));
+select pg_temp.t('ดาว 97: ชนะบอสด่าน Silver ได้ 1 ดาว (ตามค่าที่ตั้ง)', (select stars from rank_stars where student_id=(select s12 from _fr) and rank_key='silver') = 1);
+select pg_temp.t('ดาว 97: แพ้ด่าน/ไม่ชนะ ไม่ได้ดาว', not exists (select 1 from rank_stars where student_id=(select s13 from _fr)));
+update battles set status='fled' where student_id=(select s12 from _fr) and trial_rank='silver';
+update battles set status='won' where student_id=(select s12 from _fr) and trial_rank='silver';
+select pg_temp.t('ดาว 97: ชนะซ้ำ/อัปเดตซ้ำ ไม่ได้ดาวซ้ำ', (select count(*) from rank_stars where student_id=(select s12 from _fr)) = 1);
+create temp table _hs0 as select home_stats((select t12 from _fr))::jsonb j;
+insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max, used_q, correct, created_at, finished_at)
+ select (select s12 from _fr), (select id from monsters where trial_rank is null limit 1), 'won', 10, 100, 0, 50,
+        array[gen_random_uuid(), gen_random_uuid(), gen_random_uuid()], 2, now() - interval '3 hours', now() - interval '2 hours';
+insert into battles (student_id, monster_id, status, p_hp, p_max, m_hp, m_max, used_q, correct, created_at, finished_at)
+ select (select s12 from _fr), (select id from monsters where trial_rank is null limit 1), 'lost', 0, 100, 20, 50,
+        array[gen_random_uuid()], 0, now() - interval '10 minutes', now() - interval '5 minutes';
+create temp table _hs1 as select home_stats((select t12 from _fr))::jsonb j;
+select pg_temp.t('สถิติ 97: ดาวรวมและรายการดาวถูกต้อง', (select (j->>'stars')::int = 1 and jsonb_array_length(j->'star_list') = 1 from _hs1));
+select pg_temp.t('สถิติ 97: นับมอนที่ชนะ/แพ้ และบอสด่านแยกจากมอนปกติ', (select (a.j->'stats'->>'won')::int = (b.j->'stats'->>'won')::int + 1 and (a.j->'stats'->>'lost')::int = (b.j->'stats'->>'lost')::int + 1 and (a.j->'stats'->>'bosses')::int >= 1 from _hs1 a, _hs0 b));
+select pg_temp.t('สถิติ 97: นับคำถามที่ตอบ (3+1) และตอบถูก (+2)', (select (a.j->'stats'->>'questions')::int = (b.j->'stats'->>'questions')::int + 4 and (a.j->'stats'->>'correct')::int = (b.j->'stats'->>'correct')::int + 2 from _hs1 a, _hs0 b));
+select pg_temp.t('สถิติ 97: เวลาต่อการสู้จำกัด 30 นาที (1 ชม. → 1800) + 5 นาที = +2100 วินาที', (select (a.j->'stats'->>'secs')::int = (b.j->'stats'->>'secs')::int + 2100 from _hs1 a, _hs0 b));
+select pg_temp.t('ดาว 97: แรงค์ถัดไปที่มีดาวให้แสดงเป็น Gold (+2)', (select j->'next'->>'key' = 'gold' and (j->'next'->>'stars')::int = 2 from _hs1));
+select pg_temp.t('ดาว 97: anon อ่านตาราง rank_stars ตรงๆ ไม่ได้ แต่เรียก home_stats ได้', not has_table_privilege('anon','rank_stars','select') and has_function_privilege('anon','home_stats(uuid)','execute'));
 update students set exp = 5000 where id = (select s12 from _fr);
 select pg_temp.t('ด่านแรงค์: EXP สูงมาก ถูกกั้นที่ด่านถัดไป (Gold) ไม่ข้ามด่าน', (select (_rank_info_s((select s12 from _fr), 5000)->>'gate_key') = 'gold' and (_rank_info_s((select s12 from _fr), 5000)->>'key') = 'silver'));
 -- แพ้แล้วต้องรอวันถัดไป

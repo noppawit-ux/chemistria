@@ -1498,3 +1498,14 @@ body{padding-bottom:84px}
 @media(min-width:900px){.botbar{max-width:640px;margin:0 auto;border-radius:18px 18px 0 0}}
 body.peeking .botbar{bottom:0}
 #toast{bottom:96px}.bgm-btn{bottom:92px}.bgm-panel{bottom:142px}.kbpop{bottom:92px}
+
+/* การ์ดสถิติหน้าหลัก (v2.42) */
+.hs-card{padding:12px}.hs-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hs-star{display:flex;flex-direction:column;align-items:center;min-width:76px;padding:6px 10px;border-radius:14px;background:linear-gradient(180deg,#5a3d00,#2e1f00);border:1px solid #ffd75a}
+.hs-star span{font-size:1.4rem;line-height:1}.hs-star b{font-size:1.5rem;color:#ffe27a}.hs-star small{font-size:.68rem;color:#ffd9a0}
+.hs-rks{display:flex;gap:6px;flex-wrap:wrap;flex:1}.hs-rk{display:flex;align-items:center;gap:3px;padding:2px 8px 2px 4px;border-radius:999px;background:#ffffff14}
+.hs-rk img{width:26px;height:26px;object-fit:contain}.hs-rk b{color:#ffe27a;font-size:.8rem}
+.hs-next{display:flex;align-items:center;gap:8px;margin-top:8px;padding:6px 10px;border-radius:12px;background:#7b4dff22;font-size:.85rem}.hs-next img{width:28px;height:28px;object-fit:contain}
+.hs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.hs-grid>div{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:#ffffff0d}.hs-grid b{font-size:1.15rem}.hs-grid small{color:var(--muted);font-size:.74rem}
+@media(min-width:700px){.hs-grid{grid-template-columns:repeat(4,1fr)}}

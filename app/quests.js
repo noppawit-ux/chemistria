@@ -15,6 +15,21 @@ const questProg = () => { const n = D.quests.length, d = D.quests.filter((q) => 
 
 const questAct = (q) => q.status ? statusTag(q.status) : autoOf(q) ? `<span class="tag wait">⚡ อัตโนมัติ: ${esc(AUTO_HINT[autoOf(q)] || "")}</span>` : null;
 
+/* การ์ดสถิติหน้าหลัก: ดาวพิชิตแรงค์ + เวลา/มอน/คำถามจากการสู้มอนสเตอร์ (SQL 97) */
+const fmtDur = (sec) => { sec = Math.max(0, Math.round(sec || 0)); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60); return h ? `${h} ชม. ${m} นาที` : m ? `${m} นาที` : `${sec} วินาที`; };
+function statsCardHtml() {
+  const h = HST; if (!h || !h.stats) return "";
+  const s = h.stats, acc = s.questions ? Math.round((100 * s.correct) / s.questions) : 0;
+  const stars = (h.star_list || []).map((r) => `<span class="hs-rk" title="${esc(r.name)} +${r.stars}⭐"><img src="${esc(r.image || "")}" alt="" onerror="this.remove()"><b>+${r.stars}</b></span>`).join("");
+  const nx = h.next ? `<div class="hs-next"><img src="${esc(h.next.image || "")}" alt="" onerror="this.remove()"><span>พิชิตแรงค์ <b>${esc(h.next.name)}</b> ได้ <b>+${h.next.stars} ⭐</b></span></div>` : "";
+  return `<div class="card hs-card"><div class="hs-top"><div class="hs-star"><span>⭐</span><b>${h.stars}</b><small>ดาวพิชิตแรงค์</small></div><div class="hs-rks">${stars || '<small class="muted">ผ่านด่านเลื่อนแรงค์เพื่อรับดาว</small>'}</div></div>${nx}
+    <div class="hs-grid">
+      <div><b>${fmtDur(s.secs)}</b><small>⏱️ เวลาที่ใช้สู้</small></div>
+      <div><b>${s.won}</b><small>👾 ชนะมอนสเตอร์${s.monsters ? ` (${s.monsters} ชนิด)` : ""}</small></div>
+      <div><b>${s.questions}</b><small>❓ คำถามที่ตอบ${s.questions ? ` · ถูก ${acc}%` : ""}</small></div>
+      <div><b>${s.fights}</b><small>⚔️ การสู้ทั้งหมด${s.bosses ? ` · บอสด่าน ${s.bosses}` : ""}</small></div>
+    </div></div>`;
+}
 const VIEWS = {
   board() { markBoardSeen(); return boardHtml(); },
   guild() { return guildHtml(); },
@@ -23,7 +38,7 @@ const VIEWS = {
   home() {
     const a = D.attendance_summary;
     const me = D.student;
-    return `${checkinHtml()}${newsHtml()}${guildTopHtml()}${typeof PEEK !== "undefined" && PEEK ? "" : gbHold()}<div class="card mychar"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h3 class="grow" style="margin:0">${esc(me.name)} <small class="muted" style="font-weight:400">${esc(rankName(D.rank_info))}</small></h3><button class="btn small gold" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
+    return `${checkinHtml()}${newsHtml()}${guildTopHtml()}${statsCardHtml()}${typeof PEEK !== "undefined" && PEEK ? "" : gbHold()}<div class="card mychar"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h3 class="grow" style="margin:0">${esc(me.name)} <small class="muted" style="font-weight:400">${esc(rankName(D.rank_info))}</small></h3><button class="btn small gold" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
       <div class="muted" style="font-size:12px;margin:2px 0 6px">แตะช่องอุปกรณ์เพื่อเปลี่ยน</div>
       <div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div></div>
       ${reactBox()}

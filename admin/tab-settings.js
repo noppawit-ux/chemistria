@@ -21,10 +21,10 @@ TAB.settings = async function (v) {
   await crud(h, { table: "classes", order: "name", noDelete: false, defaults: { bonus_cap: 5, term: "2569/2" },
     cols: [{ k: "code", label: "รหัสห้อง", w: 80 }, { k: "name", label: "ชื่อห้อง", w: 80 }, { k: "subject_code", label: "รหัสวิชา", w: 80 }, { k: "subject_name", label: "ชื่อวิชา", w: 160 },
       { k: "term", label: "ภาคเรียน", w: 80 }, { k: "bonus_cap", label: "เพดานคะแนนพิเศษ", t: "number", w: 80 }] });
-  const hr = holder(v, "🎖️ แรงค์ (สไตล์ LoL)", "แต่ละแรงค์เริ่มที่ EXP ขั้นต่ำที่ตั้งไว้ · จำนวนดิวิชัน 4 = IV→I, 1 = ไม่มีดิวิชัน (เช่น Master) · แรงค์สุดท้ายคือสูงสุด");
+  const hr = holder(v, "🎖️ แรงค์ (สไตล์ LoL)", "แต่ละแรงค์เริ่มที่ EXP ขั้นต่ำที่ตั้งไว้ · จำนวนดิวิชัน 4 = IV→I, 1 = ไม่มีดิวิชัน (เช่น Master) · แรงค์สุดท้ายคือสูงสุด · “ดาวที่ได้เมื่อพิชิต” = ดาวที่นักเรียนได้เมื่อชนะบอสด่านเลื่อนแรงค์นั้น (0 = ไม่ให้ดาว)");
   await crud(hr, { table: "ch_ranks", order: "sort", defaults: { divisions: 4, sort: 99, min_exp: 0 },
     cols: [{ k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "key", label: "รหัส", w: 100 }, { k: "name", label: "ชื่อแรงค์", w: 120 },
-      { k: "min_exp", label: "EXP เริ่ม", t: "number", w: 80 }, { k: "divisions", label: "ดิวิชัน", t: "number", w: 70 }, { k: "image", label: "รูป (assets/ranks/…png)", w: 200 }] });
+      { k: "min_exp", label: "EXP เริ่ม", t: "number", w: 80 }, { k: "divisions", label: "ดิวิชัน", t: "number", w: 70 }, { k: "star_bonus", label: "ดาวที่ได้เมื่อพิชิต", t: "number", w: 90 }, { k: "image", label: "รูป (assets/ranks/…png)", w: 200 }] });
   const hc = holder(v, "⚔️ คลาสตัวละคร", "ผลความสามารถ 4 คลาสผูกกับ “รหัส” (alchemist, scientist, guardian, seeker) — แก้ชื่อ/คำอธิบาย/รูปได้ แต่ไม่ควรเปลี่ยนรหัส");
   await crud(hc, { table: "char_classes", order: "sort", defaults: { sort: 99, active: true },
     cols: [{ k: "sort", label: "ลำดับ", t: "number", w: 60 }, { k: "key", label: "รหัส", w: 90 }, { k: "emoji", label: "อีโมจิ", w: 50 }, { k: "name", label: "ชื่อคลาส", w: 130 },
