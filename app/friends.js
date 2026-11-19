@@ -57,7 +57,7 @@ function relOpen(no) {
   const m = (FR.mates || []).find((x) => x.no === no); if (!m) return;
   const rows = (FR.types || []).map((t) => {
     const ok = m.rp >= t.need_rp, cur = m.rel === t.key;
-    return `<div class="eqpick" style="opacity:${ok ? 1 : 0.5}"><span style="font-size:26px">${esc(t.emoji)}</span><div class="grow"><b>${esc(t.name)}</b><div class="muted" style="font-size:.85em">ต้องมี ${t.need_rp} RP</div></div>
+    return `<div class="eqpick" style="opacity:${ok ? 1 : 0.5}"><span style="font-size:26px">${esc(t.emoji)}</span><div class="grow"><b>${esc(t.name)}</b><div class="muted" style="font-size:.85em">ต้องมี ${t.need_rp} RP${relTypeBuff(t.key) ? ` · ได้บัพ ${relTypeBuff(t.key)} ทั้งคู่` : ""}</div></div>
       ${cur ? '<span class="tag ok">เป็นอยู่</span>' : ok ? `<button class="btn small gold" onclick="relPropose(${no},'${t.key}')">เสนอ</button>` : "🔒"}</div>`;
   }).join("");
   const pend = m.pend ? (m.pend.by_me ? `<div class="eqdet">รอ ${esc(m.name)} ตอบรับ “${esc(m.pend.emoji)} ${esc(m.pend.name)}” <button class="btn small ghost" onclick="relEnd(${no})">ยกเลิกคำขอ</button></div>`
@@ -69,14 +69,28 @@ const relPropose = (no, k) => { eqClose(); frAct(() => rpc("rel_propose", { p_to
 const relRespond = (no, ok) => { eqClose(); frAct(() => rpc("rel_respond", { p_token: tk(), p_from_no: no, p_accept: ok }).then((r) => { toast(ok ? "ตอบรับแล้ว 💞" : "ปฏิเสธแล้ว"); return r; })); };
 const relEnd = (no) => { eqClose(); frAct(() => rpc("rel_end", { p_token: tk(), p_no: no }), "เรียบร้อย"); };
 /* การ์ดบนหน้าหลัก */
+const REL_BUFF = { buff_exp: ["⚡", "EXP", "%"], buff_coin: ["💰", "เหรียญ", "%"], buff_str: ["⚔️", "ดาเมจบอส", "%"], buff_int: ["🧠", "EXP ควิซ", ""], buff_luk: ["🍀", "โอกาส SR", "%"] };
+const relBuffTxt = (k, p) => { const b = REL_BUFF[k]; return b && p > 0 ? `${b[0]} ${b[1]} +${p}${b[2]}` : ""; };
+const relTypeBuff = (key) => { const t = ((X.relations || {}).types || []).find((x) => x.key === key); return t ? relBuffTxt(t.buff_kind, t.buff_power) : ""; };
+// รวมบัพจากเพื่อนตามชนิด (ตัดเพดานเหมือนฝั่งฐานข้อมูล)
+function relTotals() {
+  const r = X.relations || {}, cap = r.caps || { pct: 15, flat: 6 }, t = {};
+  (r.rels || []).forEach((x) => { if (x.buff_kind && x.buff_power > 0) t[x.buff_kind] = (t[x.buff_kind] || 0) + x.buff_power; });
+  Object.keys(t).forEach((k) => { t[k] = Math.min(t[k], k === "buff_int" || k === "buff_luk" ? cap.flat : cap.pct); });
+  return t;
+}
 function relHomeHtml() {
   const r = X.relations; if (!r) return "";
-  const rels = r.rels || [], inc = r.incoming || [], ng = r.new_gifts || 0;
-  if (!rels.length && !inc.length && !ng) return `<div class="card" style="padding:10px 14px"><div class="row" style="align-items:center;gap:8px"><span>💝</span><span class="grow muted">ส่งของขวัญให้เพื่อน สะสมคะแนนมิตรภาพ ปลดล็อกความสัมพันธ์</span><button class="btn small ghost" onclick="go('friends')">ไปดู</button></div></div>`;
-  return `<div class="card relhome"><div class="row" style="align-items:center"><h3 class="grow" style="margin:0">💞 ความสัมพันธ์ของฉัน</h3><button class="btn small ghost" onclick="go('friends')">💝 เพื่อน</button></div>
+  const rels = r.rels || [], inc = r.incoming || [], ng = r.new_gifts || 0, tot = relTotals();
+  const sum = Object.keys(tot).map((k) => `<span class="tag ok">${relBuffTxt(k, tot[k])}</span>`).join(" ");
+  const hint = (r.types || []).filter((t) => t.buff_kind && t.buff_power > 0).slice(0, 4).map((t) => `${esc(t.emoji)} ${esc(t.name)} ${relBuffTxt(t.buff_kind, t.buff_power)}`).join(" · ");
+  return `<div class="card relhome"><div class="row" style="align-items:center"><h3 class="grow" style="margin:0">💞 ความสัมพันธ์ & บัพเพื่อน</h3><button class="btn small ghost" onclick="go('friends')">💝 เพื่อน</button></div>
     ${ng ? `<p style="margin:6px 0 0">🎁 ได้รับของขวัญใหม่ <b>${ng}</b> ชิ้น</p>` : ""}
-    ${inc.map((i) => `<div class="row" style="gap:6px;align-items:center;margin-top:6px"><span class="grow"><b>${esc(i.name)}</b> ขอเป็น ${esc(i.rel_emoji)} ${esc(i.rel_name)}</span><button class="btn small gold" onclick="relHomeResp(${i.no},true)">ตกลง</button><button class="btn small ghost" onclick="relHomeResp(${i.no},false)">ไม่</button></div>`).join("")}
-    <div class="relchips">${rels.map((x) => `<span class="relchip"><b>${esc(x.rel_emoji)}</b> ${esc(x.name)} <small>${esc(x.rel_name)}</small></span>`).join("")}</div></div>`;
+    ${inc.map((i) => `<div class="row" style="gap:6px;align-items:center;margin-top:6px"><span class="grow"><b>${esc(i.name)}</b> ขอเป็น ${esc(i.rel_emoji)} ${esc(i.rel_name)}${i.buff_kind ? ` <small class="muted">(${relBuffTxt(i.buff_kind, i.buff_power)} ทั้งคู่)</small>` : ""}</span><button class="btn small gold" onclick="relHomeResp(${i.no},true)">ตกลง</button><button class="btn small ghost" onclick="relHomeResp(${i.no},false)">ไม่</button></div>`).join("")}
+    ${rels.length ? `<div class="relsum">${sum ? `<small class="muted">บัพรวมจากเพื่อน (มีผลตลอด):</small> ${sum}` : '<small class="muted">ความสัมพันธ์นี้ยังไม่มีบัพ</small>'}</div>
+    <div class="relrows">${rels.map((x) => `<div class="relrow"><b>${esc(x.rel_emoji)}</b><span class="grow">${esc(x.name)} <small class="muted">${esc(x.rel_name)}</small></span>${x.buff_kind ? `<span class="tag ok">${relBuffTxt(x.buff_kind, x.buff_power)}</span>` : ""}</div>`).join("")}</div>`
+    : `<p class="muted" style="margin:6px 0 0">ส่งของขวัญให้เพื่อน สะสมคะแนนมิตรภาพ แล้วผูกความสัมพันธ์ — ได้บัพถาวร<b>ทั้งคู่</b>${hint ? `<br><small>${hint}</small>` : ""}</p>`}
+  </div>`;
 }
 const relHomeResp = (no, ok) => act(() => rpc("rel_respond", { p_token: tk(), p_from_no: no, p_accept: ok }).then((r) => { FR_STALE = true; return r; }), ok ? "ตอบรับแล้ว 💞" : "ปฏิเสธแล้ว");
 VIEWS.friends = () => { friendsLoad(); return friendsHtml(); };

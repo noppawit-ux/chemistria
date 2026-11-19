@@ -8,6 +8,27 @@ async function itemsLoad() {
   try { ITM = await rpc("my_items", { p_token: tk() }); ITM_STALE = false; } catch (e) { ITM = { error: e.message }; ITM_STALE = false; }
   ITM_BUSY = false;
   if (tab === "items") { const v = $("#view"); if (v) v.innerHTML = itemsHtml(); }
+  else if (tab === "home") { try { render(); } catch (e) {} }
+}
+// การ์ดหน้าหลัก: ไอเทมกดใช้ที่เหลือ + บัพที่มีผลอยู่ (ของตัวเอง + จากเพื่อน)
+function homeItemsHtml() {
+  if (typeof PEEK !== "undefined" && PEEK) return "";
+  if (!ITM || ITM_STALE) itemsLoad();
+  if (!ITM) return '<div class="card"><h3>🎒 ไอเทมของฉัน</h3><p class="muted">กำลังโหลด…</p></div>';
+  if (ITM.error) return "";
+  const own = (ITM.items || []).filter((i) => i.qty > 0), buffs = ITM.buffs || [], tot = typeof relTotals === "function" ? relTotals() : {};
+  const total = own.reduce((a, i) => a + i.qty, 0);
+  const tiles = own.map((i) => {
+    const act = i.kind === "heal" ? '<small class="muted">ใช้ในศึก 💚</small>' : i.kind === "scroll" ? '<button class="btn small gold" onclick="scrollPick()">ใช้</button>'
+      : i.kind === "stat_reset" ? '<small class="muted">รีเซ็ตแต้ม</small>'
+      : i.active_until ? `<small class="tag wait">มีผล ${minsLeft(i.active_until)} น.</small>` : `<button class="btn small gold" onclick="itemUse('${i.id}','${esc(i.name)}')">ใช้</button>`;
+    return `<div class="hi-tile" title="${esc(i.descr || "")}"><span class="hi-ico">${pxIco(i)}</span><b>${esc(i.name)}</b><span class="hi-q">×${i.qty}</span>${act}</div>`;
+  }).join("");
+  const mine = buffs.map((b) => `<span class="tag ok">${BUFF_LBL[b.kind] || b.kind} +${b.power}${b.kind === "buff_luk" || b.kind === "buff_int" ? "" : "%"} · ${minsLeft(b.until)} นาที</span>`).join(" ");
+  const fr = Object.keys(tot).map((k) => `<span class="tag ok">💞 ${relBuffTxt(k, tot[k])}</span>`).join(" ");
+  return `<div class="card hi-card"><div class="row" style="align-items:center"><h3 class="grow" style="margin:0">🎒 ไอเทมกดใช้ <small class="muted" style="font-weight:400">เหลือ ${total} ชิ้น</small></h3><button class="btn small ghost" onclick="go('items')">ร้าน/กระเป๋า</button></div>
+    <div class="hi-buffs"><small class="muted">บัพที่มีผลอยู่:</small> ${mine || fr ? mine + " " + fr : '<small class="muted">ยังไม่มี</small>'}</div>
+    ${tiles ? `<div class="hi-grid">${tiles}</div>` : '<p class="muted" style="margin:8px 0 0">ยังไม่มีไอเทม — ซื้อได้ที่ร้านไอเทม</p>'}</div>`;
 }
 const itemsAct = (fn, msg) => act(async () => { const r = await fn(); ITM_STALE = true; return r; }, msg);
 const itemBuy = (id, n, p) => confirm(`ซื้อ “${n}” ราคา ${p} เหรียญ?`) && itemsAct(() => rpc("buy_item", { p_token: tk(), p_item: id, p_n: 1 }), "ซื้อแล้ว 🎒");

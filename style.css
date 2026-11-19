@@ -1509,3 +1509,18 @@ body.peeking .botbar{bottom:0}
 .hs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
 .hs-grid>div{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:12px;background:#ffffff0d}.hs-grid b{font-size:1.15rem}.hs-grid small{color:var(--muted);font-size:.74rem}
 @media(min-width:700px){.hs-grid{grid-template-columns:repeat(4,1fr)}}
+/* v2.43 จัดหน้าตัวละครใหม่: ซ้าย=ตัวละคร/อุปกรณ์ ขวา=เรดาร์+โบนัส · ล่าง=ไอเทม+ความสัมพันธ์ */
+.mc-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start;margin-top:6px}
+.mc-left,.mc-right{min-width:0}
+.mc-right .radarcol{padding:0 6px}
+@media(max-width:760px){.mc-grid{grid-template-columns:1fr}}
+.home2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.home2>.card{margin:0}
+@media(max-width:760px){.home2{grid-template-columns:1fr}}
+.hi-buffs{margin:8px 0;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.hi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin-top:6px}
+.hi-tile{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 6px;border-radius:12px;background:#ffffff10;border:1px solid #ffffff22;text-align:center;font-size:.85em}
+.hi-tile .hi-ico{font-size:26px;line-height:1}.hi-tile .hi-q{color:var(--gold2,#ffd76a);font-weight:700}
+.relsum{margin:8px 0 4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.relrows{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.relrow{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:10px;background:#ffffff0f;border:1px solid #ff7ac844}

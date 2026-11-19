@@ -39,11 +39,13 @@ const VIEWS = {
     const a = D.attendance_summary;
     const me = D.student;
     return `${checkinHtml()}${newsHtml()}${guildTopHtml()}${statsCardHtml()}${typeof PEEK !== "undefined" && PEEK ? "" : gbHold()}<div class="card mychar"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h3 class="grow" style="margin:0">${esc(me.name)} <small class="muted" style="font-weight:400">${esc(rankName(D.rank_info))}</small></h3><button class="btn small gold" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
-      <div class="muted" style="font-size:12px;margin:2px 0 6px">แตะช่องอุปกรณ์เพื่อเปลี่ยน</div>
-      <div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div></div>
-      ${reactBox()}
-      <div class="charstats"><div class="radarcol">${radarHtml(me.decor)}</div><div>${gearBox()}</div></div></div>
-    ${alertsChip()}${relHomeHtml()}${todayLessonsHtml()}${bossHtml(false)}
+      <div class="mc-grid">
+        <div class="mc-left"><div class="muted" style="font-size:12px;margin:2px 0 6px;text-align:center">แตะช่องอุปกรณ์เพื่อเปลี่ยน</div>
+          <div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div></div>
+          ${reactBox()}</div>
+        <div class="mc-right"><div class="radarcol">${radarHtml(me.decor)}</div>${gearBox()}</div>
+      </div></div>
+    ${alertsChip()}<div class="home2">${homeItemsHtml()}${relHomeHtml()}</div>${todayLessonsHtml()}${bossHtml(false)}
     <div class="grid">
       <div class="card stat"><span class="muted">มาตรงเวลา</span><b>${a.present}</b>คาบ</div>
       <div class="card stat"><span class="muted">สตรีค 🔥</span><b>${a.streak}</b>คาบติด</div>
