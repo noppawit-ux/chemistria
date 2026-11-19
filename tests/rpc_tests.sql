@@ -965,11 +965,11 @@ select pg_temp.t('ตั้งรับ: การต่อสู้ใหม่
   and (select (_battle_view((select id from _gdb))->>'guard_left')::int = 0));
 update battles set p_hp = 100, p_max = 100, m_hp = 60, m_max = 60, turn = 1, pend = jsonb_build_object('dmg',20,'n',3,'seq','LUR','at', extract(epoch from now())-10) where id=(select id from _gdb);
 set role anon;
-select pg_temp.t('ตั้งรับ: ไม่ตั้งรับ → กดลูกศรไม่มีผล รับ 70% (20→14)', (select (battle_defend((select t from _gd), (select id from _gdb), 3)->'event'->>'taken')::int) = 14);
+select pg_temp.t('ตั้งรับ: ไม่ตั้งรับ → กดลูกศรไม่มีผล ลดแค่ 10% (20→18)', (select (battle_defend((select t from _gd), (select id from _gdb), 3)->'event'->>'taken')::int) = 18);
 reset role;
 update battles set turn = 3, p_hp = 100, pend = jsonb_build_object('dmg',20,'n',3,'seq','LUR','at', extract(epoch from now())-10) where id=(select id from _gdb);
 set role anon;
-select pg_temp.t('ตั้งรับ: เทิร์นที่ 3 มอนโจมตีหนัก ×1.5 (20→21 เมื่อไม่ตั้งรับ)', (select (battle_defend((select t from _gd), (select id from _gdb), 0)->'event'->>'taken')::int) = 21);
+select pg_temp.t('ตั้งรับ: เทิร์นที่ 3 มอนโจมตีหนัก ×1.5 (20→27 เมื่อไม่ตั้งรับ)', (select (battle_defend((select t from _gd), (select id from _gdb), 0)->'event'->>'taken')::int) = 27);
 reset role;
 update battles set turn = 1, p_hp = 100, pend = null, cds = '{}'::jsonb where id=(select id from _gdb);
 set role anon;
@@ -982,7 +982,7 @@ select pg_temp.t('ตั้งรับ: ระหว่างป้องกั
 reset role;
 update battles set p_hp = 70, pend = jsonb_build_object('dmg',20,'n',4,'seq','LURD','at', extract(epoch from now())-10) where id=(select id from _gdb);
 set role anon;
-select pg_temp.t('ตั้งรับ: กดถูก 2/4 ลดดาเมจครึ่ง (20→10)', (select (battle_defend((select t from _gd), (select id from _gdb), 2)->'event'->>'taken')::int) = 10);
+select pg_temp.t('ตั้งรับ: กดถูก 2/4 ลดดาเมจ 15% (20→17)', (select (battle_defend((select t from _gd), (select id from _gdb), 2)->'event'->>'taken')::int) = 17);
 reset role;
 select pg_temp.t('ตั้งรับ: หลังรับแล้ว guard กลับเป็น false', (select not guard from battles where id=(select id from _gdb)));
 select pg_temp.t('ตั้งรับ: ยังอยู่ในคูลดาวน์ ตั้งรับอีกไม่ได้', pg_temp.fails($q$select battle_guard((select t from _gd), (select id from _gdb))$q$, 'anon'));
@@ -994,8 +994,9 @@ update battles set pend = jsonb_build_object('dmg',20,'n',4,'seq','LURD','at', e
 set role anon;
 create temp table _gdpf as select battle_defend((select t from _gd), (select id from _gdb), 4)->'event' ev;
 reset role;
-select pg_temp.t('ตั้งรับ: ถูกครบ → ไม่เสีย HP + ปัดป้องสมบูรณ์', ((select ev->>'taken' from _gdpf)::int = 0) and (select (ev->>'perfect')::boolean from _gdpf));
-select pg_temp.t('ตั้งรับ: ปัดป้องสมบูรณ์ → สวนกลับลด HP มอน และฟื้น HP ผู้เล่น', (select m_hp < 60 and p_hp = 78 from battles where id=(select id from _gdb)));
+select pg_temp.t('ตั้งรับ: ถูกครบ → ลดสูงสุด 20% (20→16) + ปัดป้องสมบูรณ์', ((select ev->>'taken' from _gdpf)::int = 16) and (select (ev->>'perfect')::boolean from _gdpf));
+select pg_temp.t('ตั้งรับ: ปัดป้องสมบูรณ์ → ไม่สวนกลับ (ค่าเริ่มต้น) ฟื้น HP ผู้เล่น 3%', (select m_hp = 60 and p_hp = 54 + round(p_max * 0.03)::int from battles where id=(select id from _gdb)));
+insert into app_settings (key, value) values ('battle_counter_pct','100') on conflict (key) do update set value='100';
 update battles set cds = '{}'::jsonb, p_hp = 70, m_hp = 5, turn = 2 where id=(select id from _gdb);
 set role anon;
 select battle_guard((select t from _gd), (select id from _gdb));
@@ -1004,7 +1005,8 @@ update battles set pend = jsonb_build_object('dmg',20,'n',3,'seq','LUR','at', ex
 set role anon;
 select battle_defend((select t from _gd), (select id from _gdb), 3);
 reset role;
-select pg_temp.t('ตั้งรับ: สวนกลับไม่ฆ่ามอน (เหลือ HP อย่างน้อย 1)', (select m_hp = 1 and status = 'active' from battles where id=(select id from _gdb)));
+select pg_temp.t('ตั้งรับ: เปิดสวนกลับ 100% แล้วสวนกลับไม่ฆ่ามอน (เหลือ HP อย่างน้อย 1)', (select m_hp = 1 and status = 'active' from battles where id=(select id from _gdb)));
+delete from app_settings where key='battle_counter_pct';
 update battles set cds = '{}'::jsonb, p_hp = 70, m_hp = 60, turn = 2 where id=(select id from _gdb);
 set role anon;
 select battle_guard((select t from _gd), (select id from _gdb));
@@ -1225,8 +1227,8 @@ select pg_temp.t('คลัง 77: ข้อจับคู่และลาก
 select pg_temp.t('คลังควิซ 78: เพิ่ม 300 ข้อ ใช้ได้กับทุกห้อง (class_id ว่าง) และเปิดใช้งาน', (select count(*) from quiz_questions where topic in ('สัญลักษณ์ธาตุ','เลขอะตอม','หมู่ของธาตุ','ไอออนและประจุ','สูตรและชื่อสาร','ไอออนอะตอมกลุ่ม','อินดิเคเตอร์','อุปกรณ์วิทยาศาสตร์','ความปลอดภัยในห้องปฏิบัติการ','หน่วยและการวัด','นักวิทยาศาสตร์และแบบจำลองอะตอม','สถานะและการเปลี่ยนสถานะ','การแยกสาร','สารในชีวิตประจำวัน','โมลและมวลโมเลกุล','สมบัติธาตุตามหมู่และคาบ','แก๊สและการทดสอบแก๊ส') and class_id is null and active and explain is not null) >= 286);
 select pg_temp.t('คลังควิซ 78: ตัวเลือกไม่ซ้ำและมีเฉลยถูกช่วงทุกข้อ', (select bool_and(answer between 0 and 3 and a <> b and a <> c and a <> d and b <> c and b <> d and c <> d) from quiz_questions where topic in ('เลขอะตอม','หมู่ของธาตุ','ไอออนและประจุ','สูตรและชื่อสาร','ไอออนอะตอมกลุ่ม','โมลและมวลโมเลกุล')));
 -- ด่านบอสเลื่อนแรงค์ยากขึ้น (db/79)
-select pg_temp.t('ด่านยากขึ้น 79: สถิติบอสใหม่ (Silver 220/21 · Challenger 1250/45)', (select hp=220 and atk=21 from monsters where key='trial_silver')
-  and (select hp=1250 and atk=45 from monsters where key='trial_challenger'));
+select pg_temp.t('สมดุล 99: สถิติบอสปรับตามกติกาใหม่ (Silver 130/12 · Challenger 405/17)', (select hp=130 and atk=12 from monsters where key='trial_silver')
+  and (select hp=405 and atk=17 from monsters where key='trial_challenger'));
 select pg_temp.t('ด่านยากขึ้น 79: ผู้เล่นเข้าด่านด้วย HP 85%', (select p_max = round((80 + 6 * level_for((select exp from students where id=(select s13 from _fr)))) * 0.85)
   and p_hp = p_max from battles where student_id=(select s13 from _fr) and trial_rank='silver' and status='active'));
 update battles set m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now(), pend = null
@@ -1245,6 +1247,30 @@ set role anon;
 create temp table _tr2 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
 reset role;
 select pg_temp.t('ด่านยากขึ้น 79: ตอบถูกแต่เกิน 17 วินาทีในด่านบอส = ไม่นับ', (select (r->'event'->>'correct')::boolean is false from _tr2));
+-- ตอบไวได้โบนัสดาเมจเป็นขั้น (99)
+update battles set m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now() - interval '3 seconds', pend = null where id=(select id from _tb);
+update _tq set ans = (select answer from quiz_questions where id=(select cur_q from battles where id=(select id from _tb)));
+set role anon;
+create temp table _sp1 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
+reset role;
+update battles set status='active', m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now() - interval '6 seconds', pend = null where id=(select id from _tb);
+update _tq set ans = (select answer from quiz_questions where id=(select cur_q from battles where id=(select id from _tb)));
+set role anon;
+create temp table _sp2 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
+reset role;
+update battles set status='active', m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now() - interval '10 seconds', pend = null where id=(select id from _tb);
+update _tq set ans = (select answer from quiz_questions where id=(select cur_q from battles where id=(select id from _tb)));
+set role anon;
+create temp table _sp3 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
+reset role;
+update battles set status='active', m_hp = 100, cur_q = (select id from quiz_questions where active limit 1), cur_skill = 'gen_hit', asked_at = now() - interval '14 seconds', pend = null where id=(select id from _tb);
+update _tq set ans = (select answer from quiz_questions where id=(select cur_q from battles where id=(select id from _tb)));
+set role anon;
+create temp table _sp4 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
+reset role;
+select pg_temp.t('สมดุล 99: โบนัสตอบไว ≤4 วิ +50% · ≤8 วิ +30% · ≤12 วิ +15% · ช้ากว่านั้น 0', (select (r->'event'->>'spd')::int from _sp1) = 50 and (select (r->'event'->>'spd')::int from _sp2) = 30
+  and (select (r->'event'->>'spd')::int from _sp3) = 15 and (select (r->'event'->>'spd')::int from _sp4) = 0);
+select pg_temp.t('สมดุล 99: ตอบไวดาเมจมากกว่าช้า (≤4 วิ > ช้า)', (select (r->'event'->>'dmg')::int from _sp1) > (select (r->'event'->>'dmg')::int from _sp4));
 -- อุปกรณ์/การ์ด/ธาตุ (db/81)
 select pg_temp.t('เกียร์ 81: วงจรธาตุ น้ำ>ไฟ>พืช>เคมี>ไฟฟ้า>น้ำ', _elem_beats('water','fire') and _elem_beats('fire','plant') and _elem_beats('plant','chem') and _elem_beats('chem','thunder') and _elem_beats('thunder','water') and not _elem_beats('fire','water') and not _elem_beats('fire','fire'));
 select pg_temp.t('เกียร์ 81: มอนสเตอร์มาตรฐาน + บอสเลื่อนแรงค์มีธาตุ', (select count(*) from monsters where key in ('bubble','lava','plasma','geode','trial_silver','trial_challenger') and element is not null) = 6);

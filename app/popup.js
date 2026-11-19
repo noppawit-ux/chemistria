@@ -245,7 +245,7 @@ async function statReset() {
 function statsHtml() {
   const S = X.stats; if (!S) return "";
   const E = S.effects || {}, P = S.points || {};
-  const eff = { int: `+${E.quiz_exp || 0} EXP/ควิซ`, dil: `+${E.exp_pct || 0}% EXP`, str: `+${E.boss_pct || 0}% ดาเมจ`, luk: `+${E.rare_pct || 0}% SR/SSR` };
+  const eff = { int: `+${E.quiz_exp || 0} EXP/ควิซ`, dil: `+${E.exp_pct || 0}% EXP`, str: `+${(E.boss_pct || 0) * 2}% ดาเมจ`, luk: `+${E.rare_pct || 0}% SR/SSR` };
   const can = !PEEK && P.left > 0;
   return `<div class="card" id="statcard"><h3>📊 สเตตัสของฉัน</h3>
     <div class="ptbar ${P.left > 0 ? "on" : ""}"><div><b>แต้มสเตตัสคงเหลือ <span class="ptn">${P.left || 0}</span></b><small>เลเวลอัพรับ +${P.per_level || 2} แต้ม · ใส่ได้ด้านละสูงสุด ${P.cap || 15} · ใช้แล้ว ${P.spent || 0}/${P.total || 0}</small></div>

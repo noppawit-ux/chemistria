@@ -218,7 +218,7 @@ const BATTLE = (() => {
         if (mu.adv) { const E = ELFX[mu.top]; if (E) later(120, () => pfx(E, zx, zy, { scale: 1.8 })); num("ธาตุได้เปรียบ!", zx, zy - 112, "fast"); pop("shakebig", $f() && $f().parentNode); }
         pop("hurt", MO.querySelector(".bt-mimg,.bt-memo")); flash(ev.crit ? "flashbig" : "flash");
         num((ev.crit ? "💥 " : "") + "-" + ev.dmg, zx, zy - 50, ev.crit ? "crit" : "dmg");
-        if (ev.fast) num("⚡ ตอบไว!", zx, zy - 86, "fast");
+        if (ev.fast) num("⚡ ตอบไว +" + (ev.spd || 0) + "%", zx, zy - 86, "fast");
         if (killed) later(500, () => { pfx("shatter-death", zx, zy + 20, { scale: 2.2 }); MO.classList.add("dead"); later(350, () => pfx("collect-burst", zx, zy, { scale: 2 })); });
       };
       const fx = SKFX[sk.key] || SKFX.gen_hit;
@@ -243,7 +243,7 @@ const BATTLE = (() => {
     span(".bt-mo", ".bt-pl", "magic-missile", 0.9, (zx, zy) => {
       if (e.taken <= 0) { num("🌀 หลบได้!", zx, zy - 50, "heal"); pfx("shield-block", zx, zy, { scale: 1.4 }); }
       else { const h = MONFX[key] || ["hit-spark", 1.5]; pfx(h[0], zx, zy, { scale: h[1] }); pop("hurt", PL.querySelector(".bt-spr")); flash("flashred"); num("-" + e.taken, zx, zy - 40, "dmg"); }
-      if (e.guard && e.hits > 0 && e.taken > 0) num("🛡️ ลดดาเมจ " + Math.round((100 * e.hits) / e.n) + "%", zx, zy - 74, "fast");
+      if (e.guard && e.hits > 0 && e.taken > 0) num("🛡️ ลดดาเมจ " + Math.round(10 * (1 + e.hits / e.n)) + "%", zx, zy - 74, "fast");
       if (e.heavy && !e.guard) num("⚠️ โจมตีหนัก", zx, zy - 74, "dmg");
       if (matchup().weak && e.taken > 0) num("ธาตุแพ้ทาง! โดนแรงขึ้น", zx, zy - 100, "dmg");
       if (e.perfect) { num("✨ ปัดป้องสมบูรณ์!", zx, zy - 74, "crit"); if (e.counter) setTimeout(() => { const t = document.querySelector(".bt-mo"); if (t) { const r = t.getBoundingClientRect(), fr = $f().getBoundingClientRect(); num("-" + e.counter, r.left - fr.left + r.width / 2, r.top - fr.top, "dmg"); } if (e.heal) num("+" + e.heal, zx, zy - 20, "heal"); }, 450); }
@@ -269,7 +269,7 @@ const BATTLE = (() => {
     const d = S.data; if (!d) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
     const left = Math.max(0, d.limit - d.used);
     return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">⚔️ ล่ามอนสเตอร์เคมี</h3><button class="btn ghost small" onclick="BATTLE.exit()">‹ กลับ</button></div>
-      <div class="run-info"><section><h4>🎮 วิธีเล่น</h4><ul><li>ตอบคำถามเพื่อใช้สกิล</li><li>มอนสเตอร์โจมตีกลับ ให้กดลูกศรลดดาเมจ</li></ul></section><section><h4>🏆 รางวัล</h4><ul><li>ชนะได้ EXP + เหรียญ</li><li>สุ่มดรอปไอเทม</li></ul></section></div>
+      <div class="run-info"><section><h4>🎮 วิธีเล่น</h4><ul><li>ตอบคำถามเพื่อใช้สกิล</li><li>ตอบไว ≤4 วิ ดาเมจ +50% · สเตตัสสูงตีแรงขึ้น</li><li>มอนสเตอร์โจมตีกลับ กดลูกศรลดดาเมจได้เล็กน้อย</li></ul></section><section><h4>🏆 รางวัล</h4><ul><li>ชนะได้ EXP + เหรียญ</li><li>สุ่มดรอปไอเทม</li></ul></section></div>
       <p>${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${d.limit}</span>` : '<span class="pill">รอบที่ได้รางวัลวันนี้หมดแล้ว — เล่นฝึกได้ไม่จำกัด (ไม่ได้รางวัล)</span>'} <span class="pill">❤️ HP ${d.p_max}</span></p>
       <div class="bt-skills">${d.skills.map((s) => `<span class="bt-sk ${s.kind}" title="${esc(s.descr || "")}">${s.emoji} <b>${esc(s.name)}</b> <small>${KIND[s.kind][1]}</small></span>`).join("")}</div></div>
       ${statsPanel(true)}${arenaPicker()}
@@ -287,8 +287,8 @@ const BATTLE = (() => {
       const intl = T ? T.int.total : 0, luk = T ? T.luk.total : 0, cfg = (GEARS && GEARS.cfg) || { adv: 4, weak: 4, cap: 20 };
       const inF = S.screen === "fight" && S.bat, mu = inF ? matchup() : { adv: 0, weak: 0 }, advP = Math.min(cfg.cap, mu.adv * cfg.adv), weakP = Math.min(cfg.cap, mu.weak * cfg.weak);
       const chip = (ic, label, val, tip) => `<span class="btsc" title="${esc(tip || "")}"><i>${ic}</i><small>${label}</small><b>${val}</b></span>`;
-      const row1 = T ? [chip("🧠", "ปัญญา", T.int.total, `ดาเมจโจมตี +${Math.floor(intl / 2)} ต่อครั้ง`), chip("💪", "ขยัน", T.dil.total, "EXP จากกิจกรรม"), chip("⚔️", "พลัง", T.str.total, `ดาเมจต่อบอส +${ef.boss_pct || 0}%`), chip("🍀", "โชค", T.luk.total, `คริติคอล ~${Math.min(30, luk)}% (สกิลคริ ${Math.min(85, 30 + luk * 3)}%)`)].join("") : "";
-      const bonus = (T ? `<span class="btsx">⚔️ ดาเมจ +${ef.boss_pct || 0}% · +${Math.floor(intl / 2)} ต่อครั้ง</span><span class="btsx">💥 คริติคอล ~${Math.min(30, luk)}%</span>` : "")
+      const row1 = T ? [chip("🧠", "ปัญญา", T.int.total, `ดาเมจโจมตี +${intl} ต่อครั้ง · ฮีลแรงขึ้น ${intl * 3}%`), chip("💪", "ขยัน", T.dil.total, "EXP จากกิจกรรม"), chip("⚔️", "พลัง", T.str.total, `ดาเมจ +${(ef.boss_pct || 0) * 2}%`), chip("🍀", "โชค", T.luk.total, `คริติคอล ~${Math.min(40, luk * 2)}%`)].join("") : "";
+      const bonus = (T ? `<span class="btsx">⚔️ ดาเมจ +${(ef.boss_pct || 0) * 2}% · +${intl} ต่อครั้ง</span><span class="btsx">💥 คริติคอล ~${Math.min(40, luk * 2)}%</span>` : "")
         + (g ? `<span class="btsx">${gi("atk")} โจมตี +${g.atk}%</span><span class="btsx">${gi("def")} ลดดาเมจ −${g.def}%</span><span class="btsx">${gi("hp")} HP +${g.hp}%</span>` : "");
       const m = inF ? S.bat.monster : null, me = m && typeof monElem === "function" ? monElem(m.id) : null;
       const el = me ? `<span class="btsx">${elBadge(me)} มอนสเตอร์ตัวนี้${advP ? ` · เรา<span class="up">ได้เปรียบ +${advP}% ดาเมจ</span>` : ""}${weakP ? ` · เรา<span class="dn">แพ้ทาง โดนแรงขึ้น +${weakP}%</span>` : ""}${!advP && !weakP ? " · ธาตุเสมอ" : ""}</span>` : "";
@@ -332,7 +332,7 @@ const BATTLE = (() => {
   function fbView() {
     const f = S.fb, q = f.q, sk = f.skill; let txt;
     if (!f.correct) txt = `❌ ตอบผิด — ${sk.emoji} ${sk.name} พลาด!`;
-    else if (sk.kind === "attack") txt = `${sk.emoji} ${sk.name}! ดาเมจ ${f.dmg}${f.crit ? " 💥 คริติคอล!" : ""}${f.fast ? " ⚡ ตอบไว +25%" : ""}`;
+    else if (sk.kind === "attack") txt = `${sk.emoji} ${sk.name}! ดาเมจ ${f.dmg}${f.crit ? " 💥 คริติคอล!" : ""}${f.fast ? ` ⚡ ตอบไว +${f.spd || 0}%` : ""}`;
     else if (sk.kind === "heal") txt = `${sk.emoji} ${sk.name}! ฟื้นฟู +${f.heal} HP`;
     else txt = `${sk.emoji} ${sk.name}! ได้รับบัพ`;
     const nextTxt = S.bat.status !== "active" ? "ดูผลการต่อสู้ ▶" : "ป้องกันการโจมตี ▶";
@@ -343,7 +343,7 @@ const BATTLE = (() => {
   function guardBtn(b) {
     const left = b.guard_left || 0;
     return `<button class="bt-skill guard ${heavyNow() ? "hot" : ""}" ${left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.guard()"><span class="bt-sico">🛡️</span><b>ตั้งรับ</b>
-      <small>แทนโจมตี 1 เทิร์น${left > 0 ? ` · รอ ${left} เทิร์น` : " · CD 2"}</small><em>กดลูกศรลดดาเมจ ถูกครบ = ไม่โดนเลย + สวนกลับ + ฟื้น HP 8%</em></button>`;
+      <small>แทนโจมตี 1 เทิร์น${left > 0 ? ` · รอ ${left} เทิร์น` : " · CD 2"}</small><em>กดลูกศรลดดาเมจ ถูกครบ = ลดดาเมจสูงสุด 20% + ฟื้น HP 3% (ตอบไว/สเตตัสสำคัญกว่า)</em></button>`;
   }
   function defendView() {
     const d = S.def, p = S.bat.pend; if (!d) return '<div class="card"><p class="muted">…</p></div>';
