@@ -14,6 +14,27 @@ async function gearLoad(force) {
 }
 const gearItemFx = (d) => { const t = GEARS && GEARS.items && GEARS.items[d.id]; if (!t) return ""; const p = []; if (t.atk) p.push(`${gi("atk")}+${t.atk}%`); if (t.def) p.push(`${gi("def")}-${t.def}%`); if (t.hp) p.push(`${gi("hp")}+${t.hp}%`); return `${elBadge(t.el)}${p.length ? `<span class="stb">${p.join(" ")}</span>` : ""}`; };
 const cardFxText = (id) => { const t = GEARS && GEARS.cards && GEARS.cards[id]; return t ? `${elBadge(t.el)} <span class="stb">${t.kind ? (FXK[t.kind] || "") + " " + (t.kind === "def" ? "-" : "+") + t.pct + "%" : ""}</span>` : ""; };
+// ตารางค่าการต่อสู้ของฉัน: พื้นฐาน + โบนัส = รวม (ตัวเลขตามกติกา SQL 99 ค่าเริ่มต้น)
+function combatHtml() {
+  if (typeof PEEK !== "undefined" && PEEK) return "";
+  if (!X.stats || !GEARS || !GEARS.gear) { if (!GEARS) gearLoad(); return ""; }
+  const T = statTotals(D.student.decor), g = GEARS.gear, ef = X.stats.effects || {}, lv = D.student.level || 1;
+  const intl = T.int.total, dil = T.dil.total, luk = T.luk.total + ((X.stats.luk || {}).buff || 0);
+  const hp0 = 80 + 6 * lv, hp1 = Math.round(Math.round(hp0 * (1 + g.hp / 100)) * (1 + dil * 0.02));
+  const at0 = 20, at1 = Math.round(at0 * (1 + (ef.boss_pct || 0) * 2 / 100) * (1 + g.atk / 100) + intl);
+  const gd0 = 20, gd1 = Math.round((1 - (1 - gd0 / 100) * (1 - g.def / 100)) * 100);
+  const cr1 = Math.min(40, luk * 2), rare = ef.rare_pct || 0;
+  const row = (ic, nm, b, bonus, tot, tip) => `<tr title="${esc(tip)}"><td class="cb-n">${ic} ${nm}</td><td>${b}</td><td class="cb-b">${bonus > 0 ? "+" + bonus : bonus < 0 ? bonus : "–"}</td><td class="cb-t">${tot}</td></tr>`;
+  return `<div class="combatbox"><div class="muted center" style="margin-bottom:4px">📊 ค่าการต่อสู้ของฉัน</div>
+    <table class="cbt"><thead><tr><th></th><th>พื้นฐาน</th><th>โบนัส</th><th>รวม</th></tr></thead><tbody>
+    ${row("❤️", "HP", hp0, hp1 - hp0, hp1, `พื้นฐาน 80+6×เลเวล · โบนัสจากอุปกรณ์/การ์ด +${g.hp}% และขยัน ${dil} แต้ม (+2%/แต้ม) · ด่านเลื่อนแรงค์เริ่มที่ 85% ของค่านี้`)}
+    ${row("⚔️", "โจมตี/ครั้ง", at0, at1 - at0, at1, `ดาเมจพื้นฐานสกิลโจมตี · พลัง +${(ef.boss_pct || 0) * 2}% · อุปกรณ์ +${g.atk}% · ปัญญา +${intl} · ตอบไว ≤4 วิ เพิ่มอีก 50%`)}
+    ${row("🛡️", "ลดดาเมจ %", gd0, gd1 - gd0, gd1 + "%", `พื้นฐาน = ตั้งรับถูกครบสูงสุด ${gd0}% · อุปกรณ์/การ์ด −${g.def}% · ธาตุแพ้ทางจะโดนเพิ่ม`)}
+    ${row("💥", "คริติคอล %", 0, cr1, cr1 + "%", `โชค ${luk} × 2% (สูงสุด 40%) · คริติคอล = ดาเมจ ×2`)}
+    ${row("🍀", "ดวง (โชค)", T.luk.base, luk - T.luk.base, luk, `แต้มโชคที่แจก + อุปกรณ์ + บัพ · โอกาส SR/SSR กาชา +${rare}%`)}
+    </tbody></table>
+    <small class="muted">แตะ/ชี้แต่ละแถวเพื่อดูที่มาของตัวเลข · โอกาส SR/SSR +${rare}%${ef.exp_pct ? ` · EXP +${ef.exp_pct}%` : ""}</small></div>`;
+}
 function gearBox() {
   if (typeof PEEK !== "undefined" && PEEK) return "";
   if (!GEARS) { gearLoad(); return ""; }
