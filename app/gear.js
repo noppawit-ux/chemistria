@@ -24,6 +24,17 @@ function combatHtml() {
   const at0 = 20, at1 = Math.round(at0 * (1 + (ef.boss_pct || 0) * 2 / 100) * (1 + g.atk / 100) + intl);
   const gd0 = 20, gd1 = Math.round((1 - (1 - gd0 / 100) * (1 - g.def / 100)) * 100);
   const cr1 = Math.min(40, luk * 2), rare = ef.rare_pct || 0;
+  // ค่าพลังรวม PR = √(HP ที่ทนได้ × ดาเมจต่อเทิร์น) สมมติตอบถูก 70% ตอบไวระดับกลาง · HP ด่านเลื่อนแรงค์ 85% (ตรงกับสูตรจำลอง SQL 99)
+  const prOf = (hp, bossPct, atkP, it, lk, defP) => {
+    const dmg = 20 * (1 + bossPct * 2 / 100) * (1 + atkP / 100) * 1.2475 * (1 + Math.min(0.4, lk * 0.02)) + it;
+    return Math.sqrt((hp * 0.85 / Math.max(0.2, 1 - defP / 100)) * (0.7 * dmg * 0.85));
+  };
+  const sr = T.str.total ? (T.str.base || 0) / T.str.total : 0;
+  const pr1 = Math.round(prOf(hp1, ef.boss_pct || 0, g.atk, intl, luk, g.def));
+  const pr0 = Math.round(prOf(hp0, (ef.boss_pct || 0) * sr, 0, T.int.base || 0, T.luk.base || 0, 0));
+  const TR = [["Silver", 37.6], ["Gold", 44], ["Platinum", 50.3], ["Emerald", 56.5], ["Diamond", 60.5], ["Master", 67], ["Grandmaster", 71.7], ["Challenger", 78.9]];
+  const can = TR.filter((t) => pr1 / t[1] >= 1.0).pop(), edge = TR.find((t) => pr1 / t[1] < 1.0 && pr1 / t[1] >= 0.8);
+  const prNote = can ? `พร้อมท้าบอสด่านถึง <b>${can[0]}</b>${edge ? ` · สูสีที่ ${edge[0]}` : ""}` : edge ? `สูสีที่บอส ${edge[0]}` : "ยังต่ำกว่าบอสด่านแรก — เก็บสเตตัส/อุปกรณ์เพิ่ม";
   const row = (ic, nm, b, bonus, tot, tip) => `<tr title="${esc(tip)}"><td class="cb-n">${ic} ${nm}</td><td>${b}</td><td class="cb-b">${bonus > 0 ? "+" + bonus : bonus < 0 ? bonus : "–"}</td><td class="cb-t">${tot}</td></tr>`;
   return `<div class="combatbox"><div class="muted center" style="margin-bottom:4px">📊 ค่าการต่อสู้ของฉัน</div>
     <table class="cbt"><thead><tr><th></th><th>พื้นฐาน</th><th>โบนัส</th><th>รวม</th></tr></thead><tbody>
@@ -32,7 +43,9 @@ function combatHtml() {
     ${row("🛡️", "ลดดาเมจ %", gd0, gd1 - gd0, gd1 + "%", `พื้นฐาน = ตั้งรับถูกครบสูงสุด ${gd0}% · อุปกรณ์/การ์ด −${g.def}% · ธาตุแพ้ทางจะโดนเพิ่ม`)}
     ${row("💥", "คริติคอล %", 0, cr1, cr1 + "%", `โชค ${luk} × 2% (สูงสุด 40%) · คริติคอล = ดาเมจ ×2`)}
     ${row("🍀", "ดวง (โชค)", T.luk.base, luk - T.luk.base, luk, `แต้มโชคที่แจก + อุปกรณ์ + บัพ · โอกาส SR/SSR กาชา +${rare}%`)}
+    ${row("🧠", "พลังรวม PR", pr0, pr1 - pr0, pr1, "PR = √(HP ที่ทนได้ × ดาเมจต่อเทิร์น) สมมติตอบถูก 70% ตอบไวปานกลาง · บอสด่านเลื่อนแรงค์: " + TR.map((t) => t[0] + " " + Math.round(t[1])).join(" · ") + " · PR ของคุณ ÷ PR บอส มากกว่า 1 = มีโอกาสชนะ")}
     </tbody></table>
+    <div class="cb-pr">⭐ ${prNote}</div>
     <small class="muted">แตะ/ชี้แต่ละแถวเพื่อดูที่มาของตัวเลข · โอกาส SR/SSR +${rare}%${ef.exp_pct ? ` · EXP +${ef.exp_pct}%` : ""}</small></div>`;
 }
 function gearBox() {

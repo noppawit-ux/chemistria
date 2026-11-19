@@ -1527,3 +1527,4 @@ body.peeking .botbar{bottom:0}
 .combatbox{margin:8px 0;padding:8px 10px;border-radius:12px;background:#ffffff0d;border:1px solid #ffffff22}
 .cbt{width:100%;border-collapse:collapse;font-size:.9em}.cbt th{font-weight:400;opacity:.7;font-size:.85em;text-align:right;padding:2px 4px}
 .cbt td{text-align:right;padding:4px;border-top:1px solid #ffffff14}.cbt .cb-n{text-align:left;white-space:nowrap}.cbt .cb-b{color:#6ee7a0}.cbt .cb-t{font-weight:700;color:var(--gold2,#ffd76a)}
+.cb-pr{margin:6px 0 2px;font-size:.88em;text-align:center;color:var(--gold2,#ffd76a)}
