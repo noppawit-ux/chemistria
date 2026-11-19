@@ -1533,3 +1533,12 @@ body.peeking .botbar{bottom:0}
 .clshome .clsb{font-size:.85em;margin-top:4px;color:#6ee7a0}.clshome .clsup{margin-top:6px;padding:4px 8px;border-radius:8px;background:#ffd76a22;border:1px solid #ffd76a88;color:var(--gold2,#ffd76a);font-size:.88em;font-weight:700}
 .advcard{border:2px solid var(--line);border-radius:16px;padding:12px;background:var(--card2);display:flex;flex-direction:column;gap:6px}.advcard.on{border-color:var(--gold);box-shadow:0 0 18px #f6c45355}.advcard.lock{opacity:.7}
 .advh{font-size:1.05em}.advsk{font-size:.9em;padding:5px 8px;border-radius:8px;background:#b57bff22;border:1px solid #b57bff66}
+/* v2.48 ตารางสเตตัสข้างเรดาร์ + แถบเลเวลคลาส */
+.mc-grid{grid-template-columns:minmax(0,.85fr) minmax(0,1.5fr)!important}
+@media(max-width:900px){.mc-grid{grid-template-columns:1fr!important}}
+.radrow{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:center}
+.radrow .radarcol{flex:0 1 250px;min-width:200px}.radrow .stbl-col{flex:1 1 270px;min-width:0}
+.stbl .stcls{cursor:pointer;margin-bottom:6px;text-align:center}
+.stt td,.stt th{padding:5px 3px;white-space:nowrap}.stt tbody tr{cursor:pointer}.stt tbody tr:hover{background:#ffffff12}.stt tbody tr:focus-visible{outline:2px solid var(--gold2,#ffd76a)}
+.lvblk{display:flex;gap:3px;margin:5px auto 3px;max-width:300px}.lvblk i{flex:1;height:10px;border-radius:3px;background:#ffffff1f;border:1px solid #ffffff2a}.lvblk i.on{background:linear-gradient(180deg,#ffe58a,#f0a93a);border-color:#ffd76a;box-shadow:0 0 6px #f6c45366}
+.stsrc{display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:10px;background:#ffffff0d}.stsrc .row{gap:8px;align-items:center}.stsrc .stsum{border-top:1px solid #ffffff2a;padding-top:4px;margin-top:2px;color:var(--gold2,#ffd76a)}

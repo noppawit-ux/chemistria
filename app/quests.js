@@ -43,7 +43,7 @@ const VIEWS = {
         <div class="mc-left"><div class="muted" style="font-size:12px;margin:2px 0 6px;text-align:center">แตะช่องอุปกรณ์เพื่อเปลี่ยน</div>
           <div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>${classHomeHtml()}</div>
           ${reactBox()}</div>
-        <div class="mc-right"><div class="radarcol">${radarHtml(me.decor)}</div>${combatHtml()}${gearBox()}</div>
+        <div class="mc-right"><div class="radrow"><div class="radarcol">${radarHtml(me.decor)}</div><div class="stbl-col">${statTableHtml()}</div></div>${combatHtml()}${gearBox()}</div>
       </div></div>
     ${alertsChip()}<div class="home2">${homeItemsHtml()}${relHomeHtml()}</div>${todayLessonsHtml()}${bossHtml(false)}
     <div class="grid">
