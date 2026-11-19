@@ -216,7 +216,7 @@ function statTotals(dc) {
   const mainOf = (m) => { const v = ["int", "dil", "str", "luk"].map((x) => +m[x] || 0), mx = Math.max(...v); return mx <= 0 ? null : ["int", "dil", "str", "luk"][v.indexOf(mx)]; };
   const addRaw = (k) => Object.entries(dc || {}).reduce((a, [sl, it]) => a + (it && it.id && IS[it.id] ? (+IS[it.id][k] || 0) + (mainOf(IS[it.id]) === k ? Math.max(0, (it.lvl || 1) - 1) : 0) : 0), 0);
   const add = (k) => (k === "coin" ? Math.min(15, addRaw(k)) : Math.min(12, addRaw(k)));
-  ["int", "dil", "str", "luk"].forEach((k) => { const b = ((S[k] || {}).base || 0) + ((S[k] || {}).pts || 0); o[k] = { base: b, item: add(k), total: b + add(k) }; });
+  ["int", "dil", "str", "luk"].forEach((k) => { const b = ((S[k] || {}).base || 0) + ((S[k] || {}).pts || 0); const c = (S[k] || {}).cls || 0; o[k] = { base: b, item: add(k), cls: c, total: b + add(k) + c }; });
   o.coin = add("coin");
   return o;
 }

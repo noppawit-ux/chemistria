@@ -41,7 +41,7 @@ const VIEWS = {
     return `${checkinHtml()}${newsHtml()}${guildTopHtml()}${statsCardHtml()}${typeof PEEK !== "undefined" && PEEK ? "" : gbHold()}<div class="card mychar"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h3 class="grow" style="margin:0">${esc(me.name)} <small class="muted" style="font-weight:400">${esc(rankName(D.rank_info))}</small></h3><button class="btn small gold" onclick="go('decor')">🎨 แต่งตัวละคร</button></div>
       <div class="mc-grid">
         <div class="mc-left"><div class="muted" style="font-size:12px;margin:2px 0 6px;text-align:center">แตะช่องอุปกรณ์เพื่อเปลี่ยน</div>
-          <div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div></div>
+          <div class="stagecol"><div class="paperdoll">${stage(me.char_class, D.rank_info, me.decor, "lg")}${eqPanel(me)}</div><div style="margin-top:8px">${titleTag(me.decor)}</div>${classHomeHtml()}</div>
           ${reactBox()}</div>
         <div class="mc-right"><div class="radarcol">${radarHtml(me.decor)}</div>${combatHtml()}${gearBox()}</div>
       </div></div>
@@ -122,7 +122,7 @@ const VIEWS = {
 
   class() {
     const s = D.student, cost = D.class_change_cost;
-    return `<div class="card"><h3>⚔️ เลือกคลาสของคุณ</h3>
+    return `${classLvHtml()}<div class="card"><h3>⚔️ เลือกคลาสของคุณ</h3>
       <p class="muted">แต่ละคลาสมีความสามารถพิเศษต่างกัน เลือกครั้งแรกฟรี หลังจากนั้นเปลี่ยนคลาสครั้งละ ${cost} 🪙</p>
       <div class="clsgrid">${D.classes.map((c) => `<div class="clscard ${c.key === s.char_class ? "on" : ""}">
         <img src="${esc(c.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(c.emoji)}'))">

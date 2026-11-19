@@ -818,8 +818,19 @@ select pg_temp.t('เพื่อน: ชนิดที่ต้อง 300 แ�
 select pg_temp.t('เพื่อน: ฝ่ายรับเห็นคำขอใน student_extras.relations', (select json_array_length(student_extras((select t13 from _fr))->'relations'->'incoming') = 1));
 select pg_temp.t('เพื่อน: ฝ่ายรับกดยอมรับสำเร็จ', (select (rel_respond((select t13 from _fr), 12, true)->>'accepted')::boolean));
 select pg_temp.t('เพื่อน: ทั้งสองฝ่ายเห็นความสัมพันธ์บนหน้าหลัก', (select student_extras((select t12 from _fr))->'relations'->'rels'->0->>'rel' = 'bestie' and student_extras((select t13 from _fr))->'relations'->'rels'->0->>'rel_name' = 'เพื่อนสนิท'));
+reset role;
+select pg_temp.t('บัพความสัมพันธ์ 101: เพื่อนสนิทให้ EXP +4% ทั้งสองฝ่าย', (select (_stats(a)->'rel_total'->>'buff_exp')::int = 4 and (_stats(b)->'rel_total'->>'buff_exp')::int = 4
+  and (_stats(a)->'effects'->>'exp_pct')::int = (_stats_base(a)->'effects'->>'exp_pct')::int + 4 from friendships limit 1));
+select pg_temp.t('บัพความสัมพันธ์ 101: ส่งรายการบัพ (ชื่อเพื่อน/ชนิด) ให้หน้าหลัก', (select json_array_length(_stats(a)->'rel_buffs') = 1 and _stats(a)->'rel_buffs'->0->>'rel' = 'เพื่อนสนิท' from friendships limit 1));
+update app_settings set value='3' where key='rel_cap_pct';
+select pg_temp.t('บัพความสัมพันธ์ 101: ตัดเพดานรวม (cap 3% → EXP +3)', (select (_stats(a)->'rel_total'->>'buff_exp')::int = 3 from friendships limit 1));
+update app_settings set value='15' where key='rel_cap_pct';
+set role anon;
 select rel_end((select t13 from _fr), 12);
 select pg_temp.t('เพื่อน: เลิกความสัมพันธ์แล้วหายจากหน้าหลัก (คะแนนยังอยู่)', (select json_array_length(student_extras((select t12 from _fr))->'relations'->'rels') = 0));
+reset role;
+select pg_temp.t('บัพความสัมพันธ์ 101: เลิกความสัมพันธ์แล้วบัพหาย', (select (_stats(a)->'rel_total'->>'buff_exp')::int = 0 and (_stats(b)->'rel_total'->>'buff_exp')::int = 0 from friendships limit 1));
+set role anon;
 reset role;
 select pg_temp.t('เพื่อน: คะแนนยังคงอยู่หลังเลิก', (select rp from friendships limit 1) >= 100);
 update app_settings set value='1' where key='gift_daily_limit';
@@ -1268,6 +1279,8 @@ update _tq set ans = (select answer from quiz_questions where id=(select cur_q f
 set role anon;
 create temp table _sp4 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
 reset role;
+select pg_temp.t('แรงค์ 100: เกณฑ์ EXP ช่วงหลังยากขึ้น (Emerald 2900 · Challenger 12000 · Platinum เท่าเดิม 1800)',
+  (select min_exp from ch_ranks where key='emerald')=2900 and (select min_exp from ch_ranks where key='challenger')=12000 and (select min_exp from ch_ranks where key='platinum')=1800);
 select pg_temp.t('สมดุล 99: โบนัสตอบไว ≤4 วิ +50% · ≤8 วิ +30% · ≤12 วิ +15% · ช้ากว่านั้น 0', (select (r->'event'->>'spd')::int from _sp1) = 50 and (select (r->'event'->>'spd')::int from _sp2) = 30
   and (select (r->'event'->>'spd')::int from _sp3) = 15 and (select (r->'event'->>'spd')::int from _sp4) = 0);
 select pg_temp.t('สมดุล 99: ตอบไวดาเมจมากกว่าช้า (≤4 วิ > ช้า)', (select (r->'event'->>'dmg')::int from _sp1) > (select (r->'event'->>'dmg')::int from _sp4));
@@ -1498,6 +1511,49 @@ select pg_temp.t('หลอม 94: anon เรียกฟังก์ชัน�
 insert into student_cards (student_id, card_id) select (select sid from _fg), c.id from cards c where c.rarity='N' and c.active on conflict do nothing;
 update students set shards = 99 where id=(select sid from _fg);
 select pg_temp.t('หลอม 94: มีการ์ดระดับนั้นครบแล้ว หลอมไม่ได้ และเศษไม่ถูกหัก', pg_temp.fails($q$select card_forge((select tk from _fg), 'N')$q$, 'anon') and (select shards from students where id=(select sid from _fg)) = 99);
+-- ================= คลาส 102: เลเวลคลาส + โบนัสสเตตัส + คลาสขั้นสูง =================
+reset role;
+create temp table _cl as select student_id sid, (select t12 from _fr) tk from student_sessions where token = (select t12 from _fr);
+grant all on _cl to anon;
+delete from class_mastery where student_id = (select sid from _cl);
+delete from rank_trial_pass where student_id = (select sid from _cl);
+update students set char_class = 'scientist', adv_class = null, coins = 500 where id = (select sid from _cl);
+select _class_pts((select sid from _cl), 25);
+select _class_pts((select sid from _cl), 25);
+select pg_temp.t('คลาส 102: แต้มความชำนาญตัดเพดานต่อวัน (25+25 → 40) และเลเวล 2', (select pts = 40 and _class_lv(pts) = 2 from class_mastery where student_id = (select sid from _cl)));
+select pg_temp.t('คลาส 102: โบนัสเลเวล 2 นักทดลอง = ปัญญา +1 โชค +0', (select (_class_bonus((select sid from _cl))->>'int')::int = 1 and (_class_bonus((select sid from _cl))->>'luk')::int = 0));
+update class_mastery set pts = 140, day_pts = 0 where student_id = (select sid from _cl);
+select pg_temp.t('คลาส 102: เลเวล 5 = ปัญญา +3 โชค +1 และ _stats บวกเข้าสเตตัสรวม', (select (_stats((select sid from _cl))->'cls'->>'int')::int = 3 and (_stats((select sid from _cl))->'cls'->>'luk')::int = 1
+  and (_stats((select sid from _cl))->'int'->>'total')::int = (_stats_rel((select sid from _cl))->'int'->>'total')::int + 3
+  and (_stats((select sid from _cl))->'luk'->>'total')::int = (_stats_rel((select sid from _cl))->'luk'->>'total')::int + 1));
+select pg_temp.t('คลาส 102: โบนัสคลาสเพิ่มผลลัพธ์ quiz_exp/rare_pct (ไม่ลดลง)', (select (_stats(s)->'effects'->>'quiz_exp')::int >= (_stats_rel(s)->'effects'->>'quiz_exp')::int and (_stats(s)->'effects'->>'rare_pct')::int >= (_stats_rel(s)->'effects'->>'rare_pct')::int from (select (select sid from _cl) s) z));
+insert into ledger (student_id, exp, coins, reason, ref_key) values ((select sid from _cl), 20, 0, 'ทดสอบคลาส', 'test:cls1');
+select pg_temp.t('คลาส 102: ได้ EXP 20 → แต้มความชำนาญ +4', (select pts = 144 from class_mastery where student_id = (select sid from _cl)));
+set role anon;
+select pg_temp.t('คลาส 102: class_info แสดงเลเวล 5 และ 2 สายขั้นสูง ที่ยังไม่ผ่านด่านแรงค์', (select (j->>'lv')::int = 5 and jsonb_array_length(j->'options') = 2 and not (j->'options'->0->>'rank_ok')::boolean and (j->'options'->0->>'lv_ok')::boolean from (select class_info((select tk from _cl))::jsonb j) z));
+select pg_temp.t('คลาส 102: ยังไม่ผ่านด่านแรงค์ เลือกคลาสขั้นสูงไม่ได้', pg_temp.fails($q$select choose_adv((select tk from _cl), 'sci_sage')$q$));
+reset role;
+insert into rank_trial_pass (student_id, rank_key) values ((select sid from _cl), 'gold') on conflict do nothing;
+update class_mastery set pts = 20 where student_id = (select sid from _cl);
+set role anon;
+select pg_temp.t('คลาส 102: เลเวลไม่ถึง 5 เลือกคลาสขั้นสูงไม่ได้', pg_temp.fails($q$select choose_adv((select tk from _cl), 'sci_sage')$q$));
+reset role;
+update class_mastery set pts = 140 where student_id = (select sid from _cl);
+set role anon;
+select pg_temp.t('คลาส 102: เลเวล 5 + ผ่านด่าน Gold เลือก “นักวิจัยอัจฉริยะ” ได้ฟรีครั้งแรก', (select (choose_adv((select tk from _cl), 'sci_sage')->>'paid')::int = 0));
+select pg_temp.t('คลาส 102: คลาสขั้นสูงของสายอื่นเลือกไม่ได้', pg_temp.fails($q$select choose_adv((select tk from _cl), 'alc_gold')$q$));
+reset role;
+select pg_temp.t('คลาส 102: คลาสขั้นสูง = ปัญญา +6 (เลเวล5: 3+3) ขยัน +2 (1+1)', (select (_class_bonus((select sid from _cl))->>'int')::int = 6 and (_class_bonus((select sid from _cl))->>'dil')::int = 2));
+select pg_temp.t('คลาส 102: ชุดสกิลในศึกมีไม้ตายขั้นสูงเพิ่ม (4 สกิล)', (select count(*) = 4 and bool_or(key = 'sci_sage_u') from _battle_skillset((select sid from _cl))));
+set role anon;
+select pg_temp.t('คลาส 102: เปลี่ยนสายครั้งที่ 2 เสียเหรียญเท่าเปลี่ยนคลาส', (select (choose_adv((select tk from _cl), 'sci_volt')->>'paid')::int = 100));
+reset role;
+select pg_temp.t('คลาส 102: หักเหรียญตามจริง', (select coins = 500 - (select value::int from app_settings where key = 'class_change_cost') from students where id = (select sid from _cl)));
+update students set char_class = 'guardian' where id = (select sid from _cl);
+select pg_temp.t('คลาส 102: เปลี่ยนคลาสพื้นฐาน → ถอดคลาสขั้นสูงอัตโนมัติ แต่แต้มคลาสเดิมยังอยู่', (select adv_class is null from students where id = (select sid from _cl)) and (select pts = 140 from class_mastery where student_id = (select sid from _cl) and class_key = 'scientist'));
+select pg_temp.t('คลาส 102: anon เรียกฟังก์ชันภายในไม่ได้ แต่เรียก class_info ได้', not has_function_privilege('anon','_class_pts(uuid,int)','execute') and not has_function_privilege('anon','_class_bonus(uuid)','execute') and has_function_privilege('anon','class_info(uuid)','execute'));
+select pg_temp.t('คลาส 102: anon อ่านตาราง class_mastery / adv_classes ตรงๆ ไม่ได้', not has_table_privilege('anon','class_mastery','select') and not has_table_privilege('anon','adv_classes','select'));
+set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

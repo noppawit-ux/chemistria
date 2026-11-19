@@ -9,6 +9,7 @@ const buy = (id) => confirm("ยืนยันการแลกสิทธิ
 const usePriv = (id) => confirm("ขอใช้สิทธิ์นี้ ครูจะเป็นผู้อนุมัติ")
   && act(() => rpc("request_privilege", { p_token: tk(), p_redemption: id }), "ส่งคำขอให้ครูแล้ว");
 const pickClass = (k, n) => confirm("เลือกคลาส “" + n + "” ?") && act(() => rpc("choose_class", { p_token: tk(), p_key: k }), "เปลี่ยนคลาสแล้ว ⚔️");
+const pickAdv = (k, n, paid) => confirm(`เลือกคลาสขั้นสูง “${n}” ?${paid ? ` (เปลี่ยนสายเสีย ${paid} เหรียญ)` : ""}`) && act(() => rpc("choose_adv", { p_token: tk(), p_key: k }).then((r) => { toast(`${r.emoji} เป็น “${r.name}” แล้ว!`); return r; }));
 const buyDecor = (id, n, p) => confirm(`ซื้อ “${n}” ราคา ${p} เหรียญ?`) && act(() => rpc("buy_decor", { p_token: tk(), p_item: id }), "ซื้อสำเร็จ 🎉 กด “สวมใส่” ได้เลย").then(() => FX.coins(".coin", 4));
 const pickDecor = (slot, id) => { const it = id ? (D.decor_catalog || []).find((d) => d.id === id) : null; if (it) DRAFT[slot] = it; else delete DRAFT[slot]; render(); if (it) FX.at(".stg", "spirit-flame", { scale: 1.6, foot: true }); };
 const resetDraft = () => { DRAFT = null; render(); };
