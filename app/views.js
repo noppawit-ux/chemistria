@@ -28,11 +28,17 @@ function fxHtml(fx) {
 const GDEF = { novice: "m", alchemist: "m", scientist: "f", guardian: "m", seeker: "m" };   // เพศของภาพต้นฉบับแต่ละคลาส
 const altGender = (cls, g) => !!g && g !== (GDEF[cls || "novice"] || "m");               // true = ใช้ภาพอีกเพศ (*_alt.png)
 const gOf = (cls, dc) => (dc && dc.gender) || GDEF[cls || "novice"] || "m";
+/* ออร่าอุปกรณ์ (v2.52): ใส่ไอเทมหายาก SR/SSR → วงคลื่นที่พื้น · SSR ที่หมวก/ไอเทมถือ → วงโคจรรอบตัว (สไปรต์จากแพ็ก VFX; ปิดเมื่อลดการเคลื่อนไหว) */
+const EQ_R = { SR: 1, SSR: 2 };
+function eqfx(dc) {
+  let top = 0, orb = 0; for (const k of ["hat", "pet", "neck", "ring", "item", "outfit"]) { const r = EQ_R[dc[k] && dc[k].rarity] || 0; if (r > top) top = r; if (r === 2 && (k === "hat" || k === "item")) orb = 1; }
+  return top ? `<i class="eqfx eq-ring eqr${top}"></i>${orb ? '<i class="eqfx eq-orbit eqr2"></i>' : ""}` : "";
+}
 function stage(cls, ri, dc, sz) {
   dc = dc || {}; const f = dc.frame, b = dc.bg, o = dc.outfit, base = "assets/chars/" + (cls || "novice") + (altGender(cls, dc.gender) ? "_alt" : "");
   return `<div class="avf stg rk-${ri.key} ${sz || "md"} ${f ? "dc-f-" + esc(f.key) : ""}" style="${dcVar(f)}">
     <div class="av stage ${b ? "dc-b-" + esc(b.key) : "stg-default"}" style="${dcVar(b)}">
-      ${fxHtml(dc.fx)}<div class="st-floor"></div>
+      ${fxHtml(dc.fx)}<div class="st-floor"></div>${eqfx(dc)}
       <img class="st-char" src="${base}${o ? "_" + esc(o.key) : ""}.png" alt="" onerror="this.onerror=null;this.src='${base}.png'">
       ${dc.hat ? (dc.hat.image ? `<img class="st-hat st-himg" src="${esc(dc.hat.image)}" alt="">` : `<span class="st-hat">${esc(dc.hat.emoji)}</span>`) : ""}${dc.pet ? (dc.pet.image ? `<img class="st-pet st-pimg" src="${esc(dc.pet.image)}" alt="">` : `<span class="st-pet">${esc(dc.pet.emoji)}</span>`) : ""}
       ${dc.neck ? (dc.neck.image ? `<img class="st-neck" src="${esc(dc.neck.image)}" alt="">` : `<span class="st-neck">${esc(dc.neck.emoji)}</span>`) : ""}${dc.ring ? (dc.ring.image ? `<img class="st-ring" src="${esc(dc.ring.image)}" alt="">` : `<span class="st-ring">${esc(dc.ring.emoji)}</span>`) : ""}

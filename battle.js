@@ -156,7 +156,7 @@ const BATTLE = (() => {
     if (typeof SFX !== "undefined") SFX.fromFx(name, o);
     if (typeof PFX_DATA === "undefined" || !PFX_DATA[name]) return null;
     const m = PFX_DATA[name], sc = o.scale || 1, W = m.w * sc, H = m.h * sc, el = document.createElement("div"); el.className = "pfx";
-    Object.assign(el.style, { position: "absolute", width: W + "px", height: H + "px", backgroundImage: `url(assets/pixelfx/${name}.png)`, backgroundSize: `${m.cols * W}px auto`, imageRendering: "pixelated", pointerEvents: "none" });
+    Object.assign(el.style, { position: "absolute", width: W + "px", height: H + "px", backgroundImage: `url(assets/pixelfx/${m.src || name + ".png"})`, backgroundSize: `${m.cols * W}px auto`, imageRendering: m.sm ? "auto" : "pixelated", pointerEvents: "none" });
     if (o.parent) { el.style.left = -m.ox * sc + "px"; el.style.top = -m.oy * sc + "px"; o.parent.appendChild(el); }
     else { const L = $f(); if (!L) return null; el.style.left = x - m.ox * sc + "px"; el.style.top = y - m.oy * sc + "px"; L.appendChild(el); }
     el.style.transformOrigin = `${m.ox * sc}px ${m.oy * sc}px`; if (o.rot != null || o.flip) el.style.transform = `${o.rot != null ? `rotate(${o.rot}rad)` : ""} ${o.flip ? "scaleX(-1)" : ""}`;

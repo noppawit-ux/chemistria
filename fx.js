@@ -7,9 +7,9 @@ const FX = (() => {
   function play(name, x, y, o = {}) {              // x,y = พิกัดหน้าจอ (px) จุดยึดของเอฟเฟกต์
     if (typeof SFX !== "undefined") SFX.fromFx(name, o);
     const m = !off() && PFX_DATA[name]; if (!m) return null;
-    if (!cache[name]) { cache[name] = new Image(); cache[name].src = `assets/pixelfx/${name}.png`; }
+    if (!cache[name]) { cache[name] = new Image(); cache[name].src = `assets/pixelfx/${m.src || name + ".png"}`; }
     const sc = o.scale || 2, W = m.w * sc, H = m.h * sc, el = document.createElement("div"); el.className = "pfxg";
-    Object.assign(el.style, { width: W + "px", height: H + "px", left: x - m.ox * sc + "px", top: y - m.oy * sc + "px", backgroundImage: `url(assets/pixelfx/${name}.png)`, backgroundSize: `${m.cols * W}px auto`, opacity: o.opacity == null ? 1 : o.opacity });
+    Object.assign(el.style, { width: W + "px", height: H + "px", left: x - m.ox * sc + "px", top: y - m.oy * sc + "px", backgroundImage: `url(assets/pixelfx/${m.src || name + ".png"})`, backgroundSize: `${m.cols * W}px auto`, imageRendering: m.sm ? "auto" : "", opacity: o.opacity == null ? 1 : o.opacity });
     if (o.flip) el.style.transform = "scaleX(-1)";
     if (o.loop) el.dataset.loop = "1";
     (o.parent || L()).appendChild(el);

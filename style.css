@@ -1558,3 +1558,13 @@ body.peeking .botbar{bottom:0}
 #netbar b{position:fixed;top:8px;right:10px;display:flex;gap:6px;align-items:center;font:600 .78rem/1 Sarabun,sans-serif;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:6px 10px;box-shadow:0 4px 14px #0008}
 @keyframes nbar{from{background-position:-50% 0}to{background-position:150% 0}}
 @media (prefers-reduced-motion:reduce){.sk-spin{animation:spin 2.4s linear infinite!important}.sk-line,.sk-av,.sk-pill{animation:none!important}#netbar{animation:none!important;background:var(--gold)}}
+
+/* ===== v2.52 ออร่าอุปกรณ์ (สไปรต์ v2_aura-*.webp จากแพ็ก VFX) ===== */
+.eqfx{position:absolute;left:50%;pointer-events:none;background-repeat:no-repeat;transform:translateX(-50%);z-index:1}
+.eqfx.eq-ring{bottom:-2%;width:86%;height:26%;background-image:url(assets/pixelfx/v2_aura-ring.webp);background-size:1200% 100%;animation:eqring .84s steps(12) infinite;opacity:.85}
+.eqfx.eq-orbit{bottom:24%;width:104%;height:56%;background-image:url(assets/pixelfx/v2_aura-orbit.webp);background-size:1600% 100%;animation:eqorb 1.28s steps(16) infinite;opacity:.8;z-index:5}
+.eqfx.eqr1{filter:brightness(.9) drop-shadow(0 0 3px #b58cff) drop-shadow(0 0 7px #8a4dff)}
+.eqfx.eqr2{filter:sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.2) drop-shadow(0 0 3px #ffd45a) drop-shadow(0 0 8px #ff9d2e)}
+@keyframes eqring{to{background-position:109.0909% 0}}
+@keyframes eqorb{to{background-position:106.6667% 0}}
+@media (prefers-reduced-motion:reduce){.eqfx{animation:none}}
