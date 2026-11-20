@@ -1603,3 +1603,28 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 .advcard .advd{font-size:.88em}
 .advcard .ability,.clscard .ability{margin:2px 0;border-style:solid}
 .clscard .muted{font-size:.88em}
+
+/* ===== v2.57 มอนสเตอร์แพ้แล้วหายไปถาวร (ไม่เด้งกลับตอนหน้าจอวาดใหม่) ===== */
+.bt-mo.gone .bt-mimg,.bt-mo.gone .bt-memo{opacity:0;animation:none;transform:scale(.5)}.bt-mo.gone .bt-shadow{opacity:0}
+
+/* ===== v2.57 พื้นหลังฉากต่อสู้ (แพ็ก Animated Pixel-Art Backgrounds) + หน้าจอโหลดฉาก + สกิลไอคอนใหญ่ ===== */
+.bt-field.bt-cbg{background-size:cover!important;background-position:center bottom!important;background-repeat:no-repeat!important}
+.bt-field.bt-cbg.px{image-rendering:pixelated}
+.bt-field.bt-cbg .bt-sky{display:none}
+.bt-field.bt-ldg{display:grid;place-items:center;background:linear-gradient(100deg,var(--card) 30%,color-mix(in srgb,var(--card2) 65%,var(--violet)) 50%,var(--card) 70%)!important;background-size:300% 100%!important;animation:skshine 1.6s ease-in-out infinite}
+.bt-ldin{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}.bt-ldin .sk-spin{width:2.2em;height:2.2em}
+.bt-ldslow{opacity:0;animation:skfade .4s ease 5s forwards}
+.bgpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.bgp{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px;border-radius:12px;border:2px solid var(--line);background:var(--card2);color:inherit;font:inherit;cursor:pointer}
+.bgp.on{border-color:var(--gold);box-shadow:0 0 14px #f6c45355}
+.bgp img,.bgp .bgt{width:100%;aspect-ratio:16/9;border-radius:8px;object-fit:cover;display:grid;place-items:center;font-size:28px;background:#ffffff0d}.bgp small{font-size:.78em;text-align:center;line-height:1.2}
+.bt-big{display:inline-block;line-height:1}.bt-big .aic{width:56px;height:56px;image-rendering:pixelated}
+.bt-skgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.bt-skt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 8px;border-radius:14px;border:2px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;font:inherit;cursor:pointer;font-size:.85em;text-align:center}
+.bt-skt.attack{border-color:#ff7a7a88}.bt-skt.buff{border-color:#ffd86b88}.bt-skt.heal{border-color:#7ee0b088}
+.bt-skillrow:has(.bt-skw){grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
+.bt-skw{position:relative;display:flex}.bt-skw .bt-skill.big{flex:1;align-items:center;text-align:center;gap:4px;padding:12px 6px 8px}
+.bt-skill.big .bt-big{font-size:50px}.bt-skill.big b{font-size:.9em}.bt-skill.big small{font-size:.75em}
+.bt-info{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#0008;color:inherit;font-size:13px;line-height:1;cursor:pointer;padding:0;display:grid;place-items:center}
+.bt-sk .aic{image-rendering:pixelated}
+@media (prefers-reduced-motion:reduce){.bt-field.bt-ldg{animation:none!important}}
