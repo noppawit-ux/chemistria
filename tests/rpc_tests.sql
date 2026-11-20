@@ -1583,6 +1583,22 @@ select pg_temp.t('106: การ์ดสมาชิกกิลด์ใช้
 select pg_temp.t('106: _guild_gp_of ตรงกับ _guild_member_gp ทุกคนในกิลด์', (select coalesce(bool_and(_guild_gp_of(g.student_id) is not distinct from g.gp), true) from _guild_member_gp() g));
 select pg_temp.t('106: guild_status ยังมีรายชื่อสมาชิกครบ (members ไม่ว่าง)', (select coalesce(bool_and(jsonb_array_length(guild_status(l.tok)::jsonb->'my'->'members') >= 1), true) from (select tok from _go limit 1) l));
 set role anon;
+-- ================= SQL 107 =================
+reset role;
+insert into ledger (student_id, exp, coins, reason, ref_key, created_at)
+  select (select a from _s), 37, 0, 'ทดสอบ 107 (สัปดาห์นี้)', 't107a', now() union all
+  select (select a from _s), 1000, 0, 'ทดสอบ 107 (ก่อนสัปดาห์นี้)', 't107b', (date_trunc('week', today_th())::date::timestamp at time zone 'Asia/Bangkok') - interval '1 minute' union all
+  select (select a from _s), 5, 0, 'ทดสอบ 107 (ต้นสัปดาห์พอดี)', 't107c', (date_trunc('week', today_th())::date::timestamp at time zone 'Asia/Bangkok');
+select pg_temp.t('107: team_board.rooms ตรงกับสูตรเดิม (cast วันที่) ทุกห้อง', (select coalesce(bool_and((x->>'avg_week')::numeric = o.avg_week), false)
+  from jsonb_array_elements(team_board((select tok from _go))::jsonb->'rooms') x
+  join (select c.name, case when count(st.id) = 0 then 0 else round(coalesce(sum(w.x), 0)::numeric / count(st.id), 1) end avg_week
+          from classes c left join students st on st.class_id = c.id
+          left join lateral (select sum(l.exp) x from ledger l where l.student_id = st.id and (l.created_at at time zone 'Asia/Bangkok')::date >= date_trunc('week', today_th())::date) w on true
+         where not c.hidden or c.id = (select class_id from students where id = (select a from _s)) group by c.id, c.name having count(st.id) > 0) o on o.name = x->>'name'));
+select pg_temp.t('107: student_dashboard achievements.progress ตรงกับ student_metric ทุกรายการ', (select coalesce(bool_and((a->>'progress')::int = student_metric((select s.id from students s join classes c on c.id = s.class_id where c.code = 'T11' and s.no = 11), a->>'metric')), false)
+  from jsonb_array_elements(student_dashboard((select tok from _go))::jsonb->'achievements') a));
+select pg_temp.t('107: student_dashboard achievements จำนวนเท่ากับที่เปิดใช้งาน', (select jsonb_array_length(student_dashboard((select tok from _go))::jsonb->'achievements') = (select count(*) from achievements where active)));
+set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
