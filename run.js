@@ -182,7 +182,7 @@ const RUN = (() => {
     g.pt = g.pt.filter((q) => q.t < q.life); g.rg.forEach((r) => (r.t += dt)); g.rg = g.rg.filter((r) => r.t < 0.5);
     g.dust = (g.dust || 0) + dt;
     if (g.dust > 0.08 && g.y >= GY - 1 && !g.over) { g.dust = 0; if (g.slide > 0) burst(g, PX + 20, GY - 2, ["#fff3a0", "#ffb347"], 2, { arc: 3.4, spread: 0.8, sp: 110, up: 40, gr: 200, r: 2, life: 0.35, sq: true }); else burst(g, PX + 10, GY - 2, "rgba(210,190,255,.6)", 1, { arc: 3.5, spread: 0.6, sp: 70, up: 30, gr: 80, r: 3, life: 0.4 }); }
-    if (g.boost > 0) burst(g, PX + 8, hb.y + hb.h * 0.55, ["#ffe066", "#ff9f43", "#fff"], 2, { arc: Math.PI, spread: 0.7, sp: 220, gr: 0, r: 3.5, life: 0.35 });
+    if (g.boost > 0) burst(g, PX - 6, hb.y + hb.h * 0.5, ["#ffe066", "#ff9f43", "#fff", "#ff6b3d"], 3, { arc: Math.PI, spread: 0.5, sp: 300, gr: 0, r: 3, life: 0.45 });
     if (g.shield && !g.over && Math.random() < 0.15) burst(g, PX + 34 + Math.cos(g.time * 6) * 34, hb.y + hb.h / 2 + Math.sin(g.time * 6) * 44, "#8bdcff", 1, { sp: 20, gr: -30, r: 2.5, life: 0.4 });
   }
   function drawFx(ctx, g) {
@@ -276,10 +276,23 @@ const RUN = (() => {
     ctx.beginPath(); ctx.moveTo(x + o.w * 0.3, 0); ctx.lineTo(x + o.w * 0.3, cy - 40); ctx.moveTo(x + o.w * 0.7, 0); ctx.lineTo(x + o.w * 0.7, cy - 40); ctx.stroke();
     ctx.restore();
   }
+  /* ไอพ่นเปลวไฟด้านหลังตัวละครตอนบูสต์ (v2.65): แสงยาวต่อท้าย + เปลวซ้อน 3 ชั้น กะพริบตามเวลา · จางลงช่วงใกล้หมดบูสต์ */
+  function jet(ctx, g, now, sl) {
+    const cx = PX + 34 - (sl ? 30 : 18), cy = sl ? g.y - 28 : g.y - 56, k = Math.min(1, g.boost / 0.5), len = (150 + Math.sin(now / 38) * 24) * k, hh = 19 * k;
+    ctx.save(); ctx.shadowColor = "rgba(255,140,40,.9)"; ctx.shadowBlur = 18;
+    const gr = ctx.createLinearGradient(cx, 0, cx - len * 1.9, 0); gr.addColorStop(0, "rgba(255,190,60,.75)"); gr.addColorStop(1, "rgba(255,90,30,0)");
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(cx, cy - hh * 1.5); ctx.quadraticCurveTo(cx - len, cy - hh * 0.4, cx - len * 1.9, cy); ctx.quadraticCurveTo(cx - len, cy + hh * 0.4, cx, cy + hh * 1.5); ctx.fill();
+    for (const [sc, c] of [[1, "rgba(255,110,30,.8)"], [0.68, "rgba(255,200,70,.9)"], [0.36, "rgba(255,255,230,.95)"]]) {
+      const l = len * sc * (1 + 0.12 * Math.sin(now / 28 + sc * 5)), wob = Math.sin(now / 45 + sc) * 3;
+      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(cx, cy - hh * sc); ctx.quadraticCurveTo(cx - l * 0.55, cy - hh * sc * 0.9 + wob, cx - l, cy + wob); ctx.quadraticCurveTo(cx - l * 0.55, cy + hh * sc * 0.9 + wob, cx, cy + hh * sc); ctx.fill();
+    }
+    ctx.restore();
+  }
   function player(ctx, g, now) {
     const im = g.me; if (!im.complete || !im.naturalWidth) return;
     const sl = g.slide > 0 && g.y >= GY - 1, h = 112, w = h * im.naturalWidth / im.naturalHeight;
     if (g.inv > 0 && g.boost <= 0 && Math.floor(now / 90) % 2) ctx.globalAlpha = 0.4;
+    if (g.boost > 0) jet(ctx, g, now, sl);
     const hp = g.hurt > 0 ? g.hurt / 0.6 : 0, hdy = hp ? -Math.abs(Math.sin((1 - hp) * Math.PI * 2.2)) * 30 * hp : 0, hdx = -16 * hp;     // เด้งถอยหลังตอนโดนชน
     ctx.save(); ctx.translate(PX + 34 + hdx, g.y + hdy);
     if (hp && Math.floor(now / 60) % 2) { try { ctx.filter = "brightness(2.6) saturate(.4)"; } catch (e) {} }
