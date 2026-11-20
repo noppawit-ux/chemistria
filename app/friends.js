@@ -17,7 +17,7 @@ function frBar(rp) {
   return `<div class="bar"><i style="width:${p}%"></i></div><small class="muted">RP ${rp}/${nx.need_rp} → ปลดล็อก ${esc(nx.emoji)} ${esc(nx.name)}</small>`;
 }
 function friendsHtml() {
-  if (!FR) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
+  if (!FR) return skelCard("", 4);
   if (FR.error) return `<div class="card"><h3>💝 เพื่อน</h3><p class="muted">${esc(FR.error)}</p></div>`;
   const inbox = (FR.inbox || []).map((g) => `<div class="item"><span style="font-size:24px">${esc(g.emoji)}</span><div class="grow"><b>${esc(g.from)}</b> ส่ง ${esc(g.name)} <small class="muted">+${g.points} RP</small>${g.msg ? `<div class="muted">“${esc(g.msg)}”</div>` : ""}</div>${g.seen ? "" : '<span class="tag wait">ใหม่</span>'}</div>`).join("") || '<p class="muted">ยังไม่มีของขวัญที่ได้รับ</p>';
   const mates = (FR.mates || []).map((m) => `<div class="card frrow" style="margin:6px 0">

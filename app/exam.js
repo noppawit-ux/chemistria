@@ -19,7 +19,7 @@ async function examLoad(force) {
   if (tab === "exam") { const v = $("#view"); if (v) v.innerHTML = examListHtml(); }
 }
 function examListHtml() {
-  if (!EXL) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
+  if (!EXL) return skelCard("", 4);
   if (EXL.error) return `<div class="card"><h3>📝 สอบ</h3><p class="muted">${esc(EXL.error)}</p></div>`;
   const fmtD = (d) => (d ? new Date(d).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "");
   const rows = (EXL.exams || []).map((e) => {

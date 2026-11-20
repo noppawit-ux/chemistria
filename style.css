@@ -1542,3 +1542,19 @@ body.peeking .botbar{bottom:0}
 .stt td,.stt th{padding:5px 3px;white-space:nowrap}.stt tbody tr{cursor:pointer}.stt tbody tr:hover{background:#ffffff12}.stt tbody tr:focus-visible{outline:2px solid var(--gold2,#ffd76a)}
 .lvblk{display:flex;gap:3px;margin:5px auto 3px;max-width:300px}.lvblk i{flex:1;height:10px;border-radius:3px;background:#ffffff1f;border:1px solid #ffffff2a}.lvblk i.on{background:linear-gradient(180deg,#ffe58a,#f0a93a);border-color:#ffd76a;box-shadow:0 0 6px #f6c45366}
 .stsrc{display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:10px;background:#ffffff0d}.stsrc .row{gap:8px;align-items:center}.stsrc .stsum{border-top:1px solid #ffffff2a;padding-top:4px;margin-top:2px;color:var(--gold2,#ffd76a)}
+
+/* ===== v2.51: โครงหน้า (skeleton) + ไอคอนหมุนตอนเน็ตช้า ===== */
+.sk-spin{display:inline-block;width:1.1em;height:1.1em;border-radius:50%;border:.16em solid color-mix(in srgb,var(--violet) 30%,transparent);border-top-color:var(--gold);animation:spin .8s linear infinite;vertical-align:-.2em}
+.sk-line,.sk-av,.sk-pill{display:block;border-radius:10px;background:linear-gradient(100deg,var(--card) 30%,color-mix(in srgb,var(--card2) 65%,var(--violet)) 50%,var(--card) 70%);background-size:300% 100%;animation:skshine 1.4s ease-in-out infinite}
+.sk-line{height:.9em;margin:.55em 0}.sk-line.w40{width:40%}.sk-line.w60{width:60%}.sk-line.w80{width:80%}.sk-line.h2{height:1.5em}
+.sk-av{width:64px;height:64px;border-radius:50%;flex:none}.sk-pill{width:84px;height:28px;border-radius:99px}
+.sk-row{display:flex;gap:12px;align-items:center}.sk-col{flex:1;min-width:0}
+@keyframes skshine{from{background-position:100% 0}to{background-position:-100% 0}}
+.sk-card .sk-t{display:flex;align-items:center;gap:8px;margin:0 0 6px}
+#app>.sk-boot{display:none}.has-tk #app>.sk-boot{display:block}
+.sk-boot .sk-slow{margin:10px 0 0;opacity:0;animation:skfade .4s ease 6s forwards}
+@keyframes skfade{to{opacity:1}}
+#netbar{position:fixed;left:0;right:0;top:0;z-index:9999;height:3px;background:linear-gradient(90deg,transparent,var(--gold),var(--violet),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:nbar 1.1s linear infinite;pointer-events:none}
+#netbar b{position:fixed;top:8px;right:10px;display:flex;gap:6px;align-items:center;font:600 .78rem/1 Sarabun,sans-serif;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:6px 10px;box-shadow:0 4px 14px #0008}
+@keyframes nbar{from{background-position:-50% 0}to{background-position:150% 0}}
+@media (prefers-reduced-motion:reduce){.sk-spin{animation:spin 2.4s linear infinite!important}.sk-line,.sk-av,.sk-pill{animation:none!important}#netbar{animation:none!important;background:var(--gold)}}

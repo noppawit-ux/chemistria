@@ -1571,6 +1571,17 @@ update app_settings set value = '0' where key = 'rank_trial_on';
 select pg_temp.t('105: _rank_gate ปิดด่านแรงค์ด้วย rank_trial_on = 0 (ได้ null) ส่วนตอนเปิดคืนค่าเดิม', (select _rank_gate((select a from _s), 999999) is null));
 update app_settings set value = '1' where key = 'rank_trial_on';
 select pg_temp.t('105: _rank_gate เปิดกลับแล้วคืนค่าเท่าเดิม', (select _rank_gate((select a from _s), 999999) is not distinct from (select on_key from _rg)));
+-- ================= SQL 106 =================
+reset role;
+update students set exp = 5000 where id = (select a from _s);
+delete from rank_trial_pass where student_id = (select a from _s);
+select pg_temp.t('106: คนยังไม่ผ่านด่านแรงค์ → _rank_info_s ล็อก (locked = true)', (select (_rank_info_s((select a from _s), 5000)::jsonb->>'locked') = 'true'));
+select pg_temp.t('106: _rank_exp ตัดที่ min_exp ของด่าน − 1 ตามสูตรเดิม', (select _rank_exp((select a from _s), 5000) = (select min_exp - 1 from ch_ranks where key = _rank_gate((select a from _s), 5000))));
+select pg_temp.t('106: การ์ดสมาชิกกิลด์ใช้แรงค์แบบผ่านด่าน (rank_info ตรงกับ _rank_info_s ทุกคน)', (select coalesce(bool_and((m.mm->'rank_info') = _rank_info_s(st.id, st.exp)::jsonb), true)
+  from guilds g cross join lateral jsonb_array_elements(_guild_member_card(g.id, true)) m(mm)
+  join students st on st.no = (m.mm->>'no')::int and st.id in (select student_id from guild_members where guild_id = g.id)));
+select pg_temp.t('106: _guild_gp_of ตรงกับ _guild_member_gp ทุกคนในกิลด์', (select coalesce(bool_and(_guild_gp_of(g.student_id) is not distinct from g.gp), true) from _guild_member_gp() g));
+select pg_temp.t('106: guild_status ยังมีรายชื่อสมาชิกครบ (members ไม่ว่าง)', (select coalesce(bool_and(jsonb_array_length(guild_status(l.tok)::jsonb->'my'->'members') >= 1), true) from (select tok from _go limit 1) l));
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

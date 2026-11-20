@@ -71,7 +71,7 @@ function guildBoardLoad() {
 }
 
 function guildHtml() {
-  if (!GLD || !GLD.cfg) return `<div class="card"><h3>🏰 Mini Guild</h3><p class="muted">ยังไม่เปิดใช้งาน หรือกำลังโหลด… (ถ้าไม่ขึ้น ให้รีเฟรชหน้า)</p></div>`;
+  if (!GLD || !GLD.cfg) return skelCard("🏰 Mini Guild", 4) + `<p class="muted center" style="font-size:.85em">กำลังโหลด… ถ้าไม่ขึ้นนาน ให้รีเฟรชหน้า</p>`;
   if (GLDB === null) guildBoardLoad();
   const c = GLD.cfg, m = GLD.my, peek = !!PEEK;
   const phase = { soon: `เปิดรับสมัคร ${gDate(c.reg_from)} · กิจกรรม ${gDate(c.start)}–${gDate(c.end)}`, reg: `กิจกรรมเริ่ม ${gDate(c.start)} · สมัคร/เปลี่ยนกิลด์ได้ถึง ${gDate(c.join_until)}`,
@@ -106,7 +106,7 @@ function guildHtml() {
       ${(p.prize && !p.claimed_rank) || (p.room_bonus && !p.claimed_room) ? (p.eligible && !peek ? '<button class="btn gold" onclick="guildClaimPrize()">รับรางวัลอันดับ</button>' : '<p class="muted">แต้มส่วนตัวไม่ถึงเกณฑ์ หรือหมดเวลารับรางวัลแล้ว</p>') : '<span class="pill">✅ รับรางวัลอันดับแล้ว</span>'}</div>`;
   }
   let board = "";
-  if (GLDB && GLDB.loading) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">กำลังโหลด…</p></div>`;
+  if (GLDB && GLDB.loading) board = skelCard(`${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง`, 5);
   else if (GLDB && GLDB.hidden) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3><p class="muted">🔒 วันสุดท้ายซ่อนอันดับเพื่อความลุ้น — ประกาศผลหลังจบกิจกรรม</p></div>`;
   else if (GLDB) board = `<div class="card"><h3>${gmedal(1, 'sm')} อันดับกิลด์ทุกห้อง</h3>${(GLDB.rows || []).length ? (GLDB.rows || []).map((r) => `<div class="gbrow ${r.mine ? "me" : ""}"><div class="lbrow gb">${gmedal(r.rank)}<div class="lbm">${gnameF(r.name, r.emblem)}<small class="muted">ห้อง ${esc(r.class_name)} · ${r.size} คน</small></div><div class="lbr"><b>${r.avg}</b><small class="muted">แต้ม/คน</small></div></div>${gStrip(r.members, false, r.rank)}</div>`).join("") : '<p class="muted">ยังไม่มีกิลด์ติดอันดับ (ต้องมีสมาชิก ≥ ' + c.min_members + ' คน)</p>'}${GLDB.unranked ? `<p class="muted" style="font-size:.85em">มี ${GLDB.unranked} กิลด์ที่สมาชิกยังไม่ครบ ${c.min_members} คน จึงยังไม่ติดอันดับ</p>` : ""}</div>`;
   return head + (m && !peek ? gbHold() : "") + mine + board;

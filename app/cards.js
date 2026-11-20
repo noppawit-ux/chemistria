@@ -16,7 +16,7 @@ const cardFace = (c, own = true) => {
 };
 function albumHtml() {
   const A = ALBUM;
-  if (!A) return '<div class="card"><p class="muted center" style="padding:30px 0">กำลังโหลดสมุดสะสม…</p></div>';
+  if (!A) return skelCard("🃏 สมุดสะสม", 4);
   if (A.error) return `<div class="card"><p class="muted center" style="padding:30px 0">${esc(A.error)}</p></div>`;
   const tot = A.sets.reduce((a, s) => a + s.cards.length, 0), own = A.sets.reduce((a, s) => a + s.cards.filter((c) => c.own).length, 0);
   return `<div class="card"><h3 style="margin:0 0 4px">📖 สมุดสะสมการ์ด</h3>${gearBox()}

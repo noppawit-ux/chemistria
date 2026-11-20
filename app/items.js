@@ -14,7 +14,7 @@ async function itemsLoad() {
 function homeItemsHtml() {
   if (typeof PEEK !== "undefined" && PEEK) return "";
   if (!ITM || ITM_STALE) itemsLoad();
-  if (!ITM) return '<div class="card"><h3>🎒 ไอเทมของฉัน</h3><p class="muted">กำลังโหลด…</p></div>';
+  if (!ITM) return skelCard("🎒 ไอเทมของฉัน", 4);
   if (ITM.error) return "";
   const own = (ITM.items || []).filter((i) => i.qty > 0), buffs = ITM.buffs || [], tot = typeof relTotals === "function" ? relTotals() : {};
   const total = own.reduce((a, i) => a + i.qty, 0);
@@ -56,7 +56,7 @@ const scrollApply = async (id, n, c, sc) => {
   catch (e) { toast(e.message); }
 };
 function itemsHtml() {
-  if (!ITM) return '<div class="card"><p class="muted">กำลังโหลดไอเทม…</p></div>';
+  if (!ITM) return skelCard("", 3);
   if (ITM.error) return `<div class="card"><h3>🧪 ไอเทม</h3><p class="muted">${esc(ITM.error)}</p></div>`;
   const items = ITM.items || [], buffs = ITM.buffs || [];
   const scroll = items.find((i) => i.kind === "scroll"), sq = scroll ? scroll.qty : 0;

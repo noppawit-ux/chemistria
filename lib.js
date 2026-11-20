@@ -20,6 +20,25 @@ const _rpcRecent = new Map();
 // เรียก RPC แล้วโยน error เป็นข้อความอ่านง่าย
 /* แจ้งเซิร์ฟเวอร์ว่าเริ่มเล่นเกมแล้ว (ใช้ตรวจว่าเวลาเล่นสมเหตุสมผลตอนส่งคะแนน) — ล้มเหลวได้โดยไม่กระทบการเล่น */
 const GB = (g) => { try { rpc("game_begin", { p_token: tk(), p_game: g }).catch(() => {}); } catch (e) {} };
+// v2.51: ถ้ามีคำขอค้างเกิน ~0.9 วินาที แสดงแถบหมุนด้านบน + ไอคอน (เกิน 6 วินาทีบอกว่าเน็ตช้า) — คำขอเงียบเบื้องหลังไม่นับ
+const NET_QUIET = /^(game_begin|celebrations_feed)$/;
+let _nbN = 0, _nbT = null, _nbT2 = null;
+function netBusy(d) {
+  _nbN = Math.max(0, _nbN + d);
+  try {
+    if (_nbN > 0 && !_nbT && !document.getElementById("netbar")) {
+      _nbT = setTimeout(() => {
+        _nbT = null; if (_nbN <= 0 || document.getElementById("netbar")) return;
+        const e = document.createElement("div"); e.id = "netbar"; e.setAttribute("role", "status");
+        e.innerHTML = '<b><i class="sk-spin"></i><span>กำลังโหลด…</span></b>'; document.body.appendChild(e);
+        _nbT2 = setTimeout(() => { const s = e.querySelector("span"); if (s) s.textContent = "เน็ตช้า… ยังโหลดอยู่"; }, 6000);
+      }, 900);
+    }
+    if (_nbN === 0) { clearTimeout(_nbT); _nbT = null; clearTimeout(_nbT2); document.getElementById("netbar")?.remove(); }
+  } catch (e) {}
+}
+// โครงการ์ดระหว่างรอข้อมูล (แทนข้อความ "กำลังโหลด…" เฉย ๆ)
+const skelCard = (title = "", lines = 3) => `<div class="card sk-card" aria-busy="true"><div class="sk-t">${title ? `<h3 style="margin:0">${title}</h3>` : ""}<i class="sk-spin"></i></div>${Array.from({ length: lines }, (_, i) => `<span class="sk-line ${["w80", "", "w60", "w40"][i % 4]}"></span>`).join("")}</div>`;
 async function rpc(name, args = {}) {
   const mut = RPC_ONCE.test(name);
   let key;
@@ -29,9 +48,12 @@ async function rpc(name, args = {}) {
     if (hit && Date.now() - hit.t < 1200) return hit.p;
   }
   const p = (async () => {
-    const { data, error } = await sb.rpc(name, args);
-    if (error) throw new Error(error.message);
-    return data;
+    const quiet = NET_QUIET.test(name); if (!quiet) netBusy(1);
+    try {
+      const { data, error } = await sb.rpc(name, args);
+      if (error) throw new Error(error.message);
+      return data;
+    } finally { if (!quiet) netBusy(-1); }
   })();
   if (mut) {
     _rpcRecent.set(key, { t: Date.now(), p });
