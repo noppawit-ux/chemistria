@@ -8,6 +8,11 @@ MAP = {  # key -> (หมวด, ชื่อไฟล์ส่วนท้า�
  "arm_pyro": ("Armor", "PYRO_ROBE"), "arm_dragon": ("Armor", "DRAGON_SCALE"), "arm_plague": ("Armor", "PLAGUE_COAT"), "arm_electro": ("Armor", "ELECTRO_SUIT"),
  "arm_shadow": ("Armor", "SHADOW_SUIT"), "arm_solar": ("Armor", "SOLAR_PLATE"), "arm_kraken": ("Armor", "KRAKEN_SHELL"), "arm_hero": ("Armor", "HERO_PLATE"),
  "arm_crystal": ("Armor", "CRYSTAL_ROBES"), "arm_griffin": ("Armor", "GRIFFIN_PLATE"), "arm_jaguar": ("Armor", "JAGUAR_KNIGHT"), "arm_shogun": ("Armor", "SHOGUN_DAIMYO"),
+ "sw_blood": ("Swords", "RPGSwords_Set2_BLOOD"), "sw_ice": ("Swords", "ElementalTitans_Pack_ICE"), "sw_chrono": ("Swords", "ExoticBlades_Pack_CHRONO"),
+ "sw_nature": ("Swords", "RPGSwords_Set2_NATURE"), "sw_nebula": ("Swords", "DimensionalArmory_NEBULA"), "sw_dragon": ("Swords", "BeastSlayer_Swords_DRAGON"),
+ "sw_solarion": ("Swords", "CelestialArsenal_Pack_SOLARION"), "sw_prism": ("Swords", "DimensionalArmory_PRISM"),
+ "st_divine": ("MagicStaves", "CasterFocus_Ultimate_DIVINE"), "st_voltage": ("MagicStaves", "ElementalStaff_Pack_VOLTAGE"), "st_storm": ("MagicStaves", "HighMagic_Pack_STORM"),
+ "sh_paladin": ("Shields", "ShieldGuardians_Pack_PALADIN"),
  "pot_fire": ("Consumables", "FIRE_POTION"), "pot_health": ("Consumables", "HEALTH_POTION"), "pot_ice": ("Consumables", "ICE_POTION"),
  "pot_mana": ("Consumables", "MANA_POTION"), "pot_poison": ("Consumables", "POISON_POTION"), "pot_stamina": ("Consumables", "STAMINA_POTION"),
 }

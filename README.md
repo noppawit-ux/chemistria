@@ -844,3 +844,7 @@ web/               index.html (นักเรียน) · admin.html (คร�
 - `pxIco()` (app/gear.js) แสดงเป็นไอคอนเคลื่อนไหวเมื่อรูปขึ้นต้น `assets/aic/s_` (ที่อื่นแสดงรูปนิ่ง) · ปิดแอนิเมชันเมื่อตั้งค่าลดการเคลื่อนไหว
 - SQL 108: `decor_items.image` ของชุด 12 ชุด · `gacha_items.image_url` ของที่ผูกกับของตกแต่งแต่ยังไม่มีรูป (ไม่แตะ กรอบ/พื้น/ฉายา) · `consumables.image` 6 ชนิด; ใส่เฉพาะแถวที่ยังไม่มีรูป ยกเว้นขวดยาที่เปลี่ยนจาก `assets/px/p_*.png`
 - ย้อนกลับ: ชุด/ของกาชา → `image = null` / `image_url = null` ตามแถวที่ขึ้นต้น `assets/aic/` · ขวดยา → `assets/px/<key>.png`
+
+### รอบที่ 163 · SQL 109 ไอเทมถือ 12 ชิ้นใช้ไอคอนแพ็ก Animated RPG Icons
+- ดาบ/คทา/โล่ 12 ชิ้น (`decor_items` slot item + แถวกาชาที่ผูกกัน) → `assets/aic/s_sw_*/st_*/sh_paladin.webp` · ไอเทมถืออื่น (อุปกรณ์แล็บ ถ้วยรางวัล ฯลฯ) คงรูปเดิม
+- รูปเดิมสำหรับย้อนกลับ: [Limited] ดาบราชันธาตุ `assets/px/lim_sword.png` · คทาดาบสารเคมีม่วง `assets/px/sw_chem.png` · คทาเวทมนตร์ `assets/items/wand.png` · คทาสายฟ้าม่วง `assets/items/scepter.png` · ดาบคลื่นน้ำแข็ง `assets/px/sw_water.png` · ดาบผลึกอัคนีโลหิต `assets/items/leg_sword.png` · ดาบเพลิงอัคนี `assets/px/sw_fire.png` · ดาบสายฟ้าทองคำ `assets/px/sw_thunder.png` · ดาบหลอดแก้ว `assets/items/sword.png` · ใบมีดมรกตพงไพร `assets/px/sw_plant.png` · ไม้เท้าเกลียวดีเอ็นเอ `assets/items/dnastaff.png` · โล่ตราขวดแล็บ `assets/items/shield.png`
