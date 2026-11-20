@@ -30,17 +30,18 @@ function classLvHtml() {
   const opts = (c.options || []).map((o) => {
     const cur = o.current, ok = o.lv_ok && o.rank_ok;
     const need = [!o.lv_ok ? `เลเวลคลาส ${o.need_lv} (ตอนนี้ ${c.lv})` : "", !o.rank_ok ? `ผ่านด่านแรงค์ ${esc(o.need_rank_name || o.need_rank)}` : ""].filter(Boolean).join(" · ");
-    return `<div class="advcard ${cur ? "on" : ""} ${ok || cur ? "" : "lock"}"><div class="advh">${aico(o.key, o.emoji)} <b>${esc(o.name)}</b></div><div class="muted">${esc(o.descr || "")}</div>
+    return `<div class="advcard ${cur ? "on" : ""} ${ok || cur ? "" : "lock"}"><div class="advh">${aico(o.key, o.emoji)} <b>${esc(o.name)}</b></div><div class="muted advd">${esc(o.descr || "")}</div>
       <div class="ability">✨ ${esc(o.ability || "")}</div>
-      ${o.skill ? `<div class="advsk">${aico(o.key + "_u", o.skill.emoji)} ไม้ตาย: <b>${esc(o.skill.name)}</b> <small class="muted">${esc(o.skill.descr || "")}</small></div>` : ""}
-      ${cur ? '<span class="tag ok">สายปัจจุบัน</span>' : ok ? `<button class="btn small gold" onclick="pickAdv('${o.key}','${esc(o.name)}',${c.adv ? c.switch_cost : 0})">${c.adv ? `เปลี่ยนสาย (${c.switch_cost} 🪙)` : "เลือกสายนี้ (ฟรี)"}</button>` : `<span class="tag wait">🔒 ต้อง ${need}</span>`}</div>`;
+      ${o.skill ? `<div class="advsk">${aico(o.key + "_u", o.skill.emoji)} ไม้ตาย: <b>${esc(o.skill.name)}</b></div>` : ""}
+      ${cur ? '<span class="tag ok">สายปัจจุบัน</span>' : ok ? `<button class="btn small gold" onclick="pickAdv('${o.key}','${esc(o.name)}',${c.adv ? c.switch_cost : 0})">${c.adv ? `เปลี่ยนสาย (${c.switch_cost} 🪙)` : "เลือกสายนี้ (ฟรี)"}</button>` : `<span class="tag wait">🔒 ${need}</span>`}</div>`;
   }).join("");
   const ms = (c.mastery || []).filter((m) => m.key !== cl.key).map((m) => `<span class="tag">${esc(m.emoji)} ${esc(m.name)} Lv.${m.lv}</span>`).join(" ");
-  return `<div class="card clscard2"><h3 style="margin:0">${esc(cl.emoji)} ${esc(cl.name)} <span class="tag">Lv.${c.lv}/${c.max_lv}</span>${c.adv ? ` <span class="tag ok">${esc(c.adv.emoji)} ${esc(c.adv.name)}</span>` : ""}</h3>
+  return `<div class="card clscard2"><div class="clsh"><h3>${esc(cl.emoji)} ${esc(cl.name)}</h3><span class="tag">Lv.${c.lv}/${c.max_lv}</span>${c.adv ? `<span class="tag ok">${esc(c.adv.emoji)} ${esc(c.adv.name)}</span>` : ""}</div>
     ${clsBlocks(c.lv, c.max_lv)}${clsBar(c)}
-    <p style="margin:6px 0 0">🎯 โบนัสสเตตัสตอนนี้: <b>${clsBonusTxt(c.bonus)}</b>${nxt ? `<br><small class="muted">เลเวลถัดไป: ${clsBonusTxt(nxt)}</small>` : ""}</p>
-    <p class="muted" style="font-size:.88em;margin:6px 0 0">ได้แต้มชำนาญจาก EXP ที่ได้รับ (5 EXP = 1 แต้ม) · ชนะมอนสเตอร์ +10 · ชนะบอสด่านแรงค์ +25 · วันนี้ ${c.day_pts}/${c.day_cap} แต้ม · เปลี่ยนคลาสแล้วเลเวลของคลาสเดิมยังอยู่${ms ? `<br>คลาสอื่น: ${ms}` : ""}</p></div>
-    <div class="card"><h3 style="margin:0 0 4px">🌟 คลาสขั้นสูง</h3><p class="muted" style="margin:0 0 8px">ต้องมีเลเวลคลาส 5 + ผ่านด่านเลื่อนแรงค์ Gold ได้สเตตัสหลัก +3 รอง +1 และสกิลไม้ตายในศึก (เลือกครั้งแรกฟรี · เปลี่ยนสาย ${c.switch_cost} 🪙)</p>
+    <div class="clsduo"><div class="clsbox"><small>🎯 โบนัสตอนนี้</small><b>${clsBonusTxt(c.bonus)}</b></div>${nxt ? `<div class="clsbox"><small>⬆️ เลเวลถัดไป</small><b>${clsBonusTxt(nxt)}</b></div>` : ""}</div>
+    <details class="clsdet"><summary>วิธีได้แต้มชำนาญ</summary><ul><li>EXP ที่ได้รับ 5 = 1 แต้ม</li><li>ชนะมอนสเตอร์ +10 · ชนะบอสด่านแรงค์ +25</li><li>วันนี้ ${c.day_pts}/${c.day_cap} แต้ม</li><li>เปลี่ยนคลาสแล้วเลเวลเดิมยังอยู่</li>${ms ? `<li>คลาสอื่น: ${ms}</li>` : ""}</ul></details></div>
+    <div class="card"><h3 style="margin:0 0 6px">🌟 คลาสขั้นสูง</h3><div class="clsreq">🔑 เลเวลคลาส 5 + ผ่านด่าน Gold</div>
+      <details class="clsdet"><summary>รางวัลและค่าเปลี่ยนสาย</summary><ul><li>สเตตัสหลัก +3 · รอง +1</li><li>ได้สกิลไม้ตายในศึก</li><li>เลือกครั้งแรกฟรี · เปลี่ยนสาย ${c.switch_cost} 🪙</li></ul></details>
       <div class="clsgrid">${opts}</div></div>`;
 }
 

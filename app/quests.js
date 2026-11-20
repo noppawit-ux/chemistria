@@ -123,7 +123,7 @@ const VIEWS = {
   class() {
     const s = D.student, cost = D.class_change_cost;
     return `${classLvHtml()}<div class="card"><h3>⚔️ เลือกคลาสของคุณ</h3>
-      <p class="muted">แต่ละคลาสมีความสามารถพิเศษต่างกัน เลือกครั้งแรกฟรี หลังจากนั้นเปลี่ยนคลาสครั้งละ ${cost} 🪙</p>
+      <div class="clsreq">🆓 เลือกครั้งแรกฟรี · เปลี่ยนภายหลัง ${cost} 🪙</div>
       <div class="clsgrid">${D.classes.map((c) => `<div class="clscard ${c.key === s.char_class ? "on" : ""}">
         <img src="${esc(c.image)}" alt="" onerror="this.replaceWith(document.createTextNode('${esc(c.emoji)}'))">
         <h3 style="margin:.2em 0">${esc(c.emoji)} ${esc(c.name)}</h3>
