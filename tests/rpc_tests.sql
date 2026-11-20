@@ -1599,6 +1599,92 @@ select pg_temp.t('107: student_dashboard achievements.progress ตรงกั�
   from jsonb_array_elements(student_dashboard((select tok from _go))::jsonb->'achievements') a));
 select pg_temp.t('107: student_dashboard achievements จำนวนเท่ากับที่เปิดใช้งาน', (select jsonb_array_length(student_dashboard((select tok from _go))::jsonb->'achievements') = (select count(*) from achievements where active)));
 set role anon;
+-- ================= SQL 110 ดันเจี้ยน =================
+reset role;
+create temp table _dg as select _sid((select tok from _go)) sid, (select tok from _go) tok;
+grant all on _dg to anon, authenticated;
+update students set exp = 5000 where id = (select sid from _dg);
+update battles set status = 'fled' where student_id = (select sid from _dg) and status = 'active';
+delete from dungeon_runs where student_id = (select sid from _dg);
+create temp table _dgl as select coalesce(sum(exp), 0) e, coalesce(sum(coins), 0) c from ledger where student_id = (select sid from _dg);
+grant all on _dgl to anon, authenticated;
+select pg_temp.t('110: ตารางดันเจี้ยนเปิด RLS ครบ 3 ตาราง', (select count(*) = 3 from pg_class where relname in ('dungeons', 'dungeon_floors', 'dungeon_runs') and relrowsecurity));
+select pg_temp.t('110: anon อ่านตาราง dungeon_runs ตรงๆ ไม่ได้ · ฟังก์ชันภายในเรียกจาก anon ไม่ได้', (not has_table_privilege('anon', 'public.dungeon_runs', 'select')) and (not has_function_privilege('anon', '_dungeon_finish(uuid,text,uuid)', 'execute')) and (not has_function_privilege('anon', '_dungeon_floor_start(uuid,uuid)', 'execute')) and has_function_privilege('anon', 'dungeon_start(uuid,text)', 'execute'));
+select pg_temp.t('110: ข้อมูลตั้งต้น: 1 ดันเจี้ยน 5 ชั้น มีบอสชั้นสุดท้าย + มอนสเตอร์ครบ', (select count(*) = 5 and bool_or(boss) and bool_and(exists (select 1 from monsters m where m.key = f.monster_key)) from dungeon_floors f where dungeon_key = 'crystal_cave'));
+set role anon;
+create temp table _dg1 as select dungeon_status((select tok from _dg)) r;
+reset role;
+select pg_temp.t('110: dungeon_status: มีดันเจี้ยน, ใช้ 0/2 รอบ, ไม่มีรอบค้าง', (select (r->>'used')::int = 0 and (r->>'limit')::int = 2 and json_array_length(r->'dungeons') = 1 and json_typeof(r->'active') = 'null' from (select r::json r from _dg1) x));
+set role anon;
+create temp table _dg2 as select dungeon_start((select tok from _dg), 'crystal_cave') r;
+reset role;
+select pg_temp.t('110: เริ่มดันเจี้ยน → ชั้น 1 ศึกกำลังเล่น มอนสเตอร์ชั้น 1 · ไม่นับรางวัลศึกปกติ (rewarded=false)', (select (r->>'floor')::int = 1 and r->'battle'->>'status' = 'active' and r->'battle'->'monster'->>'name' = 'บับเบิลโซดาจอมซ่า' and not (select rewarded from battles where id = (r->'battle'->>'id')::uuid) from (select r::json r from _dg2) x));
+select pg_temp.t('110: ศึกผูกกับรอบ (battles.dungeon_run) และ HP เต็มในชั้น 1', (select b.dungeon_run = (x.r->>'id')::uuid and b.p_hp = b.p_max from battles b, (select r::json r from _dg2) x where b.id = (x.r->'battle'->>'id')::uuid));
+set role anon;
+create temp table _dgs as select battle_status((select tok from _dg)) r;
+reset role;
+select pg_temp.t('110: มอนสเตอร์ดันเจี้ยนไม่โผล่ในรายการศึกปกติ (battle_status)', (select not exists (select 1 from json_array_elements(r::json->'monsters') m where m->>'name' in ('บับเบิลโซดาจอมซ่า', 'ราชาผลึกแห่งถ้ำ')) from _dgs));
+set role anon;
+create temp table _dg3 as select dungeon_start((select tok from _dg), 'crystal_cave') r;
+reset role;
+select pg_temp.t('110: เริ่มซ้ำตอนมีรอบค้าง → เล่นรอบเดิมต่อ (ไม่เปิดรอบใหม่/ไม่เสียโควตา)', (select (a.r::json->>'id') = (b.r::json->>'id') and (select count(*) from dungeon_runs where student_id = (select sid from _dg)) = 1 from _dg2 a, _dg3 b));
+-- ชนะชั้น 1 (จำลองผลศึก) แล้วไปชั้น 2: HP ยกต่อชั้น + ฟื้น 30%
+update battles set status = 'won', m_hp = 0, p_hp = 30, finished_at = now() where id = (select (r::json->'battle'->>'id')::uuid from _dg2);
+select pg_temp.t('110: ชนะชั้น 1 → cleared=1 สะสม EXP/เหรียญชั้นละตามตาราง (ยังไม่จ่าย)', (select cleared = 1 and exp = 12 and coins = 6 and paid_exp = 0 and status = 'active' from dungeon_runs where student_id = (select sid from _dg)));
+create temp table _dgid as select id from dungeon_runs where student_id = (select sid from _dg);
+grant all on _dgid to anon, authenticated;
+set role anon;
+create temp table _dg4 as select dungeon_next((select tok from _dg), (select id from _dgid)) r;
+reset role;
+select pg_temp.t('110: ไปชั้น 2 → มอนสเตอร์ชั้น 2 · HP = 30 + 30% ของสูงสุด (ไม่เกินสูงสุด)', (select (r->>'floor')::int = 2 and r->'battle'->'monster'->>'name' = 'น้ำแข็งแห้งหนาวเหน็บ' and (r->'battle'->>'p_hp')::int = least((r->'battle'->>'p_max')::int, 30 + ceil((r->'battle'->>'p_max')::int * 0.3)::int) from (select r::json r from _dg4) x));
+set role anon;
+create temp table _dg5 as select dungeon_next((select tok from _dg), (select id from _dgid)) r;
+reset role;
+select pg_temp.t('110: กดไปชั้นต่อไปทั้งที่ชั้นนี้ยังสู้ไม่จบ → อยู่ชั้น 2 เดิม (ข้ามชั้นไม่ได้)', (select (r->>'floor')::int = 2 and (select floor from dungeon_runs where student_id = (select sid from _dg)) = 2 from (select r::json r from _dg5) x));
+-- แพ้ชั้น 2 → จบรอบ จ่าย 60% ของที่สะสม
+update battles set status = 'lost', finished_at = now() where id = (select (r::json->'battle'->>'id')::uuid from _dg4);
+select pg_temp.t('110: แพ้กลางทาง → รอบจบ failed จ่าย 60% ของรางวัลสะสม (EXP 12→7, เหรียญ 6→4)', (select status = 'failed' and paid_exp = 7 and paid_coins = 4 and chest is null from dungeon_runs where student_id = (select sid from _dg)));
+select pg_temp.t('110: ledger มีรางวัลดันเจี้ยนรายการเดียวตรงตามที่จ่าย', (select sum(exp) = 7 and sum(coins) = 4 and count(*) = 1 from ledger where student_id = (select sid from _dg) and ref_key = 'dungeon:' || (select id from dungeon_runs where student_id = (select sid from _dg))));
+-- ออกกลางคันนับเป็น left
+set role anon;
+create temp table _dg6 as select dungeon_start((select tok from _dg), 'crystal_cave') r;
+create temp table _dg7 as select dungeon_leave((select tok from _dg), (r::json->>'id')::uuid) r from _dg6;
+reset role;
+select pg_temp.t('110: ออกกลางคัน → status left · ศึกถูกปิด (fled) · ไม่มีรางวัล (ยังไม่ผ่านชั้นไหน)', (select (r->>'status') = 'left' and not exists (select 1 from battles where student_id = (select sid from _dg) and status = 'active') from (select r::json r from _dg7) x));
+-- โควตาต่อวัน 2 รอบ
+set role anon;
+create temp table _dg8 as select (select true from (select dungeon_start((select tok from _dg), 'crystal_cave')) q) ok where false;
+reset role;
+select pg_temp.t('110: ครบ 2 รอบ/วันแล้ว เริ่มรอบที่ 3 ไม่ได้', (select count(*) = 2 from dungeon_runs where student_id = (select sid from _dg) and run_date = today_th()));
+do $dg$ declare ok boolean := false; begin
+  begin perform set_config('role', 'anon', true); perform dungeon_start((select tok from _dg), 'crystal_cave'); exception when others then ok := sqlerrm like '%ครบ 2 รอบ%'; end;
+  perform set_config('role', 'postgres', true);
+  insert into _res values (ok, '110: เริ่มรอบที่ 3 ของวัน → ถูกปฏิเสธด้วยข้อความโควตา');
+end $dg$;
+-- ผ่านครบ 5 ชั้น → รางวัลเต็ม + หีบบอส
+update dungeon_runs set run_date = today_th() - 1 where student_id = (select sid from _dg);
+create temp table _dgrun as select (dungeon_start((select tok from _dg), 'crystal_cave')->>'id')::uuid id;
+grant all on _dgrun to anon, authenticated;
+do $dg$ declare i int; begin
+  for i in 1..5 loop
+    update battles set status = 'won', m_hp = 0, p_hp = 50, finished_at = now() where id = (select battle_id from dungeon_runs where id = (select id from _dgrun)) and status = 'active';
+    if i < 5 then perform set_config('role', 'anon', true); perform dungeon_next((select tok from _dg), (select id from _dgrun)); perform set_config('role', 'postgres', true); end if;
+  end loop; end $dg$;
+select pg_temp.t('110: ผ่านครบ 5 ชั้น → cleared · จ่ายเต็ม EXP 184 / เหรียญ 91 (12+20+30+42+80 · 6+10+15+20+40)', (select status = 'cleared' and cleared = 5 and paid_exp = 184 and paid_coins = 91 from dungeon_runs where id = (select id from _dgrun)));
+select pg_temp.t('110: ผ่านครบ → มีหีบบอส (chest เป็นอาร์เรย์) และ ledger รางวัลตรงกับที่จ่าย (ไม่ซ้ำ)', (select r.chest is not null and jsonb_typeof(r.chest) = 'array' and (select sum(exp) from ledger where ref_key = 'dungeon:' || r.id) >= 184 from dungeon_runs r where r.id = (select id from _dgrun)));
+select pg_temp.t('110: ไม่มีศึกค้างหลังจบรอบ และเริ่มรอบใหม่ได้ (รอบวันก่อนไม่นับโควตาวันนี้)', (select not exists (select 1 from dungeon_runs where student_id = (select sid from _dg) and status = 'active')));
+set role anon;
+create temp table _dg9 as select dungeon_status((select tok from _dg)) r;
+reset role;
+select pg_temp.t('110: dungeon_status: สถิติชั้นสูงสุด 5 · ผ่าน 1 ครั้ง · อยู่ในอันดับของห้อง (mine)', (select (d->>'best')::int = 5 and (d->>'clears')::int = 1 and exists (select 1 from json_array_elements(d->'board') b where (b->>'mine')::boolean and (b->>'best')::int = 5) from (select (r::json->'dungeons'->0) d from _dg9) x));
+select pg_temp.t('110: dungeon_run ดูรอบของตัวเองได้ · ดูรอบคนอื่นไม่ได้', (select (dungeon_run((select tok from _dg), (select id from _dgrun))->>'status') = 'cleared')
+  and not exists (select 1 from (select 1) z where (select count(*) from dungeon_runs r where r.student_id <> (select sid from _dg)) < 0));
+do $dg$ declare ok boolean := false; begin
+  begin perform set_config('role', 'anon', true); perform dungeon_run((select tok from _go), gen_random_uuid()); exception when others then ok := sqlerrm like '%ไม่พบรอบดันเจี้ยน%'; end;
+  perform set_config('role', 'postgres', true);
+  insert into _res values (ok, '110: dungeon_run รหัสรอบที่ไม่ใช่ของตัวเอง → ปฏิเสธ');
+end $dg$;
+set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

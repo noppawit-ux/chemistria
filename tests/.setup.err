@@ -118,3 +118,7 @@ psql:/home/claude/chemistria/db/setup_all.sql:12712: NOTICE:  policy "teacher_al
 psql:/home/claude/chemistria/db/setup_all.sql:12757: NOTICE:  trigger "trg_class_adv_reset" for relation "students" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:12792: NOTICE:  trigger "trg_class_pts_ledger" for relation "ledger" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:12804: NOTICE:  trigger "trg_class_pts_battle" for relation "battles" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:14715: NOTICE:  policy "teacher_all" for relation "public.dungeons" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:14715: NOTICE:  policy "teacher_all" for relation "public.dungeon_floors" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:14715: NOTICE:  policy "teacher_all" for relation "public.dungeon_runs" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:14819: NOTICE:  trigger "dungeon_battle" for relation "battles" does not exist, skipping

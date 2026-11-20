@@ -1,7 +1,7 @@
 /* มินิเกมต่อสู้มอนสเตอร์เคมี: เลือกสกิลตามคลาส → ตอบคำถามเพื่อใช้สกิล → มอนสเตอร์โต้กลับ กดลูกศรลดดาเมจ
    (ดาเมจ/เฉลย/รางวัล คำนวณที่เซิร์ฟเวอร์ทั้งหมด) */
 const BATTLE = (() => {
-  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null, trial: null, shown: {}, hpDelay: 0 };
+  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null, trial: null, shown: {}, hpDelay: 0, dg: null, dgs: null, dgBat: null };
   const ARW = { L: "⬅️", U: "⬆️", R: "➡️", D: "⬇️" };
   const KEYS = { ArrowLeft: "L", ArrowUp: "U", ArrowRight: "R", ArrowDown: "D" };
   const KIND = { attack: ["⚔️", "โจมตี"], buff: ["📈", "บัพ"], heal: ["💚", "ฮีล"] };
@@ -19,10 +19,74 @@ const BATTLE = (() => {
   const SKY = { lab: ["🧪", "⚗️", "🔬", "🫧", "🫧", "🫧", "🫧"], ice: ["❄️", "🧊", "❄️", "❄", "❄", "❄", "❄"], volcano: ["🌋", "🔥", "🌋", "🔥", "🔥", "🔥", "🔥"],
     swamp: ["☣️", "🧫", "☣️", "🟢", "🟢", "🫧", "🟢"], storm: ["⛈️", "⚡", "☁️", "⚡", "💧", "💧", "⚡"], crystal: ["💎", "🔮", "💎", "✨", "✨", "✨", "✨"] };
   const skyHtml = (t) => `<div class="bt-sky">${(SKY[t] || SKY.lab).map((e) => `<i>${e}</i>`).join("")}</div>`;
+  /* ===== ดันเจี้ยน (SQL 110): ไต่ชั้นต่อเนื่อง · ศึกแต่ละชั้นใช้ระบบศึกเดิม · ฉากพื้นหลังจาก assets/bg ===== */
+  const inDg = (bid) => !!(S.dg && S.dgBat && S.dgBat === bid);
+  const dgBgStyle = () => { const bg = S.dg && S.dg.bg; return bg ? ` style="background-image:linear-gradient(rgba(6,3,20,.18),rgba(6,3,20,.18)),url(${esc(bg)})"` : ""; };
+  const dgBgCls = () => { const bg = S.dg && S.dg.bg; return bg ? "bt-cbg" + (/\/a\d+\.webp$/.test(bg) ? " px" : "") : ""; };
+  const dgPips = (r) => Array.from({ length: r.floors }, (_, i) => { const f = i + 1, m = (r.map || [])[i] || {}; return `<i class="dgp ${f <= r.cleared ? "done" : f === r.floor ? "now" : ""} ${m.boss ? "boss" : ""}">${m.boss ? "👑" : f}</i>`; }).join("");
+  const dgBar = (bid) => inDg(bid) ? `<div class="dg-bar"><b>${esc(S.dg.dungeon.emoji)} ${esc(S.dg.dungeon.name)}</b><span class="dg-pips">${dgPips(S.dg)}</span></div>` : "";
+  async function dgLoad() { try { S.dgs = await rpc("dungeon_status", { p_token: tk() }); } catch (e) { S.dgs = null; } return S.dgs; }
+  async function dgOpen() { S.screen = "dg"; S.bat = null; paint(); await dgLoad(); paint(); }
+  function dgEnter(run) { S.dg = run; S.bat = run.battle; S.dgBat = run.battle && run.battle.id; S.trial = null; S.fb = null; S.drop = null; S.screen = "fight"; resume(); }
+  async function dgStart(key) {
+    if (S.busy) return; S.busy = true;
+    try { const r = await rpc("dungeon_start", { p_token: tk(), p_key: key }); dgEnter(r); S.msg = `เข้าสู่ ${r.dungeon.name} ชั้น ${r.floor}/${r.floors}! เลือกสกิลแล้วตอบคำถามให้ถูก`; }
+    catch (e) { toast(e.message); }
+    S.busy = false; if (S.screen === "fight" && S.bat) await scene(S.bat); else paint();
+  }
+  async function dgNext() {
+    if (S.busy || !S.dg) return; S.busy = true;
+    try { const r = await rpc("dungeon_next", { p_token: tk(), p_run: S.dg.id }); dgEnter(r); S.msg = `ชั้น ${r.floor}/${r.floors}${r.boss ? " — บอสประจำดันเจี้ยน! 👑" : ""} · ฟื้น HP ให้ ${r.heal_pct}%`; }
+    catch (e) { toast(e.message); }
+    S.busy = false; if (S.screen === "fight" && S.bat) await scene(S.bat); else paint();
+  }
+  async function dgLeave() {
+    if (!S.dg || !confirm("ออกจากดันเจี้ยน? จะได้รางวัลที่สะสมไว้เพียง 60% และรอบนี้ถือว่าใช้โควตาวันนี้ไปแล้ว")) return;
+    clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null; S.busy = true;
+    try { S.dg = await rpc("dungeon_leave", { p_token: tk(), p_run: S.dg.id }); } catch (e) { toast(e.message); }
+    S.busy = false; S.bat = null; S.fb = null; S.dgBat = null; const r = S.dg; S.dg = null; if (r && r.paid_exp + r.paid_coins > 0) toast(`ออกจากดันเจี้ยน +${r.paid_exp} EXP +${r.paid_coins} 🪙`); open();
+  }
+  const dgEntry = () => { const x = S.dgs; return `<div class="card dg-entry"><div class="row"><div class="grow"><h3 style="margin:0">🏰 ท้าดันเจี้ยน</h3><p class="muted" style="margin:2px 0 0">ไต่ทีละชั้น สู้บอส เปิดหีบสมบัติ${x ? ` · เข้าได้วันนี้อีก ${Math.max(0, x.limit - x.used)}/${x.limit} รอบ${x.active ? " · มีรอบค้างอยู่" : ""}` : ""}</p></div><button class="btn gold" onclick="BATTLE.dgOpen()">เข้าสู่ดันเจี้ยน</button></div></div>`; };
+  const dgBack = () => { S.dgSkip = true; open(); };
+  const dgDone = () => { S.dg = null; S.dgBat = null; S.bat = null; S.fb = null; S.drop = null; LC.cls = LC.hst = LC.gbest = LC.gear = 0; open(); };
+  function dgChest(r) {
+    const c = r.chest || [];
+    return c.length ? `<div class="dg-chest">${c.map((d) => `<div class="bt-drop ${esc(d.rarity)}">${d.image ? `<img src="${esc(d.image)}" alt="" onerror="this.remove()">` : ""}<div>🎁 <b>${esc(d.emoji || "")} ${esc(d.name)}</b> <span class="tag">${esc(d.rarity)}</span></div></div>`).join("")}</div>` : '<p class="muted">หีบบอสรอบนี้ว่างเปล่า… โชคดีรอบหน้านะ</p>';
+  }
+  function dgResult(b) {
+    const win = b.status === "won", r = S.dg;
+    if (b.status === "fled") return `<div class="card center"><p>ออกจากดันเจี้ยนแล้ว</p><button class="btn" onclick="BATTLE.dgDone()">กลับ</button></div>`;
+    if (!r || r.status === "active" && !r.waiting_next && win) return `<div class="card center"><i class="sk-spin"></i> <small class="muted">กำลังสรุปผลชั้น…</small></div>`;
+    const head = `<div class="dg-pips big">${dgPips(r)}</div>`;
+    if (win && r.status === "active") return `<div class="card center gm-res perfect"><div style="font-size:54px">🏆</div><h2>ผ่านชั้น ${r.floor}/${r.floors}!</h2>${head}
+      <p><span class="pill">สะสม +${r.exp} EXP</span> <span class="pill">+${r.coins} 🪙</span></p><p class="muted">รับรางวัลสะสมเมื่อจบรอบ · HP จะฟื้นให้ ${r.heal_pct}% ของสูงสุดตอนเข้าชั้นต่อไป</p>
+      <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.dgNext()">➡️ ไปชั้น ${r.floor + 1}${(r.map[r.floor] || {}).boss ? " 👑 บอส" : ""}</button><button class="btn ghost" onclick="BATTLE.dgLeave()">🚪 รับรางวัล 60% แล้วออก</button></div></div>`;
+    if (r.status === "cleared") return `<div class="card center gm-res perfect"><div style="font-size:54px">🎉</div><h2>พิชิต ${esc(r.dungeon.name)}!</h2>${head}
+      <p><span class="pill">+${r.paid_exp} EXP</span> <span class="pill">+${r.paid_coins} 🪙</span></p>${dgChest(r)}
+      <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.dgDone()">กลับ</button></div></div>`;
+    return `<div class="card center gm-res"><div style="font-size:54px">💀</div><h2>พ่ายที่ชั้น ${r.floor}</h2>${head}
+      <p><span class="pill">ผ่านมาแล้ว ${r.cleared}/${r.floors} ชั้น</span> ${r.paid_exp + r.paid_coins > 0 ? `<span class="pill">+${r.paid_exp} EXP</span> <span class="pill">+${r.paid_coins} 🪙</span>` : ""}</p>
+      <p class="muted">${r.paid_exp + r.paid_coins > 0 ? "ได้รางวัลที่สะสมไว้ 60%" : "ยังไม่ได้ผ่านชั้นไหน จึงไม่มีรางวัล"} — ลองใหม่ได้ถ้ายังเหลือโควตาวันนี้</p>
+      <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.dgDone()">กลับ</button></div></div>`;
+  }
+  function dgView() {
+    const d = S.dgs; if (!d) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
+    const act = d.active, left = Math.max(0, d.limit - d.used);
+    const resume = act ? `<div class="card gm-res perfect center"><h3 style="margin:0">${esc(act.dungeon.emoji)} ${esc(act.dungeon.name)} — ค้างอยู่ชั้น ${act.floor}/${act.floors}</h3><div class="dg-pips big">${dgPips(act)}</div>
+      <button class="btn gold" onclick="BATTLE.dgStart('${esc(act.dungeon.key)}')">▶️ เล่นต่อ</button> <button class="btn ghost" onclick="BATTLE.dgLeave()">🚪 ออก (ได้ 60%)</button></div>` : "";
+    return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">🏰 ท้าดันเจี้ยน</h3><button class="btn ghost small" onclick="BATTLE.dgBack()">⬅️ ศึกปกติ</button></div>
+      <p><span class="pill">🗝️ เข้าได้วันนี้อีก ${left}/${d.limit} รอบ</span></p><p class="muted" style="margin:4px 0 0">ไต่ทีละชั้นให้ถึงบอส · HP ยกต่อชั้น (ฟื้นให้เล็กน้อย) · แพ้หรือออกกลางคันได้ 60% ของรางวัลสะสม · ผ่านครบได้หีบบอส</p></div>${resume}
+      ${d.dungeons.map((x) => `<div class="card dg-card ${x.locked ? "locked" : ""}"><div class="row"><h3 style="margin:0" class="grow">${esc(x.emoji)} ${esc(x.name)}</h3><span class="tag">${x.floors} ชั้น</span></div>
+        <p class="muted" style="margin:2px 0 8px">${esc(x.descr || "")}</p>
+        <div class="dg-map">${x.map.map((f) => `<div class="dg-fl ${f.boss ? "boss" : ""} ${f.floor <= x.best ? "done" : ""}"><div class="dg-fbg" style="background-image:url(${esc(f.bg || "")})"></div>${(f.monster.image ? `<img src="${esc(f.monster.image)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc(f.monster.emoji || "👾")}'}))">` : `<span>${esc(f.monster.emoji || "👾")}</span>`)}<small>${f.boss ? "👑 บอส" : "ชั้น " + f.floor}</small><small class="muted">+${f.exp}</small></div>`).join("")}</div>
+        <p style="margin:8px 0"><span class="pill">🏅 ชั้นสูงสุด ${x.best}/${x.floors}</span> <span class="pill">🏆 พิชิต ${x.clears} ครั้ง</span></p>
+        ${x.locked ? `<p class="muted">🔒 ต้องถึงเลเวล ${x.min_level}</p>` : act ? "" : left > 0 ? `<button class="btn gold" onclick="BATTLE.dgStart('${esc(x.key)}')">⚔️ เข้าดันเจี้ยน</button>` : '<p class="muted">วันนี้เข้าครบโควตาแล้ว พรุ่งนี้มาใหม่</p>'}
+        ${x.board.length ? `<details class="clsdet" open><summary>🥇 อันดับในห้อง (ชั้นสูงสุด)</summary><div class="dg-board">${x.board.map((b, i) => `<div class="row ${b.mine ? "mine" : ""}"><span>${["🥇", "🥈", "🥉"][i] || i + 1}</span><span class="grow">${esc(b.avatar || "")} ${esc(b.name)}</span><b>${b.best}/${x.floors}</b><small class="muted">${b.clears ? "🏆" + b.clears : ""}</small></div>`).join("")}</div></details>` : ""}</div>`).join("")}`;
+  }
   const preload = (urls, ms = 9000) => Promise.race([Promise.all(urls.filter(Boolean).map((u) => new Promise((r) => { const i = new Image(); i.onload = i.onerror = r; i.src = u; if (i.complete) r(); }))), new Promise((r) => setTimeout(r, ms))]);
   function sceneUrls(bat) {
     const m = bat.monster, html = sprite(D.student) + mimg(m);
-    return [`assets/arenas/${m.theme || "lab"}.jpg`, ...[...html.matchAll(/src="([^"]+)"/g)].map((x) => x[1])];
+    return [inDg(bat.id) && S.dg.bg ? S.dg.bg : `assets/arenas/${m.theme || "lab"}.jpg`, ...[...html.matchAll(/src="([^"]+)"/g)].map((x) => x[1])];
   }
   /* เตรียมภาพฉาก (พื้นหลัง/มอนสเตอร์/ตัวละคร) ให้ครบก่อนเริ่มแสดง: ถ้าโหลดเร็ว (แคชแล้ว) ไม่ขึ้นหน้าจอโหลดเลย ถ้าเกิน 0.2 วิ ขึ้นหน้าจอโหลดจนภาพมาครบ (รอสูงสุด 9 วิแล้วเข้าฉากต่อ) */
   async function scene(bat) {
@@ -50,7 +114,12 @@ const BATTLE = (() => {
       S.data = await rpc("battle_status", { p_token: tk() });
       if (S.data.active && S.data.active.status === "active") { S.bat = S.data.active; S.screen = "fight"; resume();
         try { const ts = await rpc("rank_trial_status", { p_token: tk() }); S.trial = ts.active_trial && ts.gate ? { name: ts.gate.name } : null; } catch (e) {} }
+      S.dg = null; S.dgBat = null;
+      const ds = await dgLoad(), act = ds && ds.active;
+      if (act && S.screen === "fight" && S.bat && act.battle && act.battle.id === S.bat.id) { S.dg = act; S.dgBat = S.bat.id; S.trial = null; }
+      else if (act && !S.dgSkip && !(S.screen === "fight" && S.bat)) { if (act.waiting_next || !act.battle || act.battle.status !== "active") S.screen = "dg"; else { S.dg = act; S.dgBat = act.battle.id; S.bat = act.battle; S.screen = "fight"; resume(); } }
     } catch (e) { toast(e.message); }
+    S.dgSkip = false;
     if (S.screen === "fight" && S.bat) await scene(S.bat); else paint();
   }
   function resume() { clearTimeout(S.qtimer); S.def = null; if (S.bat && S.bat.phase === "question") armQ(S.bat.q.elapsed || 0); if (S.bat && S.bat.phase === "defend") startDef(); }
@@ -146,6 +215,7 @@ const BATTLE = (() => {
   }
   function finishLoad() { recBattle(); setTimeout(async () => { try { LC.cls = LC.hst = LC.gbest = LC.gear = 0; await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
   async function flee() {
+    if (S.dg && S.dgBat === (S.bat && S.bat.id)) return dgLeave();
     if (!confirm(S.trial ? "หนีจากด่านบอส? จะนับเป็นการสอบ 1 ครั้ง ต้องรอพรุ่งนี้ถึงท้าใหม่ได้" : "หนีจากการต่อสู้? จะนับเป็น 1 รอบของวันนี้และไม่ได้รางวัล")) return;
     clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null;
     try { await rpc("battle_flee", { p_token: tk(), p_battle: S.bat.id }); } catch (e) {}
@@ -303,6 +373,7 @@ const BATTLE = (() => {
       <p>${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${d.limit}</span>` : '<span class="pill">รอบที่ได้รางวัลวันนี้หมดแล้ว — เล่นฝึกได้ไม่จำกัด (ไม่ได้รางวัล)</span>'} <span class="pill">❤️ HP ${d.p_max}</span></p>
       <p class="muted" style="margin:6px 0 4px">สกิลของคุณ · แตะไอคอนเพื่อดูรายละเอียด</p>
       <div class="bt-skgrid">${d.skills.map((s) => `<button class="bt-skt ${s.kind}" onclick="BATTLE.info('${s.key}')" aria-label="ดูรายละเอียด ${esc(s.name)}"><span class="bt-big">${aico(s.key, s.emoji)}</span><b>${esc(s.name)}</b></button>`).join("")}</div></div>
+      ${dgEntry()}
       ${statsPanel(true)}${arenaPicker()}
       <div class="bt-mgrid">${d.monsters.filter((m) => !d.arenas || !d.arenas.length || (m.arena || "lab") === (arNow() || {}).key).map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small> ${elBadge(monElem(m.id))}</h3>
         <p class="muted" style="margin:2px 0">${esc(m.descr || "")}</p><p style="margin:4px 0"><span class="pill">❤️ ${m.hp}</span> <span class="pill">🗡️ ${m.atk}</span></p>
@@ -332,7 +403,7 @@ const BATTLE = (() => {
     const ph = b.phase, cs = ph === "question" && b.q ? (b.skills.find((x) => x.key === b.q.skill) || {}) : null;
     const fm = S.shown.m, fp = S.shown.p; S.shown = { m: b.m_hp, p: b.p_hp };
     const th = m.theme || "lab"; if (S.ldg) return loadView();
-    const arena = `<div class="card bt-field ar-${esc(th)} ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}">
+    const dgo = inDg(b.id), arena = dgBar(b.id) + `<div class="card bt-field ar-${esc(th)} ${dgo ? dgBgCls() : ""} ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}"${dgo ? dgBgStyle() : ""}>
       ${skyHtml(th)}<div class="bt-floor"></div>${m.arena_name ? `<div class="bt-arname">${esc(m.arena_name)}</div>` : ""}
       <div class="bt-plate bt-pm"><b>${esc(m.name)}</b> <small>Lv.${m.level}</small> ${elBadge(monElem(m.id))}${matchupNote(monElem(m.id))}${hp(b.m_hp, b.m_max, "mon", fm, S.hpDelay)}</div>
       <div class="bt-mo ${ph === "defend" ? "lunge" : ""} ${S.mdead === b.id ? "dead gone" : ""}"><div class="bt-shadow"></div>${mimg(m, "float")}</div>
@@ -388,10 +459,12 @@ const BATTLE = (() => {
   }
   function resultView() {
     const b = S.bat, win = b.status === "won", dr = S.drop, m = b.monster;
+    if (inDg(b.id) && b.status !== "fled" && S.dgFetch !== b.id) { S.dgFetch = b.id; rpc("dungeon_run", { p_token: tk(), p_run: S.dg.id }).then((r) => { S.dg = r; if (S.screen === "result") paint(); }).catch(() => {}); }
     if (S.fxFor !== b.id && b.status !== "fled") { S.fxFor = b.id; setTimeout(() => {
       if (win && S.mdead !== b.id) deathFx(document.querySelector(".bt-mo"));
       if (win) { FX.victory(); if (dr) { FX.screen("loot-beam", 0.5, 0.5, { scale: 3 }); FX.later(400, () => FX.screen("chest-open", 0.5, 0.55, { scale: 3 })); } }
       else FX.screen("curse", 0.5, 0.45, { scale: 3 }); }, 400); }
+    if (inDg(b.id)) return dgResult(b);
     if (b.status === "fled") return `<div class="card center"><p>หนีจากการต่อสู้แล้ว${S.trial ? " (นับเป็นการสอบ 1 ครั้งของวันนี้)" : ""}</p><button class="btn" onclick="BATTLE.${S.trial ? "endTrial" : "back"}()">กลับ</button></div>`;
     if (S.trial) return `<div class="card center gm-res ${win ? "perfect" : ""}"><div style="font-size:54px">${win ? "🎖️" : "💀"}</div>
       <h2>${win ? `ผ่านด่านเลื่อนแรงค์ ${esc(S.trial.name)}!` : `ยังไม่ผ่านด่าน ${esc(S.trial.name)}`}</h2>
@@ -410,6 +483,6 @@ const BATTLE = (() => {
   }
 
   function endTrial() { S.trial = null; S.bat = null; S.screen = "list"; LC.cls = LC.hst = LC.gbest = LC.gear = 0; load().then(() => go("home")).catch(() => go("home")); }
-  const view = () => (S.screen === "list" || !S.bat ? listView() : fightView());
-  return { deathFx, info: skInfo, arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
+  const view = () => (S.screen === "dg" ? dgView() : S.screen === "list" || !S.bat ? listView() : fightView());
+  return { dgBack, dgOpen, dgStart, dgNext, dgLeave, dgDone, deathFx, info: skInfo, arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
 })();
