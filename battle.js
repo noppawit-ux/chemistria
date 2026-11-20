@@ -351,7 +351,7 @@ const BATTLE = (() => {
     if (b.phase === "defend") return arena + defendView();
     const skills = b.skills.map((s) => { return `<div class="bt-skw"><button class="bt-skill big ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')"><span class="bt-big">${aico(s.key, s.emoji)}${s.left > 0 ? `<i class="bt-cd" aria-label="รออีก ${s.left} เทิร์น">${s.left}</i>` : ""}</span><b>${esc(s.name)}</b><small>${s.left > 0 ? `รอ ${s.left} เทิร์น` : s.kind === "buff" ? "บัพ" : `${KIND[s.kind][1]} ${s.power}`}</small></button><button class="bt-info" onclick="BATTLE.info('${s.key}')" aria-label="รายละเอียด ${esc(s.name)}">ℹ️</button></div>`; }).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
-    return arena + statsPanel(false) + `<div class="card">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.bgNext()" title="เปลี่ยนพื้นหลัง">🖼️</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
+    return arena + statsPanel(false) + `<div class="card bt-msg bt-m-choose">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.bgNext()" title="เปลี่ยนพื้นหลัง">🖼️</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <details class="clsdet"><summary>วิธีเล่น</summary><ul><li>เลือกสกิล แล้วตอบคำถามให้ถูกภายใน ${qs()} วิ สกิลถึงจะออกผล</li><li>ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</li><li>มอนสเตอร์โจมตีเอง (รับ 70%) ทุกเทิร์นที่ 3 โจมตีหนัก</li></ul></details><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
       ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — HP ของคุณ 85% · เวลา 15 วิ · ตอบผิดบอสจะฟื้น HP 5% · ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }
@@ -359,7 +359,7 @@ const BATTLE = (() => {
   function questionView() {
     const q = S.bat.q, sk = S.bat.skills.find((s) => s.key === q.skill) || {};
     const left = Math.max(0.5, qs() - (q.elapsed || 0));
-    return `<div class="card gm-q"><div class="row"><span class="pill">${sk.emoji || ""} ${esc(sk.name || "")}</span><span class="muted grow">${esc(q.topic)}</span><span class="pill" id="bqt">⏱️ ${qs()}</span></div>
+    return `<div class="card gm-q bt-msg bt-m-q"><div class="row"><span class="pill">${sk.emoji || ""} ${esc(sk.name || "")}</span><span class="muted grow">${esc(q.topic)}</span><span class="pill" id="bqt">⏱️ ${qs()}</span></div>
       <div class="bt-timer"><i style="animation-duration:${left}s"></i></div>
       <h3 style="margin:12px 0">${esc(q.question)}</h3>
       <div class="gm-choices">${q.choices.map((c, i) => `<button class="gm-choice" ${S.busy ? "disabled" : ""} onclick="BATTLE.pick(${i})"><b>${"กขคง"[i]}</b> ${esc(c)}</button>`).join("")}</div></div>`;
