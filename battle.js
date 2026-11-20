@@ -1,7 +1,7 @@
 /* มินิเกมต่อสู้มอนสเตอร์เคมี: เลือกสกิลตามคลาส → ตอบคำถามเพื่อใช้สกิล → มอนสเตอร์โต้กลับ กดลูกศรลดดาเมจ
    (ดาเมจ/เฉลย/รางวัล คำนวณที่เซิร์ฟเวอร์ทั้งหมด) */
 const BATTLE = (() => {
-  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null, trial: null, shown: {}, hpDelay: 0, dg: null, dgs: null, dgBat: null };
+  const S = { screen: "list", data: null, bat: null, fb: null, msg: "", busy: false, def: null, qtimer: null, hit: "", drop: null, trial: null, shown: {}, hpDelay: 0, dg: null, dgs: null, dgBat: null, mab: null };
   const ARW = { L: "⬅️", U: "⬆️", R: "➡️", D: "⬇️" };
   const KEYS = { ArrowLeft: "L", ArrowUp: "U", ArrowRight: "R", ArrowDown: "D" };
   const KIND = { attack: ["⚔️", "โจมตี"], buff: ["📈", "บัพ"], heal: ["💚", "ฮีล"] };
@@ -20,6 +20,15 @@ const BATTLE = (() => {
     swamp: ["☣️", "🧫", "☣️", "🟢", "🟢", "🫧", "🟢"], storm: ["⛈️", "⚡", "☁️", "⚡", "💧", "💧", "⚡"], crystal: ["💎", "🔮", "💎", "✨", "✨", "✨", "✨"] };
   const skyHtml = (t) => `<div class="bt-sky">${(SKY[t] || SKY.lab).map((e) => `<i>${e}</i>`).join("")}</div>`;
   /* ===== ดันเจี้ยน (SQL 110): ไต่ชั้นต่อเนื่อง · ศึกแต่ละชั้นใช้ระบบศึกเดิม · ฉากพื้นหลังจาก assets/bg ===== */
+  /* สกิลยูนิคของมอนสเตอร์ (SQL 112) — แคตาล็อกโหลดจาก monster_ability_list · รหัสสกิลของศึกอยู่ใน b.buffs.mab */
+  const abInfo = (k) => (S.mab && S.mab.cat && S.mab.cat[k]) || null;
+  const abTag = (id) => { const a = abInfo(S.mab && S.mab.mons && S.mab.mons[id]); return a ? `<span class="bt-abtag" title="${esc(a.descr)}">${esc(a.emoji)} ${esc(a.name)}</span>` : ""; };
+  const abStrip = (b) => {
+    const a = abInfo(b.buffs && b.buffs.mab); if (!a) return "";
+    const ev = b.buffs.mev && b.buffs.mev.t === b.turn ? `<div class="bt-abev">${esc(b.buffs.mev.txt)}</div>` : "";
+    return `<div class="bt-ab"><b>${esc(a.emoji)} สกิลยูนิค: ${esc(a.name)}</b><small>${esc(a.descr)}</small>${ev}</div>`;
+  };
+  async function abLoad() { try { const r = await rpc("monster_ability_list", { p_token: tk() }); S.mab = { cat: Object.fromEntries((r.abilities || []).map((x) => [x.key, x])), mons: r.monsters || {} }; } catch (e) { /* ยังไม่ได้รัน SQL 112: ซ่อนสกิลยูนิคเฉยๆ */ } }
   const inDg = (bid) => !!(S.dg && S.dgBat && S.dgBat === bid);
   const dgBgStyle = () => { const bg = S.dg && S.dg.bg; return bg ? ` style="background-image:linear-gradient(rgba(6,3,20,.18),rgba(6,3,20,.18)),url(${esc(bg)})"` : ""; };
   const dgBgCls = () => { const bg = S.dg && S.dg.bg; return bg ? "bt-cbg" + (/\/a\d+\.webp$/.test(bg) ? " px" : "") : ""; };
@@ -114,7 +123,7 @@ const BATTLE = (() => {
       S.data = await rpc("battle_status", { p_token: tk() });
       if (S.data.active && S.data.active.status === "active") { S.bat = S.data.active; S.screen = "fight"; resume();
         try { const ts = await rpc("rank_trial_status", { p_token: tk() }); S.trial = ts.active_trial && ts.gate ? { name: ts.gate.name } : null; } catch (e) {} }
-      S.dg = null; S.dgBat = null;
+      S.dg = null; S.dgBat = null; if (!S.mab) abLoad().then(() => { if (S.screen === "list" || S.screen === "fight") paint(); });
       const ds = await dgLoad(), act = ds && ds.active;
       if (act && S.screen === "fight" && S.bat && act.battle && act.battle.id === S.bat.id) { S.dg = act; S.dgBat = S.bat.id; S.trial = null; }
       else if (act && !S.dgSkip && !(S.screen === "fight" && S.bat)) { if (act.waiting_next || !act.battle || act.battle.status !== "active") S.screen = "dg"; else { S.dg = act; S.dgBat = act.battle.id; S.bat = act.battle; S.screen = "fight"; resume(); } }
@@ -375,7 +384,7 @@ const BATTLE = (() => {
       <div class="bt-skgrid">${d.skills.map((s) => `<button class="bt-skt ${s.kind}" onclick="BATTLE.info('${s.key}')" aria-label="ดูรายละเอียด ${esc(s.name)}"><span class="bt-big">${aico(s.key, s.emoji)}</span><b>${esc(s.name)}</b></button>`).join("")}</div></div>
       ${dgEntry()}
       ${statsPanel(true)}${arenaPicker()}
-      <div class="bt-mgrid">${d.monsters.filter((m) => !d.arenas || !d.arenas.length || (m.arena || "lab") === (arNow() || {}).key).map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small> ${elBadge(monElem(m.id))}</h3>
+      <div class="bt-mgrid">${d.monsters.filter((m) => !d.arenas || !d.arenas.length || (m.arena || "lab") === (arNow() || {}).key).map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small> ${elBadge(monElem(m.id))}</h3>${abTag(m.id)}
         <p class="muted" style="margin:2px 0">${esc(m.descr || "")}</p><p style="margin:4px 0"><span class="pill">❤️ ${m.hp}</span> <span class="pill">🗡️ ${m.atk}</span></p>
         <p class="muted" style="margin:2px 0 8px">รางวัล +${m.exp} EXP · +${m.coins} 🪙 · ดรอปไอเทม</p>
         <button class="btn gold" onclick="BATTLE.start('${m.id}')">⚔️ ท้าสู้</button></div>`).join("") || '<div class="card"><p class="muted">ยังไม่มีมอนสเตอร์ในระบบ</p></div>'}</div>`;
@@ -410,13 +419,14 @@ const BATTLE = (() => {
       <div class="bt-pl ${cs ? "charging" : ""}"><div class="bt-shadow"></div>${sprite(me)}${cs ? `<div class="bt-chg">${cs.emoji}</div>` : ""}</div>
       <div class="bt-plate bt-pp"><b>${esc(me.name)}</b> <small>เทิร์น ${b.turn}</small>${hp(b.p_hp, b.p_max, "me", fp, S.hpDelay)}<div class="bt-buffs">${buffs}</div></div>
       <div id="btfx" class="bt-fxl"></div></div>`;
-    if (S.fb) return arena + fbView();
+    const arenaF = arena + (b.status === "active" ? abStrip(b) : "");
+    if (S.fb) return arenaF + fbView();
     if (b.status !== "active") return arena + resultView();
-    if (b.phase === "question") return arena + questionView();
-    if (b.phase === "defend") return arena + defendView();
+    if (b.phase === "question") return arenaF + questionView();
+    if (b.phase === "defend") return arenaF + defendView();
     const skills = b.skills.map((s) => { return `<div class="bt-skw"><button class="bt-skill big ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')"><span class="bt-big">${aico(s.key, s.emoji)}${s.left > 0 ? `<i class="bt-cd" aria-label="รออีก ${s.left} เทิร์น">${s.left}</i>` : ""}</span><b>${esc(s.name)}</b><small>${s.left > 0 ? `รอ ${s.left} เทิร์น` : s.kind === "buff" ? "บัพ" : `${KIND[s.kind][1]} ${s.power}`}</small></button><button class="bt-info" onclick="BATTLE.info('${s.key}')" aria-label="รายละเอียด ${esc(s.name)}">ℹ️</button></div>`; }).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
-    return arena + statsPanel(false) + `<div class="card bt-msg bt-m-choose">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
+    return arenaF + statsPanel(false) + `<div class="card bt-msg bt-m-choose">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <details class="clsdet"><summary>วิธีเล่น</summary><ul><li>เลือกสกิล แล้วตอบคำถามให้ถูกภายใน ${qs()} วิ สกิลถึงจะออกผล</li><li>ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</li><li>มอนสเตอร์โจมตีเอง (รับ 70%) ทุกเทิร์นที่ 3 โจมตีหนัก</li></ul></details><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
       ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — HP ของคุณ 85% · เวลา 15 วิ · ตอบผิดบอสจะฟื้น HP 5% · ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }

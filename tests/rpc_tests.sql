@@ -1693,6 +1693,52 @@ select pg_temp.t('111: มอนสเตอร์ดันเจี้ยนไ
 select pg_temp.t('111: ทุกชั้นมีฉากหลัง', not exists (select 1 from dungeon_floors where bg is null or bg = ''));
 select pg_temp.t('111: รันซ้ำไม่ซ้ำแถว', (select count(*) from dungeons) = 4);
 set role anon;
+-- ================= SQL 112 มอนสเตอร์ระดับสูง + สกิลยูนิค =================
+reset role;
+create temp table _ab (k text, bid uuid);
+insert into _ab select m.key, null from monsters m where m.key in ('hi_core1','hi_core2','hi_core3','hi_core4','hi_aby2','hi_aby3','hi_cos1','bubble');
+do $$ declare r record; sid uuid := (select sid from _dg); i uuid; begin
+  for r in select k from _ab loop
+    insert into battles (student_id, monster_id, p_hp, p_max, m_hp, m_max, status) select sid, m.id, 100, 100, m.hp, m.hp, 'fled' from monsters m where m.key = r.k returning id into i;
+    update _ab set bid = i where k = r.k;
+  end loop;
+end $$;
+select pg_temp.t('112: INSERT ใส่ mab ให้มอนที่มีสกิล และไม่ใส่ให้มอนทั่วไป', (select (b.buffs->>'mab') from battles b join _ab a on a.bid = b.id where a.k = 'hi_core2') = 'regen' and (select b.buffs ? 'mab' from battles b join _ab a on a.bid = b.id where a.k = 'bubble') = false);
+update battles set status = 'active' where id in (select bid from _ab);
+-- ฟื้นฟู: จบเทิร์นมอน m_hp +4% ของ max
+update battles set m_hp = 200, pend = '{"dmg":10,"n":3,"seq":"LRU"}' where id = (select bid from _ab where k = 'hi_core2');
+update battles set pend = null, turn = turn + 1 where id = (select bid from _ab where k = 'hi_core2');
+select pg_temp.t('112: regen ฟื้น 4% ของ HP สูงสุด (380 → +15)', (select m_hp from battles where id = (select bid from _ab where k = 'hi_core2')) = 215);
+-- เกราะ: ลดดาเมจที่ผู้เล่นทำ 25%
+update battles set m_hp = 440, pend = '{"dmg":10,"n":3,"seq":"LRU"}' where id = (select bid from _ab where k = 'hi_core4');
+select pg_temp.t('112: armor ลดดาเมจ 25% (ตี 100 เหลือโดน 75)', (select m_hp from battles where id = (select bid from _ab where k = 'hi_core4')) = 465);
+-- คลุ้มคลั่ง: HP ≤ ครึ่ง โจมตี ×1.3
+update battles set m_hp = 100, pend = '{"dmg":20,"n":3,"seq":"LRU"}' where id = (select bid from _ab where k = 'hi_core1');
+select pg_temp.t('112: enrage ดาเมจ ×1.3 เมื่อ HP ≤ 50%', ((select pend->>'dmg' from battles where id = (select bid from _ab where k = 'hi_core1'))::int) = 26);
+-- พิษเผาไหม้
+update battles set pend = '{"dmg":10,"n":3,"seq":"LRU"}' where id = (select bid from _ab where k = 'hi_core3');
+update battles set pend = null, turn = turn + 1 where id = (select bid from _ab where k = 'hi_core3');
+select pg_temp.t('112: burn ลด HP ผู้เล่น 3% (100 → 97) และมี mev', (select p_hp from battles where id = (select bid from _ab where k = 'hi_core3')) = 97 and (select buffs->'mev'->>'txt' from battles where id = (select bid from _ab where k = 'hi_core3')) like '%พิษ%');
+-- หนามสะท้อน
+update battles set m_hp = 600 - 0, pend = null where id = (select bid from _ab where k = 'hi_aby3');
+update battles set m_hp = 490, pend = '{"dmg":10,"n":3,"seq":"LRU"}' where id = (select bid from _ab where k = 'hi_aby3');
+select pg_temp.t('112: thorns สะท้อน 10% ของดาเมจ (ตี 110 → -11)', (select p_hp from battles where id = (select bid from _ab where k = 'hi_aby3')) = 89 or (select p_hp from battles where id = (select bid from _ab where k = 'hi_aby3')) = 90);
+-- ดูดเลือด
+update battles set m_hp = 300, pend = '{"dmg":20,"n":3,"seq":"LRU"}' where id = (select bid from _ab where k = 'hi_aby2');
+update battles set pend = null, p_hp = 80, turn = turn + 1 where id = (select bid from _ab where k = 'hi_aby2');
+select pg_temp.t('112: drain ดูด 35% ของดาเมจที่ผู้เล่นโดน (20 → +7)', (select m_hp from battles where id = (select bid from _ab where k = 'hi_aby2')) = 307);
+-- ผู้เล่นไม่ตายจากพิษ/หนาม
+update battles set p_hp = 1, pend = '{"dmg":10,"n":3,"seq":"LRU"}' where id = (select bid from _ab where k = 'hi_core3');
+update battles set pend = null, turn = turn + 1 where id = (select bid from _ab where k = 'hi_core3');
+select pg_temp.t('112: พิษเผาไหม้ไม่ฆ่าผู้เล่น (เหลืออย่างน้อย 1)', (select p_hp from battles where id = (select bid from _ab where k = 'hi_core3')) = 1);
+select pg_temp.t('112: ศึกที่จบแล้วไม่ถูกทริกเกอร์แก้ HP', (select count(*) from battles where id = (select bid from _ab where k = 'hi_cos1')) = 1);
+select pg_temp.t('112: สนามใหม่ 3 แห่ง + มอนสเตอร์ใหม่ 13 ตัว เลเวลสูงสุด 10', (select count(*) from arenas where key in ('core','abyss','cosmos')) = 3 and (select count(*) from monsters where key like 'hi\_%') = 13 and (select max(level) from monsters) = 10);
+select pg_temp.t('112: มอนสเตอร์ดันเจี้ยนมีสกิลยูนิค', (select ability from monsters where key = 'dg1_f5') = 'regen' and (select ability from monsters where key = 'dg4_f5') = 'storm');
+set role anon;
+select pg_temp.t('112: monster_ability_list ใช้ได้ด้วย token (7 สกิล)', json_array_length((monster_ability_list((select tok from _go)))->'abilities') = 7);
+reset role;
+select pg_temp.t('112: anon เรียก trg_monster_ability ตรงๆ ไม่ได้', not has_function_privilege('anon', 'trg_monster_ability()', 'execute'));
+set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
