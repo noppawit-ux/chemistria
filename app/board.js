@@ -3,11 +3,11 @@
 async function markBoardSeen() { try { await rpc("board_mark_seen", { p_token: tk() }); B.unread = 0; const bg = document.querySelector("#nav .navgrid .bdg"); if (bg) bg.remove(); } catch (e) {} }
 async function postBoard() {
   const t = $("#bt").value, b = $("#bb").value;
-  try { await rpc("board_post", { p_token: tk(), p_title: t, p_body: b }); toast("โพสต์แล้ว ✅"); await load(); } catch (e) { toast(e.message); }
+  try { await rpc("board_post", { p_token: tk(), p_title: t, p_body: b }); toast("โพสต์แล้ว ✅"); LC.board = 0; await load(); } catch (e) { toast(e.message); }
 }
 async function delBoard(id) {
   if (!confirm("ลบโพสต์นี้?")) return;
-  try { await rpc("board_delete", { p_token: tk(), p_id: id }); toast("ลบแล้ว"); await load(); } catch (e) { toast(e.message); }
+  try { await rpc("board_delete", { p_token: tk(), p_id: id }); toast("ลบแล้ว"); LC.board = 0; await load(); } catch (e) { toast(e.message); }
 }
 const ago = (iso) => { const m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000)); return m < 1 ? "เมื่อสักครู่" : m < 60 ? m + " นาทีที่แล้ว" : m < 1440 ? Math.round(m / 60) + " ชม.ที่แล้ว" : Math.round(m / 1440) + " วันที่แล้ว"; };
 function boardHtml() {

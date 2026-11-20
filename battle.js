@@ -122,7 +122,7 @@ const BATTLE = (() => {
     const b = S.bat; if (!b || (b.status !== "won" && b.status !== "lost") || S.recFor === b.id) return; S.recFor = b.id; const win = b.status === "won";
     gsRecord("battle", { correct: b.correct, hp_left: win ? b.p_hp : undefined, turns: win ? b.turn : undefined, wins: win ? 1 : 0 }).then((r) => { if (r) { r.bid = b.id; S.gs = r; if (S.screen === "result") paint(); } if (win) cardAfter("battle"); });
   }
-  function finishLoad() { recBattle(); setTimeout(async () => { try { await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
+  function finishLoad() { recBattle(); setTimeout(async () => { try { LC.cls = LC.hst = LC.gbest = LC.gear = 0; await load(); } catch (e) {} }, 2400); }   // รอให้เอฟเฟกต์เล่นจบก่อนรีเฟรชข้อมูล
   async function flee() {
     if (!confirm(S.trial ? "หนีจากด่านบอส? จะนับเป็นการสอบ 1 ครั้ง ต้องรอพรุ่งนี้ถึงท้าใหม่ได้" : "หนีจากการต่อสู้? จะนับเป็น 1 รอบของวันนี้และไม่ได้รางวัล")) return;
     clearTimeout(S.qtimer); if (S.def) clearTimeout(S.def.t); S.def = null;
@@ -380,7 +380,7 @@ const BATTLE = (() => {
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.start('${m.id}')">⚔️ สู้อีกครั้ง</button><button class="btn ghost" onclick="BATTLE.back()">เลือกมอนสเตอร์</button></div></div>`;
   }
 
-  function endTrial() { S.trial = null; S.bat = null; S.screen = "list"; load().then(() => go("home")).catch(() => go("home")); }
+  function endTrial() { S.trial = null; S.bat = null; S.screen = "list"; LC.cls = LC.hst = LC.gbest = LC.gear = 0; load().then(() => go("home")).catch(() => go("home")); }
   const view = () => (S.screen === "list" || !S.bat ? listView() : fightView());
   return { arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
 })();

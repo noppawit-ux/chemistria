@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "2.49";
+const APP_VERSION = "2.50";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
@@ -39,11 +39,22 @@ async function changePin() {
   catch (e) { toast(e.message); }
 }
 const tk = () => PEEK || localStorage.getItem(TOKEN_KEY);
+// v2.50: แคชชั่วคราวของข้อมูลที่ไม่เปลี่ยนบ่อย (ข่าว ตารางเรียน กิลด์ ฯลฯ) — load() ที่เรียกหลังทุกการกดจะไม่ยิงซ้ำถ้ายังสดอยู่
+const LC = {}, lcFresh = (k, ms) => !!LC[k] && Date.now() - LC[k] < ms, lcMark = (k) => { LC[k] = Date.now(); };
+const lcAct = (fn) => {   // เรียกจาก act(): ล้างแคชเฉพาะส่วนที่การกระทำนี้อาจเปลี่ยน
+  const t = String(fn);
+  LC.cls = LC.hst = LC.gbest = 0;
+  if (/guild/i.test(t)) LC.guild = 0;
+  if (/gift/i.test(t)) LC.gift = 0;
+  if (/decor|card|gear|equip|item|gacha|upgrade|stat/i.test(t)) LC.gear = 0;
+  if (/board/i.test(t)) LC.board = 0;
+  if (/promo/i.test(t)) LC.promo = 0;
+};
 
 async function load() {
   if (!tk()) return showLogin();
   try {
-    try { if (typeof PEEK === "undefined" || !PEEK) setTimeout(() => gearLoad(true), 0); } catch (e) {}
+    try { if ((typeof PEEK === "undefined" || !PEEK) && !lcFresh("gear", 60000)) { lcMark("gear"); setTimeout(() => gearLoad(true), 0); } } catch (e) {}
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
     // v2.49: โหลด 2 ชั้น — ชั้นแรก (หน้าหลักขั้นต่ำ) แล้วแสดงเลย ส่วนที่เหลือโหลดตามหลัง กันหมุนค้างเมื่อเซิร์ฟเวอร์ช้า
@@ -57,22 +68,23 @@ async function load() {
     DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
     render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
     const L = (n) => tmo(rpc(n, { p_token: tk() }), 25000);
-    const [hof, brd, nws, ttl, prm, gld, gft, gbs, hst, cli] = await Promise.all([
-      L("hall_of_fame").catch(() => []),
-      L("board_list").catch(() => ({ posts: [], unread: 0 })),
-      L("news_list").catch(() => []),
-      L("timetable_list").catch(() => []),
-      L("promo_status").catch(() => ({ active: false })),
-      L("guild_status").catch(() => null),
-      PEEK ? Promise.resolve([]) : L("gift_inbox").catch(() => []),
-      PEEK ? Promise.resolve({}) : L("game_bests_all").catch(() => null),
-      L("home_stats").catch(() => null),
-      PEEK ? Promise.resolve(null) : L("class_info").catch(() => null),
-    ]);
-    CLS = cli; HST = hst; GLD = gld; GIFTS = gft || []; if (gbs) GBEST = gbs;
-    NEWS = nws || []; TT = ttl || []; PROMO = prm || { active: false };
-    HOF = hof || []; B = brd || { posts: [], unread: 0 };
-    render(); if (!PEEK) giftShow();
+    const jobs = []; let giftRan = false;
+    const job = (k, ms, name, set) => { if (lcFresh(k, ms)) return; jobs.push(L(name).then((v) => { set(v); lcMark(k); if (k === "gift") giftRan = true; }).catch(() => {})); };
+    job("hof", 180000, "hall_of_fame", (v) => { HOF = v || []; });
+    job("board", 60000, "board_list", (v) => { B = v || { posts: [], unread: 0 }; });
+    job("news", 180000, "news_list", (v) => { NEWS = v || []; });
+    job("tt", 180000, "timetable_list", (v) => { TT = v || []; });
+    job("promo", 120000, "promo_status", (v) => { PROMO = v || { active: false }; });
+    job("guild", 60000, "guild_status", (v) => { GLD = v || null; });
+    job("hst", 45000, "home_stats", (v) => { HST = v || null; });
+    if (!PEEK) {
+      job("gift", 45000, "gift_inbox", (v) => { GIFTS = v || []; });
+      job("gbest", 60000, "game_bests_all", (v) => { if (v) GBEST = v; });
+      job("cls", 45000, "class_info", (v) => { CLS = v || null; });
+    } else { GIFTS = []; }
+    await Promise.all(jobs);
+    if (!jobs.length) return;
+    render(); if (!PEEK && giftRan) giftShow();
   } catch (e) {
     if (!PEEK && /เซสชัน|หมดอายุ|JWT/.test(e.message || "")) localStorage.removeItem(TOKEN_KEY);   // ไม่ล้างล็อกอินเมื่อแค่เน็ตหลุด
     showLogin(e.message);

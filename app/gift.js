@@ -13,5 +13,5 @@ function giftShow() {
 async function giftClose() {
   document.getElementById("giftov")?.remove(); GIFTS = [];
   try { await rpc("gift_ack", { p_token: tk() }); } catch (e) {}
-  load();
+  LC.gift = 0; load();
 }

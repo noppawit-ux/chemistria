@@ -74,7 +74,7 @@ function cardQueueShow() {
   setTimeout(() => { try { FX.gacha(".flipc", c.rarity === "N" ? "R" : c.rarity); } catch (e) {} }, 700);
   try { SFX.play(c.rarity === "SSR" ? "levelup" : "blip"); } catch (e) {}
   if (tab === "cards") cardAlbumLoad(); else ALBUM = null;
-  if (c.set_done) load();
+  if (c.set_done) { LC.gear = 0; load(); }
 }
 /* หลังจบเกม: ขอสุ่มการ์ด (เซิร์ฟเวอร์ตรวจว่ามีรอบเล่นจริง) */
 async function cardAfter(game) {

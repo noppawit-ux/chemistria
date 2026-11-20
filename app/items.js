@@ -52,7 +52,7 @@ function scrollPick() {
 }
 const scrollApply = async (id, n, c, sc) => {
   if (!confirm(`อัปเกรด “${n}” ใช้ ${c} เหรียญ + ม้วน ${sc} ม้วน?`)) return;
-  try { await rpc("upgrade_decor", { p_token: tk(), p_item: id }); ITM_STALE = true; await load(); toast("อัปเกรดสำเร็จ ✨"); eqClose(); }
+  try { await rpc("upgrade_decor", { p_token: tk(), p_item: id }); ITM_STALE = true; LC.gear = 0; await load(); toast("อัปเกรดสำเร็จ ✨"); eqClose(); }
   catch (e) { toast(e.message); }
 };
 function itemsHtml() {

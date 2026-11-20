@@ -1,7 +1,7 @@
 /* การกระทำ — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- การกระทำ ---------------- */
 async function act(fn, okMsg) {
-  try { const r = await fn(); await load(); if (okMsg) toast(okMsg); return r; }
+  try { const r = await fn(); lcAct(fn); await load(); if (okMsg) toast(okMsg); return r; }
   catch (e) { toast(e.message); }
 }
 const claim = (id) => act(() => rpc("claim_quest", { p_token: tk(), p_quest: id }), "ส่งเควสแล้ว รอครูตรวจ ✅");

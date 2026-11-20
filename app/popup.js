@@ -88,8 +88,8 @@ function promoHtml() {
 let promoBusy = false;
 async function claimPromo() {
   if (promoBusy) return; promoBusy = true;
-  try { await rpc("promo_claim", { p_token: tk() }); await load(); toast("รับของขวัญต้อนรับแล้ว 🎁"); try { FX.victory(); } catch (e) {} }
-  catch (e) { toast(e.message); try { await load(); } catch (x) {} }   // รับไปแล้ว → รีเฟรชให้ปุ่มหายทันที
+  try { await rpc("promo_claim", { p_token: tk() }); LC.promo = 0; await load(); toast("รับของขวัญต้อนรับแล้ว 🎁"); try { FX.victory(); } catch (e) {} }
+  catch (e) { toast(e.message); LC.promo = 0; try { await load(); } catch (x) {} }   // รับไปแล้ว → รีเฟรชให้ปุ่มหายทันที
   promoBusy = false;
 }
 function lessonsOn(d) {
@@ -206,7 +206,7 @@ async function eqDetail(id) {
 }
 const eqUp = async (id, n, c, s, wid) => {
   if (!confirm(`อัปเกรด “${n}” ใช้ ${c} เหรียญ + ม้วน ${s} ม้วน?`)) return;
-  try { await rpc("upgrade_decor", { p_token: tk(), p_item: id }); ITM_STALE = true; await load(); toast("อัปเกรดสำเร็จ ✨"); const k = Object.entries(D.student.decor || {}).find(([, v]) => v && v.id === id); if (k) eqOpen(k[0]); else eqClose(); }
+  try { await rpc("upgrade_decor", { p_token: tk(), p_item: id }); ITM_STALE = true; LC.gear = 0; await load(); toast("อัปเกรดสำเร็จ ✨"); const k = Object.entries(D.student.decor || {}).find(([, v]) => v && v.id === id); if (k) eqOpen(k[0]); else eqClose(); }
   catch (e) { toast(e.message); }
 };
 const eqPick = (k, id) => { eqClose(); const cur = ((D.student.decor || {})[k] || {}).id || null; if (cur === id) return; equipDecor(k, id); };
@@ -240,7 +240,7 @@ const pointsLeft = () => ((X.stats || {}).points || {}).left || 0;
 async function statAdd(k) { try { X.stats = await rpc("stat_add", { p_token: tk(), p_stat: k, p_n: 1 }); try { SFX.play("pop"); } catch (e) {} render(); } catch (e) { toast(e.message); } }
 async function statReset() {
   const P = (X.stats || {}).points || {}; if (!confirm(`รีเซ็ตแต้มสเตตัสทั้งหมด? ต้องเสีย ${P.reset_cost} เหรียญ (ได้แต้มคืนทั้งหมดไปแจกใหม่)`)) return;
-  try { X.stats = await rpc("stat_reset", { p_token: tk() }); toast("รีเซ็ตแล้ว แจกแต้มใหม่ได้เลย"); await load(); } catch (e) { toast(e.message); }
+  try { X.stats = await rpc("stat_reset", { p_token: tk() }); toast("รีเซ็ตแล้ว แจกแต้มใหม่ได้เลย"); LC.gear = 0; await load(); } catch (e) { toast(e.message); }
 }
 function statsHtml() {
   const S = X.stats; if (!S) return "";
