@@ -19,17 +19,10 @@ const BATTLE = (() => {
   const SKY = { lab: ["🧪", "⚗️", "🔬", "🫧", "🫧", "🫧", "🫧"], ice: ["❄️", "🧊", "❄️", "❄", "❄", "❄", "❄"], volcano: ["🌋", "🔥", "🌋", "🔥", "🔥", "🔥", "🔥"],
     swamp: ["☣️", "🧫", "☣️", "🟢", "🟢", "🫧", "🟢"], storm: ["⛈️", "⚡", "☁️", "⚡", "💧", "💧", "⚡"], crystal: ["💎", "🔮", "💎", "✨", "✨", "✨", "✨"] };
   const skyHtml = (t) => `<div class="bt-sky">${(SKY[t] || SKY.lab).map((e) => `<i>${e}</i>`).join("")}</div>`;
-  /* พื้นหลังฉากต่อสู้จากแพ็ก Animated Pixel-Art Backgrounds (เลือกเองได้ เก็บในเครื่อง ไม่กระทบรางวัล) — "" = ตามสนามของมอนสเตอร์ */
-  const BGS = [{ k: "1", n: "ป่าสนยามเช้า", a: 1 }, { k: "2", n: "ทุ่งหญ้าเมฆฟู", a: 1 }, { k: "3", n: "เมืองกลางป่า", a: 1 }, { k: "4", n: "เมืองยามเย็น", a: 1 }, { k: "5", n: "ป่าเห็ดเรืองแสง" }, { k: "6", n: "ถ้ำคริสตัล" }, { k: "7", n: "อวกาศ" }];
-  const bgSel = () => { try { return localStorage.getItem("kb_btbg") || ""; } catch (e) { return ""; } };
-  const bgOf = (k) => BGS.find((x) => x.k === k);
-  const bgFile = (b) => `assets/bg/${b.a ? "a" : "s"}${b.k}.webp`;
-  const bgStyle = () => { const b = bgOf(bgSel()); return b ? ` style="background-image:linear-gradient(rgba(6,3,20,.18),rgba(6,3,20,.18)),url(${bgFile(b)})"` : ""; };
-  const bgCls = () => { const b = bgOf(bgSel()); return b ? "bt-cbg" + (b.a ? " px" : "") : ""; };
   const preload = (urls, ms = 9000) => Promise.race([Promise.all(urls.filter(Boolean).map((u) => new Promise((r) => { const i = new Image(); i.onload = i.onerror = r; i.src = u; if (i.complete) r(); }))), new Promise((r) => setTimeout(r, ms))]);
   function sceneUrls(bat) {
-    const m = bat.monster, b = bgOf(bgSel()), html = sprite(D.student) + mimg(m);
-    return [b ? bgFile(b) : `assets/arenas/${m.theme || "lab"}.jpg`, ...[...html.matchAll(/src="([^"]+)"/g)].map((x) => x[1])];
+    const m = bat.monster, html = sprite(D.student) + mimg(m);
+    return [`assets/arenas/${m.theme || "lab"}.jpg`, ...[...html.matchAll(/src="([^"]+)"/g)].map((x) => x[1])];
   }
   /* เตรียมภาพฉาก (พื้นหลัง/มอนสเตอร์/ตัวละคร) ให้ครบก่อนเริ่มแสดง: ถ้าโหลดเร็ว (แคชแล้ว) ไม่ขึ้นหน้าจอโหลดเลย ถ้าเกิน 0.2 วิ ขึ้นหน้าจอโหลดจนภาพมาครบ (รอสูงสุด 9 วิแล้วเข้าฉากต่อ) */
   async function scene(bat) {
@@ -39,13 +32,6 @@ const BATTLE = (() => {
     paint();
   }
   const loadView = () => `<div class="card bt-field bt-ldg" aria-busy="true"><div class="bt-ldin"><i class="sk-spin"></i><b>กำลังโหลดฉากต่อสู้…</b><small class="bt-ldslow">เน็ตช้านิดหน่อย รอสักครู่นะ</small></div></div>`;
-  const bgPick = (k) => { try { localStorage.setItem("kb_btbg", k); } catch (e) {} paint(); };
-  async function bgNext() { const o = ["", ...BGS.map((x) => x.k)], n = o[(o.indexOf(bgSel()) + 1) % o.length], b = bgOf(n); if (b) await preload([bgFile(b)], 6000); bgPick(n); }
-  function bgPicker() {
-    const sel = bgSel();
-    return `<div class="card"><h3 style="margin:0">🖼️ พื้นหลังฉากต่อสู้</h3><p class="muted" style="margin:2px 0 8px">เลือกได้ตามใจ ไม่กระทบรางวัล · ✨ = พื้นหลังเคลื่อนไหว</p>
-      <div class="bgpick"><button class="bgp ${!sel ? "on" : ""}" onclick="BATTLE.bg('')"><span class="bgt">🏟️</span><small>ตามสนาม</small></button>${BGS.map((b) => `<button class="bgp ${sel === b.k ? "on" : ""}" onclick="BATTLE.bg('${b.k}')"><img src="assets/bg/s${b.k}.webp" alt="" loading="lazy"><small>${esc(b.n)}${b.a ? " ✨" : ""}</small></button>`).join("")}</div></div>`;
-  }
   /* รายละเอียดสกิล (กดดูเพิ่มเติม) */
   function skInfo(key) {
     const g = { key: "guard", name: "ตั้งรับ", emoji: "🛡️", kind: "guard", descr: "แทนโจมตี 1 เทิร์น กดลูกศรลดดาเมจ ถูกครบ = ลดดาเมจสูงสุด 20% + ฟื้น HP 3% (ตอบไว/สเตตัสสำคัญกว่า)", cd: 2 };
@@ -239,6 +225,14 @@ const BATTLE = (() => {
     } catch (e) {} return o;
   }
   const MONFX = { bubble: ["hit-spark", 1.5], rust: ["blunt-hit", 1.5], salt: ["hit-spark", 1.8], lemon: ["acid-splash", 1.4], fog: ["poison-cloud", 1.0] };
+  /* มอนสเตอร์ตาย: เอฟเฟกต์แตกสลายที่พื้นที่มันยืน (เท้า) + แสดงความยินดีกับผู้เล่น */
+  function deathFx(MO0) {
+    const f = $f(); if (!f) return; const root = f.parentNode, MO = root.querySelector(".bt-mo") || MO0, PL = root.querySelector(".bt-pl"); if (!MO) return;
+    const [fx, fy] = foot(MO, f);
+    pfx("shatter-death", fx, fy - 12, { scale: 2.2 }); S.mdead = S.bat && S.bat.id; MO.classList.add("dead");
+    later(350, () => pfx("collect-burst", fx, fy - 22, { scale: 2 }));
+    if (PL) { const [px, py] = ctr(PL, f); later(700, () => { pfx("level-up", px, py + 10, { scale: 2 }); pfx("halo", px, py - 50, { scale: 1.6 }); num("🎉 ชนะแล้ว!", px, py - 90, "fast"); }); later(1000, () => pfx("firework-burst", px, py - 60, { scale: 1.3 })); }
+  }
   function playSkill(ev) {
     const f = $f(); if (!f) return; const sk = ev.skill, col = COL[sk.key] || "#ffb347", root = f.parentNode, PL = root.querySelector(".bt-pl"), MO = root.querySelector(".bt-mo");
     const [px, py] = ctr(PL, f), [mx, my] = ctr(MO, f), [fx0, fy0] = foot(PL, f);
@@ -255,7 +249,7 @@ const BATTLE = (() => {
         pop("hurt", MO.querySelector(".bt-mimg,.bt-memo")); flash(ev.crit ? "flashbig" : "flash");
         num((ev.crit ? "💥 " : "") + "-" + ev.dmg, zx, zy - 50, ev.crit ? "crit" : "dmg");
         if (ev.fast) num("⚡ ตอบไว +" + (ev.spd || 0) + "%", zx, zy - 86, "fast");
-        if (killed) later(500, () => { pfx("shatter-death", zx, zy + 20, { scale: 2.2 }); S.mdead = S.bat && S.bat.id; const M2 = document.querySelector(".bt-mo") || MO; M2.classList.add("dead"); later(350, () => pfx("collect-burst", zx, zy, { scale: 2 })); });
+        if (killed) later(500, () => deathFx(MO));
       };
       const fx = SKFX[sk.key] || SKFX.gen_hit;
       if (fx.shot) shot(".bt-pl", ".bt-mo", fx.shot, ev.crit, col, impact);
@@ -309,7 +303,7 @@ const BATTLE = (() => {
       <p>${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${d.limit}</span>` : '<span class="pill">รอบที่ได้รางวัลวันนี้หมดแล้ว — เล่นฝึกได้ไม่จำกัด (ไม่ได้รางวัล)</span>'} <span class="pill">❤️ HP ${d.p_max}</span></p>
       <p class="muted" style="margin:6px 0 4px">สกิลของคุณ · แตะไอคอนเพื่อดูรายละเอียด</p>
       <div class="bt-skgrid">${d.skills.map((s) => `<button class="bt-skt ${s.kind}" onclick="BATTLE.info('${s.key}')" aria-label="ดูรายละเอียด ${esc(s.name)}"><span class="bt-big">${aico(s.key, s.emoji)}</span><b>${esc(s.name)}</b></button>`).join("")}</div></div>
-      ${statsPanel(true)}${arenaPicker()}${bgPicker()}
+      ${statsPanel(true)}${arenaPicker()}
       <div class="bt-mgrid">${d.monsters.filter((m) => !d.arenas || !d.arenas.length || (m.arena || "lab") === (arNow() || {}).key).map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small> ${elBadge(monElem(m.id))}</h3>
         <p class="muted" style="margin:2px 0">${esc(m.descr || "")}</p><p style="margin:4px 0"><span class="pill">❤️ ${m.hp}</span> <span class="pill">🗡️ ${m.atk}</span></p>
         <p class="muted" style="margin:2px 0 8px">รางวัล +${m.exp} EXP · +${m.coins} 🪙 · ดรอปไอเทม</p>
@@ -338,7 +332,7 @@ const BATTLE = (() => {
     const ph = b.phase, cs = ph === "question" && b.q ? (b.skills.find((x) => x.key === b.q.skill) || {}) : null;
     const fm = S.shown.m, fp = S.shown.p; S.shown = { m: b.m_hp, p: b.p_hp };
     const th = m.theme || "lab"; if (S.ldg) return loadView();
-    const arena = `<div class="card bt-field ar-${esc(th)} ${bgCls()} ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}"${bgStyle()}>
+    const arena = `<div class="card bt-field ar-${esc(th)} ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}">
       ${skyHtml(th)}<div class="bt-floor"></div>${m.arena_name ? `<div class="bt-arname">${esc(m.arena_name)}</div>` : ""}
       <div class="bt-plate bt-pm"><b>${esc(m.name)}</b> <small>Lv.${m.level}</small> ${elBadge(monElem(m.id))}${matchupNote(monElem(m.id))}${hp(b.m_hp, b.m_max, "mon", fm, S.hpDelay)}</div>
       <div class="bt-mo ${ph === "defend" ? "lunge" : ""} ${S.mdead === b.id ? "dead gone" : ""}"><div class="bt-shadow"></div>${mimg(m, "float")}</div>
@@ -351,7 +345,7 @@ const BATTLE = (() => {
     if (b.phase === "defend") return arena + defendView();
     const skills = b.skills.map((s) => { return `<div class="bt-skw"><button class="bt-skill big ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')"><span class="bt-big">${aico(s.key, s.emoji)}${s.left > 0 ? `<i class="bt-cd" aria-label="รออีก ${s.left} เทิร์น">${s.left}</i>` : ""}</span><b>${esc(s.name)}</b><small>${s.left > 0 ? `รอ ${s.left} เทิร์น` : s.kind === "buff" ? "บัพ" : `${KIND[s.kind][1]} ${s.power}`}</small></button><button class="bt-info" onclick="BATTLE.info('${s.key}')" aria-label="รายละเอียด ${esc(s.name)}">ℹ️</button></div>`; }).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
-    return arena + statsPanel(false) + `<div class="card bt-msg bt-m-choose">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.bgNext()" title="เปลี่ยนพื้นหลัง">🖼️</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
+    return arena + statsPanel(false) + `<div class="card bt-msg bt-m-choose">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <details class="clsdet"><summary>วิธีเล่น</summary><ul><li>เลือกสกิล แล้วตอบคำถามให้ถูกภายใน ${qs()} วิ สกิลถึงจะออกผล</li><li>ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</li><li>มอนสเตอร์โจมตีเอง (รับ 70%) ทุกเทิร์นที่ 3 โจมตีหนัก</li></ul></details><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
       ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — HP ของคุณ 85% · เวลา 15 วิ · ตอบผิดบอสจะฟื้น HP 5% · ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
   }
@@ -395,7 +389,7 @@ const BATTLE = (() => {
   function resultView() {
     const b = S.bat, win = b.status === "won", dr = S.drop, m = b.monster;
     if (S.fxFor !== b.id && b.status !== "fled") { S.fxFor = b.id; setTimeout(() => {
-      if (win && S.mdead !== b.id) { const f = $f(), MO = document.querySelector(".bt-mo"); if (f && MO) { const [x, y] = ctr(MO, f); pfx("shatter-death", x, y + 20, { scale: 2.2 }); MO.classList.add("dead"); S.mdead = b.id; later(350, () => pfx("collect-burst", x, y, { scale: 2 })); } }
+      if (win && S.mdead !== b.id) deathFx(document.querySelector(".bt-mo"));
       if (win) { FX.victory(); if (dr) { FX.screen("loot-beam", 0.5, 0.5, { scale: 3 }); FX.later(400, () => FX.screen("chest-open", 0.5, 0.55, { scale: 3 })); } }
       else FX.screen("curse", 0.5, 0.45, { scale: 3 }); }, 400); }
     if (b.status === "fled") return `<div class="card center"><p>หนีจากการต่อสู้แล้ว${S.trial ? " (นับเป็นการสอบ 1 ครั้งของวันนี้)" : ""}</p><button class="btn" onclick="BATTLE.${S.trial ? "endTrial" : "back"}()">กลับ</button></div>`;
@@ -417,5 +411,5 @@ const BATTLE = (() => {
 
   function endTrial() { S.trial = null; S.bat = null; S.screen = "list"; LC.cls = LC.hst = LC.gbest = LC.gear = 0; load().then(() => go("home")).catch(() => go("home")); }
   const view = () => (S.screen === "list" || !S.bat ? listView() : fightView());
-  return { bg: bgPick, bgNext, info: skInfo, arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
+  return { deathFx, info: skInfo, arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
 })();
