@@ -1614,7 +1614,7 @@ select pg_temp.t('110: ข้อมูลตั้งต้น: 1 ดันเ�
 set role anon;
 create temp table _dg1 as select dungeon_status((select tok from _dg)) r;
 reset role;
-select pg_temp.t('110: dungeon_status: มีดันเจี้ยน, ใช้ 0/2 รอบ, ไม่มีรอบค้าง', (select (r->>'used')::int = 0 and (r->>'limit')::int = 2 and json_array_length(r->'dungeons') = 1 and json_typeof(r->'active') = 'null' from (select r::json r from _dg1) x));
+select pg_temp.t('110: dungeon_status: มีดันเจี้ยน, ใช้ 0/2 รอบ, ไม่มีรอบค้าง', (select (r->>'used')::int = 0 and (r->>'limit')::int = 2 and json_array_length(r->'dungeons') = 4 and json_typeof(r->'active') = 'null' from (select r::json r from _dg1) x));
 set role anon;
 create temp table _dg2 as select dungeon_start((select tok from _dg), 'crystal_cave') r;
 reset role;
@@ -1684,6 +1684,14 @@ do $dg$ declare ok boolean := false; begin
   perform set_config('role', 'postgres', true);
   insert into _res values (ok, '110: dungeon_run รหัสรอบที่ไม่ใช่ของตัวเอง → ปฏิเสธ');
 end $dg$;
+set role anon;
+-- ================= SQL 111 ดันเจี้ยนเพิ่ม =================
+reset role;
+select pg_temp.t('111: มีดันเจี้ยน 4 แห่ง ชั้นละ 5 ชั้น', (select count(*) from dungeons) = 4 and (select count(*) from dungeon_floors) = 20);
+select pg_temp.t('111: ทุกชั้นมีมอนสเตอร์ซ่อนครบและชั้น 5 เป็นบอส', (select count(*) from dungeon_floors f join monsters m on m.key = f.monster_key where m.trial_rank like 'dg%') = 20 and (select count(*) from dungeon_floors where boss) = 4);
+select pg_temp.t('111: มอนสเตอร์ดันเจี้ยนไม่โผล่ในรายการศึกปกติ', not exists (select 1 from monsters where key like 'dg%' and trial_rank is null));
+select pg_temp.t('111: ทุกชั้นมีฉากหลัง', not exists (select 1 from dungeon_floors where bg is null or bg = ''));
+select pg_temp.t('111: รันซ้ำไม่ซ้ำแถว', (select count(*) from dungeons) = 4);
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
