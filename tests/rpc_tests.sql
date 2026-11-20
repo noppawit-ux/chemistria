@@ -1760,6 +1760,11 @@ select pg_temp.t('113: ด่านง่ายสุด (⭐1) ไม่มี�
 select pg_temp.t('113: anon อ่านตาราง run_stages ตรงๆ ไม่ได้', not has_table_privilege('anon', 'run_stages', 'select'));
 set role anon;
 select pg_temp.t('113: run_stage_info ใช้ได้ด้วย token', (select (run_stage_info((select tok from _dg))->'ice'->>'stars')::int = 5));
+-- ================= SQL 114 ดาวความยากของดันเจี้ยน =================
+reset role;
+select pg_temp.t('114: ดันเจี้ยนมีดาว 2/3/4/5 ตามลำดับ', (select string_agg(stars::text, '' order by sort) from dungeons) = '2345');
+set role anon;
+select pg_temp.t('114: dungeon_status ส่ง stars ครบทุกดันเจี้ยน', (select bool_and((x->>'stars')::int between 1 and 5) from json_array_elements(dungeon_status((select tok from _dg))->'dungeons') x));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

@@ -33,7 +33,8 @@ const BATTLE = (() => {
   const dgBgStyle = () => { const bg = S.dg && S.dg.bg; return bg ? ` style="background-image:linear-gradient(rgba(6,3,20,.18),rgba(6,3,20,.18)),url(${esc(bg)})"` : ""; };
   const dgBgCls = () => { const bg = S.dg && S.dg.bg; return bg ? "bt-cbg" + (/\/a\d+\.webp$/.test(bg) ? " px" : "") : ""; };
   const dgPips = (r) => Array.from({ length: r.floors }, (_, i) => { const f = i + 1, m = (r.map || [])[i] || {}; return `<i class="dgp ${f <= r.cleared ? "done" : f === r.floor ? "now" : ""} ${m.boss ? "boss" : ""}">${m.boss ? "👑" : f}</i>`; }).join("");
-  const dgBar = (bid) => inDg(bid) ? `<div class="dg-bar"><b>${esc(S.dg.dungeon.emoji)} ${esc(S.dg.dungeon.name)}</b><span class="dg-pips">${dgPips(S.dg)}</span></div>` : "";
+  const dgStars = (key) => { const x = S.dgs && (S.dgs.dungeons || []).find((d) => d.key === key); return x && x.stars ? "⭐".repeat(x.stars) : ""; };
+  const dgBar = (bid) => inDg(bid) ? `<div class="dg-bar"><b>${esc(S.dg.dungeon.emoji)} ${esc(S.dg.dungeon.name)} <small>${dgStars(S.dg.dungeon.key)}</small></b><span class="dg-pips">${dgPips(S.dg)}</span></div>` : "";
   async function dgLoad() { try { S.dgs = await rpc("dungeon_status", { p_token: tk() }); } catch (e) { S.dgs = null; } return S.dgs; }
   async function dgOpen() { S.screen = "dg"; S.bat = null; paint(); await dgLoad(); paint(); }
   function dgEnter(run) { S.dg = run; S.bat = run.battle; S.dgBat = run.battle && run.battle.id; S.trial = null; S.fb = null; S.drop = null; S.screen = "fight"; resume(); }
@@ -81,11 +82,11 @@ const BATTLE = (() => {
   function dgView() {
     const d = S.dgs; if (!d) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
     const act = d.active, left = Math.max(0, d.limit - d.used);
-    const resume = act ? `<div class="card gm-res perfect center"><h3 style="margin:0">${esc(act.dungeon.emoji)} ${esc(act.dungeon.name)} — ค้างอยู่ชั้น ${act.floor}/${act.floors}</h3><div class="dg-pips big">${dgPips(act)}</div>
+    const resume = act ? `<div class="card gm-res perfect center"><h3 style="margin:0">${esc(act.dungeon.emoji)} ${esc(act.dungeon.name)} ${dgStars(act.dungeon.key)} — ค้างอยู่ชั้น ${act.floor}/${act.floors}</h3><div class="dg-pips big">${dgPips(act)}</div>
       <button class="btn gold" onclick="BATTLE.dgStart('${esc(act.dungeon.key)}')">▶️ เล่นต่อ</button> <button class="btn ghost" onclick="BATTLE.dgLeave()">🚪 ออก (ได้ 60%)</button></div>` : "";
     return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">🏰 ท้าดันเจี้ยน</h3><button class="btn ghost small" onclick="BATTLE.dgBack()">⬅️ ศึกปกติ</button></div>
       <p><span class="pill">🗝️ เข้าได้วันนี้อีก ${left}/${d.limit} รอบ</span></p><p class="muted" style="margin:4px 0 0">ไต่ทีละชั้นให้ถึงบอส · HP ยกต่อชั้น (ฟื้นให้เล็กน้อย) · แพ้หรือออกกลางคันได้ 60% ของรางวัลสะสม · ผ่านครบได้หีบบอส</p></div>${resume}
-      ${d.dungeons.map((x) => `<div class="card dg-card ${x.locked ? "locked" : ""}"><div class="row"><h3 style="margin:0" class="grow">${esc(x.emoji)} ${esc(x.name)}</h3><span class="tag">${x.floors} ชั้น</span></div>
+      ${d.dungeons.map((x) => `<div class="card dg-card ${x.locked ? "locked" : ""}"><div class="row"><h3 style="margin:0" class="grow">${esc(x.emoji)} ${esc(x.name)}</h3><span class="tag">${x.stars ? "⭐".repeat(x.stars) + " · " : ""}${x.floors} ชั้น</span></div>
         <p class="muted" style="margin:2px 0 8px">${esc(x.descr || "")}</p>
         <div class="dg-map">${x.map.map((f) => `<div class="dg-fl ${f.boss ? "boss" : ""} ${f.floor <= x.best ? "done" : ""}"><div class="dg-fbg" style="background-image:url(${esc(f.bg || "")})"></div>${(f.monster.image ? `<img src="${esc(f.monster.image)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc(f.monster.emoji || "👾")}'}))">` : `<span>${esc(f.monster.emoji || "👾")}</span>`)}<small>${f.boss ? "👑 บอส" : "ชั้น " + f.floor}</small><small class="muted">+${f.exp}</small></div>`).join("")}</div>
         <p style="margin:8px 0"><span class="pill">🏅 ชั้นสูงสุด ${x.best}/${x.floors}</span> <span class="pill">🏆 พิชิต ${x.clears} ครั้ง</span></p>
