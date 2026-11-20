@@ -1739,6 +1739,27 @@ select pg_temp.t('112: monster_ability_list ใช้ได้ด้วย token
 reset role;
 select pg_temp.t('112: anon เรียก trg_monster_ability ตรงๆ ไม่ได้', not has_function_privilege('anon', 'trg_monster_ability()', 'execute'));
 set role anon;
+-- ================= SQL 113 เคมีรัน ระดับความยากของด่าน =================
+reset role;
+delete from game_plays where student_id = (select sid from _dg) and game = 'run';
+delete from game_plays where student_id = (select sid from _dg) and play_date = today_th();
+select pg_temp.t('113: มีด่านครบ 8 รายการ (รวมสุ่ม) และดาว 1–5', (select count(*) from run_stages) = 8 and (select min(stars) from run_stages) = 1 and (select max(stars) from run_stages) = 5);
+set role anon;
+select game_begin((select tok from _dg), 'run'); select pg_temp.bd(40);
+create temp table _rs as select run_submit_v2((select tok from _dg), 2600, 30, 'ice') r;
+reset role;
+select pg_temp.t('113: ด่านยากสุดได้โบนัสตามเปอร์เซ็นต์ (EXP 10 → +5) และตอบดาว 5', (select (r->>'bonus')::int = 5 and (r->>'stars')::int = 5 and (r->>'exp')::int = 10 from _rs));
+select pg_temp.t('113: โบนัสถูกบันทึกลง game_plays และ ledger', (select sum(exp) from game_plays where student_id = (select sid from _dg) and game = 'run') = 15
+  and exists (select 1 from ledger where student_id = (select sid from _dg) and reason like '%โบนัสด่าน%'));
+delete from game_plays where student_id = (select sid from _dg) and play_date = today_th();
+set role anon;
+select game_begin((select tok from _dg), 'run'); select pg_temp.bd(40);
+create temp table _rs2 as select run_submit_v2((select tok from _dg), 2600, 30, 'lab') r;
+reset role;
+select pg_temp.t('113: ด่านง่ายสุด (⭐1) ไม่มีโบนัส', (select (r->>'bonus')::int = 0 and (r->>'stars')::int = 1 from _rs2));
+select pg_temp.t('113: anon อ่านตาราง run_stages ตรงๆ ไม่ได้', not has_table_privilege('anon', 'run_stages', 'select'));
+set role anon;
+select pg_temp.t('113: run_stage_info ใช้ได้ด้วย token', (select (run_stage_info((select tok from _dg))->'ice'->>'stars')::int = 5));
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

@@ -8,6 +8,9 @@ const RUN = (() => {
     "arenas/lab", "arenas/storm", "arenas/volcano", "arenas/crystal", "arenas/ice", "arenas/swamp"];
   const img = (k) => { if (!IMGS[k]) { const i = new Image(); i.src = `assets/${k}.${k.startsWith("arenas/") ? "jpg" : k.startsWith("run/") ? "webp" : "png"}`; IMGS[k] = i; } return IMGS[k]; };
   /* ---- ด่าน (v2.40): เลือกเองหรือสุ่ม ---- */
+  /* ระดับความยากของด่าน (SQL 113): ดาว + โบนัส EXP มาจากเซิร์ฟเวอร์ (run_stage_info) · ถ้ายังไม่ได้รัน SQL จะไม่แสดง */
+  const stars = (id) => { const x = S.stg && S.stg[id]; return x ? "⭐".repeat(x.stars) : ""; };
+  const bonusTxt = (id) => { const x = S.stg && S.stg[id]; return x && x.bonus_pct > 0 ? `โบนัส EXP +${x.bonus_pct}%` : x ? "ไม่มีโบนัส (ฝึกมือ)" : ""; };
   const stGet = () => { try { const v = localStorage.getItem("ch_run_stage"); return v === "rand" || RUNST.byId[v] ? v : "rand"; } catch (e) { return "rand"; } };
   const stSet = (v) => { try { localStorage.setItem("ch_run_stage", v); } catch (e) {} };
   const pick = (v) => { stSet(v); GAMES.paint(); };
@@ -23,6 +26,7 @@ const RUN = (() => {
   async function open() {
     cancelAnimationFrame(S.raf); S.screen = "home"; S.st = null; GAMES.setMode("run"); paint();
     try { S.st = await rpc("run_status", { p_token: tk() }); } catch (e) {} paint();
+    if (!S.stg) { try { S.stg = await rpc("run_stage_info", { p_token: tk() }); paint(); } catch (e) {} }
   }
 
   /* ---------- เริ่มเกม ---------- */
@@ -333,8 +337,10 @@ const RUN = (() => {
     S.res = { score: sc, dist: Math.floor(g.dist), coins: g.coins, tiles: g.tiles, hits: g.hits, combo: g.bestCombo, secs, busy: true }; S.screen = "res"; paint();
     try {
       if (secs < 5) throw new Error("เล่นสั้นเกินไป ไม่นับรางวัล");
-      const r = await rpc("run_submit", { p_token: tk(), p_score: sc, p_seconds: secs });
-      S.res = { ...S.res, exp: r.exp, award: r.coins, capped: r.capped, no_reward: r.no_reward, busy: false }; S.res.gs = await gsRecord("run", { score: sc, dist: S.res.dist, secs, combo: g.bestCombo, coins: g.coins }); await load();
+      let r;
+      try { r = await rpc("run_submit_v2", { p_token: tk(), p_score: sc, p_seconds: secs, p_stage: g.mode }); }
+      catch (e2) { if (/run_submit_v2|schema cache|does not exist|Could not find/i.test(e2.message || "")) r = await rpc("run_submit", { p_token: tk(), p_score: sc, p_seconds: secs }); else throw e2; }
+      S.res = { ...S.res, bonus: r.bonus || 0, stars: r.stars || 0, exp: r.exp, award: r.coins, capped: r.capped, no_reward: r.no_reward, busy: false }; S.res.gs = await gsRecord("run", { score: sc, dist: S.res.dist, secs, combo: g.bestCombo, coins: g.coins }); await load();
       try { SFX.play(r.exp > 0 ? "levelup" : "click"); } catch (e) {}
     } catch (e) { S.res = { ...S.res, busy: false, err: e.message }; }
     if (GAMES.mode() === "run") { S.screen = "res"; paint(); }
@@ -360,14 +366,15 @@ const RUN = (() => {
   }
   function stagePicker() {
     const cur = stGet(), sel = cur === "rand" ? null : RUNST.byId[cur];
-    const chip = (id, th, n, e) => `<button class="run-st ${cur === id ? "on" : ""}" onclick="RUN.pick('${id}')"><span class="th" style="background-image:url(assets/run/th_${th}.jpg)">${e}</span><b>${n}</b></button>`;
+    const chip = (id, th, n, e) => `<button class="run-st ${cur === id ? "on" : ""}" onclick="RUN.pick('${id}')"><span class="th" style="background-image:url(assets/run/th_${th}.jpg)">${e}</span><b>${n}</b><span class="run-star">${stars(id)}</span></button>`;
     return `<div class="run-stages"><h4>🗺️ เลือกด่าน</h4><div class="run-stl">
-      <button class="run-st ${cur === "rand" ? "on" : ""}" onclick="RUN.pick('rand')"><span class="th rnd">🎲</span><b>สุ่ม</b></button>
+      <button class="run-st ${cur === "rand" ? "on" : ""}" onclick="RUN.pick('rand')"><span class="th rnd">🎲</span><b>สุ่ม</b><span class="run-star">${stars("rand")}</span></button>
       ${RUNST.STAGES.map((t) => chip(t.id, t.th, t.n, t.e)).join("")}</div>
-      <p class="muted run-stinfo">${sel ? `<b>${sel.e} ${sel.n}</b> — ${sel.info}` : "<b>🎲 สุ่มด่าน</b> — เปลี่ยนด่านใหม่ทุก 1,000 เมตร พร้อมพื้นหลังและอุปสรรคชุดใหม่ (ไม่ซ้ำด่านเดิมติดกัน)"}</p></div>`;
+      <p class="muted run-stinfo">${sel ? `<b>${sel.e} ${sel.n}</b> — ${sel.info}` : "<b>🎲 สุ่มด่าน</b> — เปลี่ยนด่านใหม่ทุก 1,000 เมตร พร้อมพื้นหลังและอุปสรรคชุดใหม่ (ไม่ซ้ำด่านเดิมติดกัน)"}</p>
+      ${S.stg ? `<p class="run-stbonus">${stars(cur)} ${bonusTxt(cur)}</p>` : ""}</div>`;
   }
   function playView() {
-    return `<div class="card run-card"><div class="row" style="margin-bottom:6px"><b class="grow">🏃 เคมีรัน</b><button class="btn ghost small" onclick="RUN.quit()">ออก</button></div>
+    return `<div class="card run-card"><div class="row" style="margin-bottom:6px"><b class="grow">🏃 เคมีรัน <small>${stars(S.g ? S.g.mode : "rand")}</small></b><button class="btn ghost small" onclick="RUN.quit()">ออก</button></div>
       <div class="run-wrap"><canvas id="runcv" width="${W}" height="${H}" onpointerdown="RUN.jump()"></canvas></div>
       <div class="run-btns">
         <button class="run-b slide" onpointerdown="event.preventDefault();RUN.slide(true)" onpointerup="RUN.slide(false)" onpointerleave="RUN.slide(false)" onpointercancel="RUN.slide(false)" oncontextmenu="return false">⬇<small>สไลด์</small></button>
@@ -378,7 +385,7 @@ const RUN = (() => {
     const r = S.res;
     return `<div class="card center gm-res ${r.score >= (S.st ? S.st.target : 2500) ? "perfect" : ""}"><div style="font-size:54px">${r.score >= 2500 ? "🏅" : r.score >= 1000 ? "🎉" : "💪"}</div>
       <h2>${r.score} คะแนน</h2><p class="muted">วิ่งได้ ${r.dist} เมตร · เหรียญ ${r.coins} · แผ่นธาตุ ${r.tiles} · ชนอุปสรรค ${r.hits} ครั้ง · คอมโบสูงสุด ${r.combo || 0} · ${r.secs} วินาที</p>
-      ${r.busy ? '<p class="muted">กำลังบันทึกผล...</p>' : r.err ? `<p class="tag no" style="display:inline-block">${esc(r.err)}</p>` : `<p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (เล่นฝึกได้ไม่จำกัด)</span>' : `ได้ <b style="color:var(--gold2)">+${r.exp} EXP</b>${r.award > 0 ? ` · +${r.award} 🪙` : ""}`}</p>
+      ${r.busy ? '<p class="muted">กำลังบันทึกผล...</p>' : r.err ? `<p class="tag no" style="display:inline-block">${esc(r.err)}</p>` : `<p>${r.no_reward ? '<span class="pill">ครบรอบที่ได้รางวัลของวันนี้แล้ว (เล่นฝึกได้ไม่จำกัด)</span>' : `ได้ <b style="color:var(--gold2)">+${r.exp} EXP</b>${r.bonus > 0 ? ` <span class="pill">${"⭐".repeat(r.stars)} โบนัสด่าน +${r.bonus}</span>` : ""}${r.award > 0 ? ` · +${r.award} 🪙` : ""}`}</p>
       ${r.capped && !r.no_reward ? '<p class="muted">EXP จากเกมวันนี้ถึงเพดานแล้ว</p>' : ""}${gsCard(r.gs)}`}
       <div class="row" style="justify-content:center"><button class="btn gold" ${r.busy ? "disabled" : ""} onclick="RUN.again()">วิ่งอีกครั้ง</button><button class="btn ghost" onclick="GAMES.home()">กลับหน้าเกม</button></div></div>`;
   }

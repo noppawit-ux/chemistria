@@ -1688,3 +1688,7 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 .run-card{padding:8px}
 .run-btns{margin-top:8px}.run-b{height:64px}
 @media (orientation:landscape) and (max-height:500px){.run-card{padding:4px}.run-card .row{display:none}.run-wrap canvas{max-height:max(150px,calc(100dvh - 120px))}.run-b{height:52px;font-size:1.5rem}.run-card>p{display:none}}
+
+/* v2.66 เคมีรัน: ดาวความยากของด่าน */
+.run-star{font-size:.62rem;line-height:1;letter-spacing:-1px;min-height:.62rem}
+.run-stbonus{margin:2px 0 0;font-size:.84rem;font-weight:700;color:var(--gold2,#ffd75a)}
