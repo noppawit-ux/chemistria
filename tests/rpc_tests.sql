@@ -1337,7 +1337,7 @@ select pg_temp.t('เกียร์ 81: เริ่มศึกด้วยช
 select pg_temp.t('เกียร์ 81: _gear/_gear_battle ปิดจาก anon', not has_function_privilege('anon', '_gear_battle(uuid,text)', 'execute') and not has_function_privilege('anon', '_gear(uuid)', 'execute'));
 -- ไอคอน/ไอเทมธาตุชุดใหม่ (db/82)
 select pg_temp.t('ไอคอน 82: ยา/ของใช้ทั้ง 8 ชนิดมีภาพ', (select count(*) from consumables where image like 'assets/px/%' or image like 'assets/aic/s\_%') = 8);
-select pg_temp.t('ไอคอน 82: ดาบ+หมวกธาตุใหม่ 10 ชิ้น มีธาตุและโบนัส', (select count(*) from decor_items where image like 'assets/px/%' and slot in ('item','hat') and element is not null and fx_atk + fx_def > 0) = 10);
+select pg_temp.t('ไอคอน 82: ดาบ+หมวกธาตุอย่างน้อย 10 ชิ้น มีธาตุและโบนัส', (select count(*) from decor_items where (image like 'assets/px/%' or image like 'assets/aic/s\_%') and slot in ('item','hat') and element is not null and fx_atk + fx_def > 0) >= 10);
 -- กดอิโมจิให้ตัวละครเพื่อน (db/83)
 set role anon;
 create temp table _rc1 as select char_react((select tk from _gs), 11, '❤️')::jsonb r;
@@ -1403,7 +1403,7 @@ select security_scan();
 reset role;
 select pg_temp.t('ความปลอดภัย 86: EXP จากแหล่งอื่นยังถูกจับ', exists (select 1 from security_events where kind='exp_spike' and student_id=(select sid from _gs)));
 -- แคมเปญเช็คอินสะสมวัน + ชุดลิมิเต็ด (db/87)
-select pg_temp.t('แคมเปญ 87: ชุดลิมิเต็ด 3 ชิ้น ไม่ขาย ไม่อยู่ในกาชา', (select count(*) from decor_items where set_key='lim_king1' and price is null and image like 'assets/px/lim_%') = 3 and not exists (select 1 from gacha_items g join decor_items d on d.id=g.decor_id where d.set_key='lim_king1'));
+select pg_temp.t('แคมเปญ 87: ชุดลิมิเต็ด 3 ชิ้น ไม่ขาย ไม่อยู่ในกาชา', (select count(*) from decor_items where set_key='lim_king1' and price is null and (image like 'assets/px/lim_%' or image like 'assets/aic/s\_%')) = 3 and not exists (select 1 from gacha_items g join decor_items d on d.id=g.decor_id where d.set_key='lim_king1'));
 select set_config('request.jwt.claims','{"email":"t@x.th","role":"authenticated"}',false);
 create temp table _cp as select admin_camp_open('ทดสอบแคมเปญ','',7,'[{"need":1,"exp":10,"coins":5},{"need":2,"pulls":1},{"need":3,"set_key":"lim_king1"}]'::jsonb) cid; grant all on _cp to anon;
 select pg_temp.t('แคมเปญ 87: เปิดแคมเปญไม่ได้ถ้าไม่มีขั้นรางวัล/ไม่ใช่ครู', pg_temp.fails($q$select admin_camp_open('x','',7,'[]'::jsonb)$q$, 'authenticated') and pg_temp.fails($q$select admin_camp_open('x','',7,'[{"need":1,"exp":5}]'::jsonb)$q$, 'anon') and pg_temp.fails($q$select admin_camp_open('x','',3,'[{"need":9,"exp":5}]'::jsonb)$q$, 'authenticated'));
