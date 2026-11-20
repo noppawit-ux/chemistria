@@ -1,6 +1,6 @@
 /* ประกาศอัปเดต — ส่วนหนึ่งของหน้านักเรียน (index.html) โหลดต่อกันตามลำดับใน index.html */
 /* ---------------- ประกาศอัปเดต (patch notes) ---------------- */
-const APP_VERSION = "2.48";
+const APP_VERSION = "2.49";
 const PATCH = {
   id: "2026-11-07d", ver: APP_VERSION, title: "โปรโมชันเปิดระบบใหม่! 🎉", date: "7 พ.ย. 2569", img: "assets/news/promo.jpg",
   items: [
@@ -46,26 +46,33 @@ async function load() {
     try { if (typeof PEEK === "undefined" || !PEEK) setTimeout(() => gearLoad(true), 0); } catch (e) {}
     const prev = D;
     // โหลดพร้อมกัน (เดิมโหลดทีละอัน ช้ากว่า 3–4 เท่า); แดชบอร์ดผิดพลาด = เข้าสู่ระบบใหม่ ส่วนที่เหลือพลาดได้
-    const [, dash, hof, ext, brd, nws, ttl, prm, gld, gft, gbs, hst, cli] = await Promise.all([
+    // v2.49: โหลด 2 ชั้น — ชั้นแรก (หน้าหลักขั้นต่ำ) แล้วแสดงเลย ส่วนที่เหลือโหลดตามหลัง กันหมุนค้างเมื่อเซิร์ฟเวอร์ช้า
+    const tmo = (p, ms = 20000) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("เซิร์ฟเวอร์ตอบช้า ลองกดโหลดใหม่อีกครั้ง")), ms))]);
+    const [, dash, ext] = await tmo(Promise.all([
       chkLoad(),
       rpc("student_dashboard", { p_token: tk() }),
-      rpc("hall_of_fame", { p_token: tk() }).catch(() => []),
       rpc("student_extras", { p_token: tk() }).catch(() => ({})),
-      rpc("board_list", { p_token: tk() }).catch(() => ({ posts: [], unread: 0 })),
-      rpc("news_list", { p_token: tk() }).catch(() => []),
-      rpc("timetable_list", { p_token: tk() }).catch(() => []),
-      rpc("promo_status", { p_token: tk() }).catch(() => ({ active: false })),
-      rpc("guild_status", { p_token: tk() }).catch(() => null),
-      PEEK ? Promise.resolve([]) : rpc("gift_inbox", { p_token: tk() }).catch(() => []),
-      PEEK ? Promise.resolve({}) : rpc("game_bests_all", { p_token: tk() }).catch(() => null),
-      rpc("home_stats", { p_token: tk() }).catch(() => null),
-      PEEK ? Promise.resolve(null) : rpc("class_info", { p_token: tk() }).catch(() => null),
+    ]));
+    D = dash; X = ext || {};
+    DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
+    render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); }
+    const L = (n) => tmo(rpc(n, { p_token: tk() }), 25000);
+    const [hof, brd, nws, ttl, prm, gld, gft, gbs, hst, cli] = await Promise.all([
+      L("hall_of_fame").catch(() => []),
+      L("board_list").catch(() => ({ posts: [], unread: 0 })),
+      L("news_list").catch(() => []),
+      L("timetable_list").catch(() => []),
+      L("promo_status").catch(() => ({ active: false })),
+      L("guild_status").catch(() => null),
+      PEEK ? Promise.resolve([]) : L("gift_inbox").catch(() => []),
+      PEEK ? Promise.resolve({}) : L("game_bests_all").catch(() => null),
+      L("home_stats").catch(() => null),
+      PEEK ? Promise.resolve(null) : L("class_info").catch(() => null),
     ]);
     CLS = cli; HST = hst; GLD = gld; GIFTS = gft || []; if (gbs) GBEST = gbs;
     NEWS = nws || []; TT = ttl || []; PROMO = prm || { active: false };
-    D = dash; HOF = hof || []; X = ext || {}; B = brd || { posts: [], unread: 0 };
-    DRAFT = null; if (!prev) document.getElementById("fxlayer")?.replaceChildren(); setTimeout(() => document.querySelectorAll("#fxlayer .pfxg[data-loop]").forEach((e) => e.remove()), 600);
-    render(); if (PEEK) peekBar(); else { kbAuto(); fxDiff(prev); celCheck(); if (!prev) patchShow(); giftShow(); }
+    HOF = hof || []; B = brd || { posts: [], unread: 0 };
+    render(); if (!PEEK) giftShow();
   } catch (e) {
     if (!PEEK && /เซสชัน|หมดอายุ|JWT/.test(e.message || "")) localStorage.removeItem(TOKEN_KEY);   // ไม่ล้างล็อกอินเมื่อแค่เน็ตหลุด
     showLogin(e.message);
