@@ -848,3 +848,8 @@ web/               index.html (นักเรียน) · admin.html (คร�
 ### รอบที่ 163 · SQL 109 ไอเทมถือ 12 ชิ้นใช้ไอคอนแพ็ก Animated RPG Icons
 - ดาบ/คทา/โล่ 12 ชิ้น (`decor_items` slot item + แถวกาชาที่ผูกกัน) → `assets/aic/s_sw_*/st_*/sh_paladin.webp` · ไอเทมถืออื่น (อุปกรณ์แล็บ ถ้วยรางวัล ฯลฯ) คงรูปเดิม
 - รูปเดิมสำหรับย้อนกลับ: [Limited] ดาบราชันธาตุ `assets/px/lim_sword.png` · คทาดาบสารเคมีม่วง `assets/px/sw_chem.png` · คทาเวทมนตร์ `assets/items/wand.png` · คทาสายฟ้าม่วง `assets/items/scepter.png` · ดาบคลื่นน้ำแข็ง `assets/px/sw_water.png` · ดาบผลึกอัคนีโลหิต `assets/items/leg_sword.png` · ดาบเพลิงอัคนี `assets/px/sw_fire.png` · ดาบสายฟ้าทองคำ `assets/px/sw_thunder.png` · ดาบหลอดแก้ว `assets/items/sword.png` · ใบมีดมรกตพงไพร `assets/px/sw_plant.png` · ไม้เท้าเกลียวดีเอ็นเอ `assets/items/dnastaff.png` · โล่ตราขวดแล็บ `assets/items/shield.png`
+
+### รอบที่ 164 · v2.54 ไอคอนแพ็ก Animated RPG Icons แทน emoji ของสกิลในศึก + คลาสขั้นสูง (ไม่มี SQL)
+- `app/aicons.js` แผนที่ key สกิล/คลาสขั้นสูง → ไอคอน (`aico(key, emoji)`; ไม่มีในแผนที่ = ใช้ emoji เดิม) · ใช้ที่รายการสกิลบนหน้าศึก, ปุ่มสกิลระหว่างสู้, การ์ดคลาสขั้นสูง + ไม้ตาย
+- ไอคอนเพิ่มอีก 10 (คทา/โล่/แร่/ขวดยา) ใน `assets/aic/`
+- จุดที่ครูเลือกแต่ไม่เปลี่ยน: ความสำเร็จมีเหรียญตราของครูอยู่แล้ว · เหรียญกิลด์ 🥇🥈🥉 ใช้เหรียญกราฟิกเดิม · ของขวัญ/ความสัมพันธ์/สิทธิพิเศษ/ภารกิจกิลด์ ไม่มีไอคอนในแพ็กที่เข้ากับความหมาย

@@ -271,7 +271,7 @@ const BATTLE = (() => {
     return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">⚔️ ล่ามอนสเตอร์เคมี</h3><button class="btn ghost small" onclick="BATTLE.exit()">‹ กลับ</button></div>
       <div class="run-info"><section><h4>🎮 วิธีเล่น</h4><ul><li>ตอบคำถามเพื่อใช้สกิล</li><li>ตอบไว ≤4 วิ ดาเมจ +50% · สเตตัสสูงตีแรงขึ้น</li><li>มอนสเตอร์โจมตีกลับ กดลูกศรลดดาเมจได้เล็กน้อย</li></ul></section><section><h4>🏆 รางวัล</h4><ul><li>ชนะได้ EXP + เหรียญ</li><li>สุ่มดรอปไอเทม</li></ul></section></div>
       <p>${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${d.limit}</span>` : '<span class="pill">รอบที่ได้รางวัลวันนี้หมดแล้ว — เล่นฝึกได้ไม่จำกัด (ไม่ได้รางวัล)</span>'} <span class="pill">❤️ HP ${d.p_max}</span></p>
-      <div class="bt-skills">${d.skills.map((s) => `<span class="bt-sk ${s.kind}" title="${esc(s.descr || "")}">${s.emoji} <b>${esc(s.name)}</b> <small>${KIND[s.kind][1]}</small></span>`).join("")}</div></div>
+      <div class="bt-skills">${d.skills.map((s) => `<span class="bt-sk ${s.kind}" title="${esc(s.descr || "")}">${aico(s.key, s.emoji)} <b>${esc(s.name)}</b> <small>${KIND[s.kind][1]}</small></span>`).join("")}</div></div>
       ${statsPanel(true)}${arenaPicker()}
       <div class="bt-mgrid">${d.monsters.filter((m) => !d.arenas || !d.arenas.length || (m.arena || "lab") === (arNow() || {}).key).map((m) => `<div class="card bt-mcard">${mimg(m)}<h3>${esc(m.name)} <small class="muted">Lv.${m.level}</small> ${elBadge(monElem(m.id))}</h3>
         <p class="muted" style="margin:2px 0">${esc(m.descr || "")}</p><p style="margin:4px 0"><span class="pill">❤️ ${m.hp}</span> <span class="pill">🗡️ ${m.atk}</span></p>
@@ -313,7 +313,7 @@ const BATTLE = (() => {
     if (b.phase === "question") return arena + questionView();
     if (b.phase === "defend") return arena + defendView();
     const skills = b.skills.map((s) => `<button class="bt-skill ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')">
-        <span class="bt-sico">${s.emoji}</span><b>${esc(s.name)}</b><small>${KIND[s.kind][1]}${s.kind !== "buff" ? ` ${s.power}` : ""}${s.left > 0 ? ` · รอ ${s.left} เทิร์น` : s.cd ? ` · CD ${s.cd}` : ""}</small>
+        <span class="bt-sico">${aico(s.key, s.emoji)}</span><b>${esc(s.name)}</b><small>${KIND[s.kind][1]}${s.kind !== "buff" ? ` ${s.power}` : ""}${s.left > 0 ? ` · รอ ${s.left} เทิร์น` : s.cd ? ` · CD ${s.cd}` : ""}</small>
         <em>${esc(s.descr || "")}</em></button>`).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
     return arena + statsPanel(false) + `<div class="card">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>

@@ -30,9 +30,9 @@ function classLvHtml() {
   const opts = (c.options || []).map((o) => {
     const cur = o.current, ok = o.lv_ok && o.rank_ok;
     const need = [!o.lv_ok ? `เลเวลคลาส ${o.need_lv} (ตอนนี้ ${c.lv})` : "", !o.rank_ok ? `ผ่านด่านแรงค์ ${esc(o.need_rank_name || o.need_rank)}` : ""].filter(Boolean).join(" · ");
-    return `<div class="advcard ${cur ? "on" : ""} ${ok || cur ? "" : "lock"}"><div class="advh">${esc(o.emoji)} <b>${esc(o.name)}</b></div><div class="muted">${esc(o.descr || "")}</div>
+    return `<div class="advcard ${cur ? "on" : ""} ${ok || cur ? "" : "lock"}"><div class="advh">${aico(o.key, o.emoji)} <b>${esc(o.name)}</b></div><div class="muted">${esc(o.descr || "")}</div>
       <div class="ability">✨ ${esc(o.ability || "")}</div>
-      ${o.skill ? `<div class="advsk">${esc(o.skill.emoji)} ไม้ตาย: <b>${esc(o.skill.name)}</b> <small class="muted">${esc(o.skill.descr || "")}</small></div>` : ""}
+      ${o.skill ? `<div class="advsk">${aico(o.key + "_u", o.skill.emoji)} ไม้ตาย: <b>${esc(o.skill.name)}</b> <small class="muted">${esc(o.skill.descr || "")}</small></div>` : ""}
       ${cur ? '<span class="tag ok">สายปัจจุบัน</span>' : ok ? `<button class="btn small gold" onclick="pickAdv('${o.key}','${esc(o.name)}',${c.adv ? c.switch_cost : 0})">${c.adv ? `เปลี่ยนสาย (${c.switch_cost} 🪙)` : "เลือกสายนี้ (ฟรี)"}</button>` : `<span class="tag wait">🔒 ต้อง ${need}</span>`}</div>`;
   }).join("");
   const ms = (c.mastery || []).filter((m) => m.key !== cl.key).map((m) => `<span class="tag">${esc(m.emoji)} ${esc(m.name)} Lv.${m.lv}</span>`).join(" ");

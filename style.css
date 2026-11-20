@@ -1573,3 +1573,4 @@ body.peeking .botbar{bottom:0}
 .aic{display:inline-block;width:32px;height:32px;vertical-align:middle;background-repeat:no-repeat;background-size:800% 100%;animation:aic .9s steps(8) infinite}
 @keyframes aic{to{background-position:114.2857% 0}}
 @media (prefers-reduced-motion:reduce){.aic{animation:none}}
+.bt-sk .aic{width:22px;height:22px}.bt-sico .aic{width:36px;height:36px}.advh .aic,.advsk .aic{width:30px;height:30px}
