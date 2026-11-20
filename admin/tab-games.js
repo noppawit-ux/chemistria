@@ -38,10 +38,11 @@ TAB.games = async function (v) {
     await run(async () => must(await sb.from("quiz_questions").insert(rows)), `เพิ่มคำถาม ${rows.length} ข้อแล้ว ✅`); renderTab();
   };
   const h = holder(v, "🧠 คลังคำถามควิซ", "นักเรียนแต่ละคนได้ชุดคำถามสุ่มต่างกันในแต่ละวัน · เฉลยตรวจที่เซิร์ฟเวอร์ ไม่ถูกส่งไปที่เครื่องนักเรียนก่อนส่งคำตอบ · ปิดข้อที่ไม่ต้องการได้ด้วยช่อง “เปิด”");
-  await crud(h, { table: "quiz_questions", order: "topic", defaults: { topic: "ทั่วไป", answer: 0, active: true },
+  await crud(h, { table: "quiz_questions", order: "topic", filter: { pool: null }, defaults: { topic: "ทั่วไป", answer: 0, active: true },
     cols: [{ k: "topic", label: "หัวข้อ/บท", w: 90 }, { k: "class_id", label: "ห้อง", t: "select", opts: classOpts("ทุกห้อง") }, { k: "question", label: "คำถาม", w: 260 }, { k: "a", label: "ก.", w: 110 }, { k: "b", label: "ข.", w: 110 }, { k: "c", label: "ค.", w: 110 }, { k: "d", label: "ง.", w: 110 },
       { k: "answer", label: "ข้อที่ถูก", t: "select", opts: () => [["0", "ก"], ["1", "ข"], ["2", "ค"], ["3", "ง"]] }, { k: "explain", label: "คำอธิบายเฉลย", w: 220 }, { k: "active", label: "เปิด", t: "bool" }] });
   await TAB.kbBank(v);
+  await TAB.banks(v);
   await TAB.monstersAdmin(v);
   const ha = holder(v, "🏟️ สนามต่อสู้", "ธีม: lab / ice / volcano / swamp / storm / crystal · ปลดล็อกตามเลเวล · โบนัสรางวัล % ใช้กับโหมดล่ามอนสเตอร์ · ผูกมอนสเตอร์กับสนามด้วย “รหัสสนาม” ในตารางด้านบน");
   await crud(ha, { table: "arenas", order: "sort", defaults: { emoji: "🏟️", theme: "lab", min_level: 1, reward_pct: 100, active: true, sort: 9 },

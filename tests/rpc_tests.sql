@@ -1765,6 +1765,58 @@ reset role;
 select pg_temp.t('114: ดันเจี้ยนมีดาว 2/3/4/5 ตามลำดับ', (select string_agg(stars::text, '' order by sort) from dungeons) = '2345');
 set role anon;
 select pg_temp.t('114: dungeon_status ส่ง stars ครบทุกดันเจี้ยน', (select bool_and((x->>'stars')::int between 1 and 5) from json_array_elements(dungeon_status((select tok from _dg))->'dungeons') x));
+-- ================= SQL 115 คลังไอเทม + คลังข้อสอบ =================
+reset role;
+select pg_temp.t('115: คลังไอเทมตั้งต้นมี 30 รายการ ครบ 4 ดันเจี้ยน + ครูบุ๊ค', (select count(*) from loot_items) = 30 and (select count(distinct source) from loot_items) = 5);
+select pg_temp.t('115: anon อ่านตาราง loot_items ตรงๆ ไม่ได้', not has_table_privilege('anon', 'loot_items', 'select'));
+select pg_temp.t('115: _loot_roll/_loot_has เรียกจาก anon ไม่ได้', not has_function_privilege('anon', '_loot_roll(uuid,text,boolean,numeric)', 'execute') and not has_function_privilege('anon', '_loot_has(text)', 'execute'));
+create temp table _lr115 (n text, k text);
+do $$ declare i int; r json; sid uuid := (select sid from _dg); begin
+  for i in 1..200 loop r := _loot_roll(sid, 'dungeon:crystal_cave', false, 1.0); insert into _lr115 values (r->>'name', r->>'kind'); end loop;
+end $$;
+select pg_temp.t('115: ได้ของทุกครั้งเมื่อ chance = 1 และไม่ออกของเฉพาะบอส (ยาโชค/ยาพลังสมอง) นอกหีบบอส', (select count(*) from _lr115 where n is not null) = 200 and not exists (select 1 from _lr115 where n in ('ยาโชคสี่แฉก', 'ยาเพิ่มพลังสมอง')));
+create temp table _lb115 (n text);
+do $$ declare i int; r json; sid uuid := (select sid from _dg); begin
+  for i in 1..400 loop r := _loot_roll(sid, 'dungeon:crystal_cave', true, 1.0); insert into _lb115 values (r->>'name'); end loop;
+end $$;
+select pg_temp.t('115: หีบบอสออกของเฉพาะบอสได้', exists (select 1 from _lb115 where n in ('ยาโชคสี่แฉก', 'ยาเพิ่มพลังสมอง')));
+select pg_temp.t('115: ไอเทมใช้สิ้นเปลืองเข้าคลังของนักเรียน (student_items)', coalesce((select sum(qty) from student_items where student_id = (select sid from _dg)), 0) > 0);
+select pg_temp.t('115: เหรียญ/EXP จากคลังเข้า ledger', exists (select 1 from ledger where student_id = (select sid from _dg) and reason like 'หีบดันเจี้ยน:%'));
+update loot_items set active = false where source = 'dungeon:space_lab';
+select pg_temp.t('115: คลังว่าง/ปิดใช้ = _loot_has เป็นเท็จ (ระบบเดิมทำงานต่อ)', not _loot_has('dungeon:space_lab') and _loot_has('dungeon:crystal_cave') and _loot_has('kb'));
+update loot_items set active = true where source = 'dungeon:space_lab';
+select pg_temp.t('115: คลังข้อสอบดันเจี้ยนมี ม.ต้น 18 + ม.ปลาย 18 ข้อ (ง่าย/กลาง/ยาก อย่างละ 6)', (select count(*) from quiz_questions where pool = 'dungeon' and grade = 'jr') = 18 and (select count(*) from quiz_questions where pool = 'dungeon' and grade = 'hs') = 18
+  and (select count(*) from quiz_questions where pool = 'dungeon' and lvl = 1) = 12 and (select count(*) from quiz_questions where pool = 'dungeon' and lvl = 3) = 12);
+select pg_temp.t('115: ข้อสอบในคลังดันเจี้ยนไม่ active จึงไม่ปนควิซ/ศึกทั่วไป', not exists (select 1 from quiz_questions where pool = 'dungeon' and active) and (select max(answer) from quiz_questions where pool = 'dungeon') <= 3);
+-- ทริกเกอร์สลับคำถามในศึกดันเจี้ยน
+create temp table _qp115 (sid uuid, run uuid, bat uuid, orig uuid);
+do $$ declare s uuid := (select id from students where id <> (select sid from _dg) limit 1); r uuid; b uuid; mid uuid := (select id from monsters where key = 'dg1_f1'); o uuid := (select id from quiz_questions where active limit 1);
+begin
+  insert into dungeon_runs (student_id, dungeon_key, floor) values (s, 'crystal_cave', 1) returning id into r;
+  insert into battles (student_id, monster_id, p_hp, p_max, m_hp, m_max, dungeon_run) values (s, mid, 100, 100, 70, 70, r) returning id into b;
+  update battles set cur_skill = 'x', cur_q = o, asked_at = now(), used_q = used_q || o where id = b;
+  insert into _qp115 values (s, r, b, o);
+end $$;
+select pg_temp.t('115: ศึกดันเจี้ยนสลับคำถามมาจากคลังดันเจี้ยน และไม่เกินความยากของชั้น', (select q.pool = 'dungeon' and q.lvl <= 1 and q.id <> p.orig from battles b join _qp115 p on p.bat = b.id join quiz_questions q on q.id = b.cur_q));
+select pg_temp.t('115: used_q ถูกแก้ให้ตรงกับคำถามที่สลับ (ไม่มีคำถามเดิมค้าง)', (select b.cur_q = any (b.used_q) and not (p.orig = any (b.used_q)) from battles b join _qp115 p on p.bat = b.id));
+do $$ declare b uuid := (select bat from _qp115); o uuid := (select id from quiz_questions where active offset 1 limit 1); begin
+  update battles set status = 'fled' where id = b;
+  update dungeon_runs set status = 'left' where id = (select run from _qp115);
+end $$;
+-- ศึกปกติ (ไม่ใช่ดันเจี้ยน) ไม่ถูกสลับ
+create temp table _qn115 (bat uuid, orig uuid);
+do $$ declare s uuid := (select id from students where id <> (select sid from _dg) limit 1); b uuid; o uuid := (select id from quiz_questions where active limit 1); begin
+  insert into battles (student_id, monster_id, p_hp, p_max, m_hp, m_max) values (s, (select id from monsters where key = 'bubble'), 100, 100, 70, 70) returning id into b;
+  update battles set cur_skill = 'x', cur_q = o, asked_at = now(), used_q = used_q || o where id = b;
+  update battles set status = 'fled' where id = b; insert into _qn115 values (b, o);
+end $$;
+select pg_temp.t('115: ศึกปกติยังใช้คำถามเดิมจากคลังควิซ (ไม่ถูกสลับ)', (select b.cur_q = n.orig from battles b join _qn115 n on n.bat = b.id));
+set role anon;
+select game_begin((select tok from _dg), 'kb'); select pg_temp.bd(100);
+create temp table _kv115 as select kb_submit_v2((select tok from _dg), 8, true, 90) r;
+reset role;
+select pg_temp.t('115: kb_submit_v2 ใช้ได้และมีช่อง drop ในผลลัพธ์ (ชนะ)', (select r::jsonb ? 'drop' and (r->>'won')::boolean from _kv115));
+set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;

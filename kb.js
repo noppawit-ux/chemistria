@@ -242,7 +242,8 @@ const KB = (() => {
     const sec = Math.max(S.cleared * 3, Math.round((Date.now() - S.t0) / 1000));
     S.say = say(won ? "win" : "lose");
     try {
-      const r = await rpc("kb_submit", { p_token: tk(), p_cleared: S.cleared, p_won: won, p_seconds: sec });
+      const args = { p_token: tk(), p_cleared: S.cleared, p_won: won, p_seconds: sec };
+      let r; try { r = await rpc("kb_submit_v2", args); } catch (e2) { if (/kb_submit_v2|function|schema cache/i.test(String(e2.message))) r = await rpc("kb_submit", args); else throw e2; }
       if (won && S.st) S.st.wins = (S.st.wins || 0) + 1; S.res = { ...r, secs: sec, tierUp: won && tierOf(S.st && S.st.wins) > (S.tier || 0) }; S.res.gs = await gsRecord("kb", { cleared: S.cleared, secs: won ? sec : undefined, wins: won ? 1 : 0 }); S.screen = "res"; await load(); if (won) FX.victory();
     } catch (e) { toast(e.message); S.screen = "home"; }
     go("game");
@@ -254,9 +255,10 @@ const KB = (() => {
   const ARENA = ["lab", "lab", "storm", "storm", "volcano", "volcano", "crystal", "crystal"];
   const TYPE = { quiz: ["🧠", "ควิซสุดโหด"], react: ["⚡", "ไวแสง"], memory: ["🧩", "จำลำดับ"], odd: ["🔍", "หาตัวแปลกแยก"], calc: ["🧮", "คำนวณเคมี"], balance: ["⚖️", "ดุลสมการ"], pairs: ["🔗", "จับคู่ธาตุ"], blitz: ["⚡", "จริง/เท็จ สายฟ้า"] };
   function rewardCard(r) {
-    const dr = r.drops || [], dc = r.decors || [], ac = r.ach || [];
-    if (!dr.length && !dc.length && !ac.length) return "";
+    const dr = r.drops || [], dc = r.decors || [], ac = r.ach || [], lt = r.drop;
+    if (!dr.length && !dc.length && !ac.length && !lt) return "";
     return `<div class="kb-rew"><h4>🎁 ของรางวัลจากครูบุ๊ค</h4>
+      ${lt ? `<div class="kb-rw ${lt.rarity === "SR" || lt.rarity === "SSR" ? "gold" : ""}"><span>${lt.image ? `<img src="${esc(lt.image)}" alt="" style="width:1.4em;height:1.4em;vertical-align:middle">` : esc(lt.emoji || "🎁")}</span><b>${esc(lt.name)}</b><small>${esc(lt.rarity || "")} · รางวัลจากคลังไอเทมครูบุ๊ค</small></div>` : ""}
       ${dc.map((x) => `<div class="kb-rw gold"><span>${x.emoji}</span><b>ได้รับ ${esc(x.name)}!</b><small>ไปสวมใส่ได้ที่แท็บ ตกแต่ง</small></div>`).join("")}
       ${dr.map((x) => `<div class="kb-rw"><span>${x.emoji}</span><b>${esc(x.name)} ×${x.qty}</b><small>ไอเทมเข้ากระเป๋าแล้ว</small></div>`).join("")}
       ${ac.map((x) => `<div class="kb-rw gold"><span>${x.emoji}</span><b>ความสำเร็จ: ${esc(x.name)}</b><small>+${x.exp} EXP${x.coins ? ` +${x.coins} 🪙` : ""}</small></div>`).join("")}</div>`;
