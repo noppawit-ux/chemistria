@@ -349,8 +349,7 @@ const BATTLE = (() => {
     if (b.status !== "active") return arena + resultView();
     if (b.phase === "question") return arena + questionView();
     if (b.phase === "defend") return arena + defendView();
-    const skills = b.skills.map((s) => { const st = s.left > 0 ? `รอ ${s.left} เทิร์น` : s.cd ? `CD ${s.cd}` : "พร้อม";
-      return `<div class="bt-skw"><button class="bt-skill big ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')"><span class="bt-big">${aico(s.key, s.emoji)}</span><b>${esc(s.name)}</b><small>${KIND[s.kind][1]}${s.kind !== "buff" ? ` ${s.power}` : ""} · ${st}</small></button><button class="bt-info" onclick="BATTLE.info('${s.key}')" aria-label="รายละเอียด ${esc(s.name)}">ℹ️</button></div>`; }).join("");
+    const skills = b.skills.map((s) => { return `<div class="bt-skw"><button class="bt-skill big ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')"><span class="bt-big">${aico(s.key, s.emoji)}${s.left > 0 ? `<i class="bt-cd" aria-label="รออีก ${s.left} เทิร์น">${s.left}</i>` : ""}</span><b>${esc(s.name)}</b><small>${s.left > 0 ? `รอ ${s.left} เทิร์น` : s.kind === "buff" ? "บัพ" : `${KIND[s.kind][1]} ${s.power}`}</small></button><button class="bt-info" onclick="BATTLE.info('${s.key}')" aria-label="รายละเอียด ${esc(s.name)}">ℹ️</button></div>`; }).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
     return arena + statsPanel(false) + `<div class="card">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.bgNext()" title="เปลี่ยนพื้นหลัง">🖼️</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <details class="clsdet"><summary>วิธีเล่น</summary><ul><li>เลือกสกิล แล้วตอบคำถามให้ถูกภายใน ${qs()} วิ สกิลถึงจะออกผล</li><li>ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</li><li>มอนสเตอร์โจมตีเอง (รับ 70%) ทุกเทิร์นที่ 3 โจมตีหนัก</li></ul></details><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
@@ -378,7 +377,7 @@ const BATTLE = (() => {
   }
   function guardBtn(b) {
     const left = b.guard_left || 0;
-    return `<div class="bt-skw"><button class="bt-skill big guard ${heavyNow() ? "hot" : ""}" ${left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.guard()"><span class="bt-big">🛡️</span><b>ตั้งรับ</b><small>${left > 0 ? `รอ ${left} เทิร์น` : "CD 2"}</small></button><button class="bt-info" onclick="BATTLE.info('guard')" aria-label="รายละเอียด ตั้งรับ">ℹ️</button></div>`;
+    return `<div class="bt-skw"><button class="bt-skill big guard ${heavyNow() ? "hot" : ""}" ${left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.guard()"><span class="bt-big">🛡️${left > 0 ? `<i class="bt-cd" aria-label="รออีก ${left} เทิร์น">${left}</i>` : ""}</span><b>ตั้งรับ</b><small>${left > 0 ? `รอ ${left} เทิร์น` : "CD 2"}</small></button><button class="bt-info" onclick="BATTLE.info('guard')" aria-label="รายละเอียด ตั้งรับ">ℹ️</button></div>`;
   }
   function defendView() {
     const d = S.def, p = S.bat.pend; if (!d) return '<div class="card"><p class="muted">…</p></div>';

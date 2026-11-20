@@ -1628,3 +1628,14 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 .bt-info{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#0008;color:inherit;font-size:13px;line-height:1;cursor:pointer;padding:0;display:grid;place-items:center}
 .bt-sk .aic{image-rendering:pixelated}
 @media (prefers-reduced-motion:reduce){.bt-field.bt-ldg{animation:none!important}}
+
+/* ===== v2.57b สกิลในศึกอยู่แถวเดียว + ตัวเลขคูลดาวน์นับถอยหลังบนไอคอน ===== */
+.bt-skillrow:has(.bt-skw){display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);grid-template-columns:none;gap:6px}
+.bt-skw .bt-skill.big{min-width:0;padding:10px 2px 6px;overflow:hidden}
+.bt-skw .bt-skill.big b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.82em}
+.bt-skw .bt-skill.big small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.68em}
+.bt-skw .bt-skill.big:disabled{opacity:1}.bt-skw .bt-skill.big:disabled .bt-big .aic{opacity:.4}.bt-skw .bt-skill.big:disabled b,.bt-skw .bt-skill.big:disabled small{opacity:.55}
+.bt-big{position:relative}
+.bt-cd{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:28px;color:#fff;text-shadow:0 2px 6px #000,0 0 10px #000;opacity:1!important}
+@media(max-width:560px){.bt-skill.big .bt-big{font-size:38px}.bt-skill.big .bt-big .aic{width:40px;height:40px}.bt-skw .bt-skill.big .bt-cd{font-size:22px}.bt-info{width:22px;height:22px;font-size:11px;top:2px;right:2px}}
+.bt-skw .bt-skill.big b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.2;min-height:2.4em;text-align:center}
