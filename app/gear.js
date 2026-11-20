@@ -4,7 +4,7 @@ const gi = (k) => `<img class="gi" src="assets/gi/${k}.svg" alt="" aria-hidden="
 const ELEM = { fire: [gi("fire"), "ไฟ"], water: [gi("water"), "น้ำ"], plant: [gi("plant"), "พืช"], thunder: [gi("thunder"), "ไฟฟ้า"], chem: [gi("chem"), "สารเคมี"] };
 const ELEM_BEATS = { water: "fire", fire: "plant", plant: "chem", chem: "thunder", thunder: "water" };
 const elBadge = (el) => (el && ELEM[el] ? `<span class="elb el-${el}" title="ธาตุ${ELEM[el][1]}">${ELEM[el][0]} ${ELEM[el][1]}</span>` : "");
-const pxIco = (o) => (o && o.image ? `<img class="pxi" src="${esc(o.image)}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${esc(o.emoji || "🎁")}'))">` : esc((o && o.emoji) || ""));
+const pxIco = (o) => (o && o.image && o.image.startsWith("assets/aic/s_") ? `<span class="aic" style="background-image:url(${esc(o.image.replace("/s_", "/a_"))})" role="img" aria-label="${esc(o.name || "")}"></span>` : o && o.image ? `<img class="pxi" src="${esc(o.image)}" alt="" loading="lazy" onerror="this.replaceWith(document.createTextNode('${esc(o.emoji || "🎁")}'))">` : esc((o && o.emoji) || ""));
 const FXK = { atk: gi("atk") + " โจมตี", def: gi("def") + " ลดดาเมจ", hp: gi("hp") + " HP" };
 async function gearLoad(force) {
   if (GEAR_BUSY || (GEARS && !force)) return; GEAR_BUSY = true;

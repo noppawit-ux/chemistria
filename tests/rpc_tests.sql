@@ -1336,7 +1336,7 @@ reset role;
 select pg_temp.t('เกียร์ 81: เริ่มศึกด้วยชุด HP+30% → HP เริ่มต้นเพิ่ม 30%', (select p_max = round((80 + 6 * level_for((select exp from students where id=(select sid from _gs)))) * 1.3) from battles where student_id=(select sid from _gs) and status='active'));
 select pg_temp.t('เกียร์ 81: _gear/_gear_battle ปิดจาก anon', not has_function_privilege('anon', '_gear_battle(uuid,text)', 'execute') and not has_function_privilege('anon', '_gear(uuid)', 'execute'));
 -- ไอคอน/ไอเทมธาตุชุดใหม่ (db/82)
-select pg_temp.t('ไอคอน 82: ยา/ของใช้ทั้ง 8 ชนิดมีภาพ', (select count(*) from consumables where image like 'assets/px/%') = 8);
+select pg_temp.t('ไอคอน 82: ยา/ของใช้ทั้ง 8 ชนิดมีภาพ', (select count(*) from consumables where image like 'assets/px/%' or image like 'assets/aic/s\_%') = 8);
 select pg_temp.t('ไอคอน 82: ดาบ+หมวกธาตุใหม่ 10 ชิ้น มีธาตุและโบนัส', (select count(*) from decor_items where image like 'assets/px/%' and slot in ('item','hat') and element is not null and fx_atk + fx_def > 0) = 10);
 -- กดอิโมจิให้ตัวละครเพื่อน (db/83)
 set role anon;

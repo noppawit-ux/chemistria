@@ -1568,3 +1568,8 @@ body.peeking .botbar{bottom:0}
 @keyframes eqring{to{background-position:109.0909% 0}}
 @keyframes eqorb{to{background-position:106.6667% 0}}
 @media (prefers-reduced-motion:reduce){.eqfx{animation:none}}
+
+/* ===== v2.53 ไอคอนเคลื่อนไหวจากแพ็ก Animated RPG Icons (แถบ 8 เฟรม a_*.webp) ===== */
+.aic{display:inline-block;width:32px;height:32px;vertical-align:middle;background-repeat:no-repeat;background-size:800% 100%;animation:aic .9s steps(8) infinite}
+@keyframes aic{to{background-position:114.2857% 0}}
+@media (prefers-reduced-motion:reduce){.aic{animation:none}}
