@@ -1583,3 +1583,10 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 .bt-mimg.isk{filter:none;opacity:.7}
 .avf .av img.isk{border-radius:50%}
 @media (prefers-reduced-motion:reduce){img.isk,.aic.sk,.avf.stg .av img.st-char.isk{animation:none!important}}
+
+/* ===== v2.56 ลดเอฟเฟกต์/ความกระตุกของตัวละครบนเวที (หน้าโปรไฟล์) =====
+   ตัดแอนิเมชันที่เล่นวนตลอดและ drop-shadow เรืองแสงบนชั้นที่ขยับ ซึ่งทำให้มือถือรีเพนต์ทุกเฟรม */
+.avf.stg .av img.st-char{animation:none!important;filter:none}
+.avf.stg .av img.st-item,.avf.stg .av img.st-ring,.avf.stg .av img.st-pimg,.st-pet{animation:none!important;filter:none}
+.avf.stg,.avf.stg::before,.avf.stg .av,.avf.stg .av::before,.avf.stg .av::after{animation:none!important}
+.eqfx{display:none!important}

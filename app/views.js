@@ -32,6 +32,7 @@ const gOf = (cls, dc) => (dc && dc.gender) || GDEF[cls || "novice"] || "m";
 const EQ_R = { SR: 1, SSR: 2 };
 function eqfx(dc) {
   let top = 0, orb = 0; for (const k of ["hat", "pet", "neck", "ring", "item", "outfit"]) { const r = EQ_R[dc[k] && dc[k].rarity] || 0; if (r > top) top = r; if (r === 2 && (k === "hat" || k === "item")) orb = 1; }
+  return ""; // v2.56: ปิดออร่าอุปกรณ์ (ลดภาระเครื่อง/ความกระตุก) — เปิดคืนโดยลบบรรทัดนี้
   return top ? `<i class="eqfx eq-ring eqr${top}"></i>${orb ? '<i class="eqfx eq-orbit eqr2"></i>' : ""}` : "";
 }
 function stage(cls, ri, dc, sz) {
