@@ -2,7 +2,7 @@
    กด/แตะ "กระโดด" (กระโดดซ้อนได้ 2 ครั้ง) · กดค้าง "สไลด์" ลอดใต้เมฆพิษ · พลังชีวิตลดเรื่อยๆ ต้องเก็บยาฟื้นพลัง
    เซิร์ฟเวอร์ตรวจคะแนนกับเวลา (run_submit) แล้วให้ EXP ตามคะแนน */
 const RUN = (() => {
-  const W = 560, H = 420, GY = 350;               // พิกัดตรรกะของแคนวาส · GY = ระดับพื้น
+  const W = 640, H = 420, GY = 350;               // พิกัดตรรกะของแคนวาส · GY = ระดับพื้น
   const IMGS = {};
   const need = ["icons/coin", "icons/star", "icons/heart", "items/tile", "items/potion_red", "items/burner", "items/rack", "items/shield", "items/hourglass", "items/flask",
     "arenas/lab", "arenas/storm", "arenas/volcano", "arenas/crystal", "arenas/ice", "arenas/swamp"];
@@ -299,11 +299,11 @@ const RUN = (() => {
     const hpc = g.hp > 50 ? "#4fe3b0" : g.hp > 25 ? "#ffd75a" : "#ff6b81";
     ctx.fillStyle = hpc; rr(ctx, 15, 15, Math.max(8, 204 * g.hp / 100), 20, 10); ctx.fill();
     ctx.drawImage(img("icons/heart"), 8, 8, 32, 32);
-    ctx.fillStyle = "#fff"; ctx.font = "700 14px Prompt, Sarabun, sans-serif"; ctx.textAlign = "left"; ctx.fillText(Math.ceil(g.hp), 46, 26);
+    ctx.fillStyle = "#fff"; ctx.font = "700 16px Prompt, Sarabun, sans-serif"; ctx.textAlign = "left"; ctx.fillText(Math.ceil(g.hp), 46, 26);
     // คะแนน
     ctx.textAlign = "right"; ctx.font = "800 26px Prompt, Sarabun, sans-serif"; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 5;
     ctx.strokeText(score(g), W - 14, 26); ctx.fillStyle = "#ffe48a"; ctx.fillText(score(g), W - 14, 26);
-    ctx.font = "700 14px Prompt, Sarabun, sans-serif"; ctx.fillStyle = "#fff"; ctx.strokeText(`${Math.floor(g.dist)} ม. · เหรียญ ${g.coins}`, W - 14, 52); ctx.fillText(`${Math.floor(g.dist)} ม. · เหรียญ ${g.coins}`, W - 14, 52);
+    ctx.font = "700 16px Prompt, Sarabun, sans-serif"; ctx.fillStyle = "#fff"; ctx.strokeText(`${Math.floor(g.dist)} ม. · เหรียญ ${g.coins}`, W - 14, 52); ctx.fillText(`${Math.floor(g.dist)} ม. · เหรียญ ${g.coins}`, W - 14, 52);
     { let ey = 58; const eff = [g.shield && "🛡️ โล่พร้อม", g.slow > 0 && `⏳ ชะลอ ${g.slow.toFixed(1)}`, g.mag > 0 && `🧲 แม่เหล็ก ${g.mag.toFixed(1)}`, g.combo >= 5 && `🔥 คอมโบ x${g.combo}`].filter(Boolean);
       ctx.textAlign = "left"; ctx.font = "800 15px Prompt, Sarabun, sans-serif"; ctx.strokeStyle = "#1b1238"; ctx.lineWidth = 4;
       eff.forEach((t) => { ctx.strokeText(t, 14, ey + 14); ctx.fillStyle = "#fff"; ctx.fillText(t, 14, ey + 14); ey += 20; });

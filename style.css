@@ -1681,3 +1681,10 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 .bt-ab small{opacity:.9}
 .bt-abev{margin-top:2px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.35);font-weight:700;animation:abpop .5s}
 @keyframes abpop{from{transform:scale(.9);opacity:0}}
+
+/* v2.64 เคมีรัน: จอแนวนอนกว้างขึ้น (640×420) และจำกัดความสูงไม่ให้ล้นหน้าจอตอนเล่น */
+.run-wrap{text-align:center}
+.run-wrap canvas{width:auto;max-width:100%;height:auto;max-height:max(180px,calc(100vh - 210px));max-height:max(180px,calc(100dvh - 210px));display:inline-block}
+.run-card{padding:8px}
+.run-btns{margin-top:8px}.run-b{height:64px}
+@media (orientation:landscape) and (max-height:500px){.run-card{padding:4px}.run-card .row{display:none}.run-wrap canvas{max-height:max(150px,calc(100dvh - 120px))}.run-b{height:52px;font-size:1.5rem}.run-card>p{display:none}}
