@@ -1558,6 +1558,20 @@ select pg_temp.t('คลาส 102: เปลี่ยนคลาสพื้�
 select pg_temp.t('คลาส 102: anon เรียกฟังก์ชันภายในไม่ได้ แต่เรียก class_info ได้', not has_function_privilege('anon','_class_pts(uuid,int)','execute') and not has_function_privilege('anon','_class_bonus(uuid)','execute') and has_function_privilege('anon','class_info(uuid)','execute'));
 select pg_temp.t('คลาส 102: anon อ่านตาราง class_mastery / adv_classes ตรงๆ ไม่ได้', not has_table_privilege('anon','class_mastery','select') and not has_table_privilege('anon','adv_classes','select'));
 set role anon;
+-- ================= SQL 105: ลดงานซ้ำกระดานกิลด์ =================
+reset role;
+select pg_temp.t('105: _guild_member_card(ซ่อนคะแนน) ให้ gp เป็น null ทุกคน', (select coalesce(bool_and(mm->'gp' = 'null'::jsonb), true) from guilds g, jsonb_array_elements(_guild_member_card(g.id, true)) mm));
+select pg_temp.t('105: _guild_member_card(แสดงคะแนน) gp ตรงกับ _guild_member_gp', (select coalesce(bool_and((m.mm->>'gp')::numeric = x.gp), true)
+  from guilds g cross join lateral jsonb_array_elements(_guild_member_card(g.id, false)) m(mm)
+  join students st on st.no = (m.mm->>'no')::int and st.id in (select student_id from guild_members where guild_id = g.id)
+  join _guild_member_gp() x on x.student_id = st.id));
+select pg_temp.t('105: guild_board คืน unranked/total เป็นจำนวนเต็ม และ total = จำนวนกิลด์', (select (guild_board((select tok from _go))::jsonb->>'total')::int = (select count(*) from guilds) and (guild_board((select tok from _go))::jsonb->>'unranked')::int >= 0));
+create temp table _rg as select _rank_gate((select a from _s), 999999) as on_key;
+update app_settings set value = '0' where key = 'rank_trial_on';
+select pg_temp.t('105: _rank_gate ปิดด่านแรงค์ด้วย rank_trial_on = 0 (ได้ null) ส่วนตอนเปิดคืนค่าเดิม', (select _rank_gate((select a from _s), 999999) is null));
+update app_settings set value = '1' where key = 'rank_trial_on';
+select pg_temp.t('105: _rank_gate เปิดกลับแล้วคืนค่าเท่าเดิม', (select _rank_gate((select a from _s), 999999) is not distinct from (select on_key from _rg)));
+set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
   raise notice 'SUMMARY  ผ่าน % ข้อ · ไม่ผ่าน % ข้อ', p, f; end $$;
