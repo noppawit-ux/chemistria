@@ -1695,15 +1695,8 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 
 /* ---------- v2.68 ประตูมิติ (แผนที่เมือง) + ปริศนา + โบนัส roguelike ---------- */
 .cportal{position:absolute;transform:translate(-50%,-50%);width:11%;max-width:72px;min-width:50px;aspect-ratio:1;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
-.cportal i{position:absolute;border-radius:50%;pointer-events:none}
-.cportal .cp3{inset:-18%;background:radial-gradient(circle,#c084fcaa,#7c3aed00 70%);animation:cpbreath 2.4s ease-in-out infinite}
-.cportal .cp2{inset:0;border:4px solid transparent;border-top-color:#a78bfa;border-bottom-color:#38bdf8;box-shadow:0 0 14px #a78bfa,inset 0 0 12px #38bdf8;animation:cpspin 2.2s linear infinite}
-.cportal .cp1{inset:16%;border:3px solid transparent;border-left-color:#f0abfc;border-right-color:#67e8f9;background:radial-gradient(circle,#1e1b4b,#4c1d95 70%,#7c3aed);box-shadow:0 0 12px #e879f9;animation:cpspin 1.4s linear infinite reverse}
-.cportal b{position:relative;font-size:clamp(18px,3.4vw,30px);filter:drop-shadow(0 0 6px #fff);animation:cpspin 5s linear infinite}
-.cportal:hover .cp2,.cportal:focus-visible .cp2{box-shadow:0 0 22px #f0abfc,inset 0 0 16px #67e8f9}
 @keyframes cpspin{to{transform:rotate(360deg)}}
 @keyframes cpbreath{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}
-@media (prefers-reduced-motion:reduce){.cportal i,.cportal b{animation:none}}
 .dg-portal{font-size:54px;display:inline-block;animation:cpspin 6s linear infinite}
 .dg-ph{background:linear-gradient(160deg,#faf5ff,#eef2ff)}
 .dg-perks{display:inline-flex;gap:4px;margin-left:auto}
@@ -1779,3 +1772,10 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 @media (min-width:700px){.dg-cover>.dg-map{grid-template-columns:repeat(5,1fr)}}
 .dg-cover>.dg-map{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .dg-cover .dg-fl{min-height:84px}.dg-cover .dg-fl small{font-size:10px}.dg-cover .dg-fl img{width:36px;height:36px}
+
+.cportal{overflow:visible}
+.cportal .pfxg{z-index:1;filter:drop-shadow(0 0 8px #a78bfa)}
+.cportal .cpfb{font-size:clamp(22px,4vw,34px);width:70%;aspect-ratio:1;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,#4c1d95,#1e1b4b);box-shadow:0 0 16px #a78bfa;animation:cpspin 6s linear infinite}
+.cportal.fxon .cpfb{display:none}
+.cportal:hover .pfxg,.cportal:focus-visible .pfxg{filter:drop-shadow(0 0 14px #f0abfc) brightness(1.15)}
+@media (prefers-reduced-motion:reduce){.cportal .cpfb{animation:none}}

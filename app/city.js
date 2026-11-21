@@ -28,14 +28,21 @@ const CITY = (() => {
   const clip = (p) => "polygon(" + p.map(([x, y]) => `${(x / W * 100).toFixed(2)}% ${(y / H * 100).toFixed(2)}%`).join(",") + ")";
   const centroid = (p) => [p.reduce((a, q) => a + q[0], 0) / p.length / W * 100, p.reduce((a, q) => a + q[1], 0) / p.length / H * 100];
   function html(s) {
-    const locs = L.map((l, i) => l.at ? `<button class="cportal" style="left:${(l.at[0] / W * 100).toFixed(2)}%;top:${(l.at[1] / H * 100).toFixed(2)}%" aria-label="${esc(l.name)}" onclick="CITY.open('${l.id}')"><i class="cp3"></i><i class="cp2"></i><i class="cp1"></i><b>🌀</b></button>` : `<div class="cl ${l.locked ? "locked" : ""}" style="--d:${(i * 0.37).toFixed(2)}s"><img class="climg" src="assets/city/map.jpg" alt="${esc(l.name)}" draggable="false" role="button" tabindex="0" aria-label="${esc(l.name)}" style="clip-path:${clip(l.poly)}" onclick="CITY.open('${l.id}')"></div>`).join("");
+    const locs = L.map((l, i) => l.at ? `<button class="cportal" style="left:${(l.at[0] / W * 100).toFixed(2)}%;top:${(l.at[1] / H * 100).toFixed(2)}%" aria-label="${esc(l.name)}" onclick="CITY.open('${l.id}')"><b class="cpfb">🌀</b></button>` : `<div class="cl ${l.locked ? "locked" : ""}" style="--d:${(i * 0.37).toFixed(2)}s"><img class="climg" src="assets/city/map.jpg" alt="${esc(l.name)}" draggable="false" role="button" tabindex="0" aria-label="${esc(l.name)}" style="clip-path:${clip(l.poly)}" onclick="CITY.open('${l.id}')"></div>`).join("");
     const pins = L.map((l) => { const [x, y] = l.at ? [l.at[0] / W * 100, l.at[1] / H * 100 + 7] : centroid(l.poly), dot = l.dot && l.dot(s);
       return `<div class="clpin ${l.locked ? "locked" : ""}" style="left:${x}%;top:${y}%"><span>${l.locked ? "🔒" : l.emoji} ${esc(l.name)}</span>${dot ? '<i class="cldot"></i>' : ""}</div>`; }).join("");
     return `<div class="citywrap" id="citywrap"><div class="citymap"><img class="citybg" src="assets/city/map.jpg" alt="แผนที่เมือง Chemistria" draggable="false" onload="CITY.center()">${locs}${pins}</div></div>
       <div class="row" style="justify-content:center;margin:6px 0"><span class="muted" style="font-size:.85em">แตะสถานที่ที่เรืองแสงเพื่อเข้าเล่น · เลื่อนแผนที่ไปซ้าย-ขวาได้</span>
       <button class="btn small ghost" onclick="GAMES.setList(true)">📋 ดูเป็นรายการ</button></div>`;
   }
-  const center = () => { const w = document.getElementById("citywrap"); if (w) w.scrollLeft = (w.scrollWidth - w.clientWidth) / 2; };
+  function portalFx() {                           // เอฟเฟกต์ประตูมิติ (สไปรต์ portal จาก pixelfx วนลูป) — ถ้าปิดเอฟเฟกต์/ลดการเคลื่อนไหว จะใช้ 🌀 แทน
+    const b = document.querySelector(".cportal"); if (!b || typeof FX === "undefined") return;
+    b.querySelectorAll(".pfxg").forEach((e) => e.remove());
+    const r = b.getBoundingClientRect(), sc = Math.max(0.6, (r.width * 1.7) / 140);
+    const el = FX.play("portal", r.width / 2, r.height * 0.78, { scale: sc, loop: true, parent: b });
+    b.classList.toggle("fxon", !!el);
+  }
+  const center = () => { const w = document.getElementById("citywrap"); if (w) w.scrollLeft = (w.scrollWidth - w.clientWidth) / 2; portalFx(); };
   function open(id) {
     const l = L.find((x) => x.id === id); if (!l) return; eqClose();
     const s = GAMES.status && GAMES.status();
