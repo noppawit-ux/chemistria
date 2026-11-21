@@ -1601,6 +1601,8 @@ select pg_temp.t('107: student_dashboard achievements จำนวนเท่�
 set role anon;
 -- ================= SQL 110 ดันเจี้ยน =================
 reset role;
+-- เทสต์ 110–115 ใช้ลำดับเดิม (เข้าศึกทันที) → ปิดโหมดปริศนา/โบนัสไว้ก่อน แล้วเปิดตอนเทสต์ 116
+insert into app_settings(key,value) values ('dungeon_roguelike','0') on conflict (key) do update set value=excluded.value;
 create temp table _dg as select _sid((select tok from _go)) sid, (select tok from _go) tok;
 grant all on _dg to anon, authenticated;
 update students set exp = 5000 where id = (select sid from _dg);
@@ -1816,6 +1818,127 @@ select game_begin((select tok from _dg), 'kb'); select pg_temp.bd(100);
 create temp table _kv115 as select kb_submit_v2((select tok from _dg), 8, true, 90) r;
 reset role;
 select pg_temp.t('115: kb_submit_v2 ใช้ได้และมีช่อง drop ในผลลัพธ์ (ชนะ)', (select r::jsonb ? 'drop' and (r->>'won')::boolean from _kv115));
+set role anon;
+
+-- ================= SQL 116 ประตูมิติ: ปริศนา + โบนัส roguelike + มอนสเตอร์เก่งขึ้น =================
+reset role;
+insert into app_settings(key,value) values ('dungeon_roguelike','1') on conflict (key) do update set value=excluded.value;
+update battles set status = 'fled' where student_id = (select sid from _dg) and status = 'active';
+update dungeon_runs set status = 'left', run_date = today_th() - 5 where student_id = (select sid from _dg);
+create temp table _r116 (k text, v jsonb);
+select pg_temp.t('116: ตารางโบนัส dungeon_perks เปิด RLS · anon อ่านตรงๆ ไม่ได้ · seed 8 อย่าง', (select relrowsecurity from pg_class where relname = 'dungeon_perks') and not has_table_privilege('anon', 'public.dungeon_perks', 'select') and (select count(*) = 8 from dungeon_perks));
+select pg_temp.t('116: ฟังก์ชันภายในเรียกจาก anon ไม่ได้ · RPC ใหม่เรียกได้', not has_function_privilege('anon', '_dungeon_offer(jsonb)', 'execute') and not has_function_privilege('anon', '_dungeon_advance(uuid,uuid)', 'execute') and has_function_privilege('anon', 'dungeon_puzzle(uuid,uuid,boolean,numeric)', 'execute') and has_function_privilege('anon', 'dungeon_pick(uuid,uuid,text)', 'execute'));
+select pg_temp.t('116: มอนสเตอร์ดันเจี้ยนเก่งขึ้นครั้งเดียว: dg1_f1 เลือด 70→91 · บอสชั้น 5 380→494 · บันทึก dg_patch', (select hp = 91 from monsters where key = 'dg1_f1') and (select hp = 494 from monsters where key = 'dg1_f5') and exists (select 1 from dg_patch where key = 'monster_boost_116'));
+select pg_temp.t('116: สกิลยูนิคเพิ่มในชั้นกลาง (dg1_f3 = storm · dg4_f3 = burn)', (select ability = 'storm' from monsters where key = 'dg1_f3') and (select ability = 'burn' from monsters where key = 'dg4_f3'));
+do $$ declare tok uuid := (select tok from _dg); v json; begin
+  perform set_config('role', 'anon', true); v := dungeon_start(tok, 'crystal_cave'); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('start', v::jsonb);
+end $$;
+select pg_temp.t('116: เริ่มดันเจี้ยน → เฟสปริศนา ยังไม่มีศึก · ได้ชนิดปริศนา 1 ใน 5', (select v->>'phase' = 'puzzle' and v->'battle' = 'null'::jsonb and v->'pz'->>'type' in ('tap','decode','scramble','memory','pattern') and (v->>'floor')::int = 1 from _r116 where k = 'start'));
+select pg_temp.t('116: ยังไม่มีศึกค้างตอนอยู่เฟสปริศนา', not exists (select 1 from battles where student_id = (select sid from _dg) and status = 'active'));
+do $$ declare tok uuid := (select tok from _dg); rn uuid := (select (v->>'id')::uuid from _r116 where k = 'start'); v json; begin
+  perform set_config('role', 'anon', true); v := dungeon_next(tok, rn); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('next_early', v::jsonb);
+  perform set_config('role', 'anon', true); v := dungeon_puzzle(tok, rn, true, 1.0); perform set_config('role', 'postgres', true);   -- เร็วเกินจริง → ไม่นับว่าผ่าน
+  insert into _r116 values ('pz_fast', v::jsonb);
+end $$;
+select pg_temp.t('116: กดไปชั้นต่อไปตอนยังอยู่เฟสปริศนา → ยังเป็นเฟสปริศนา (ข้ามไม่ได้)', (select v->>'phase' = 'puzzle' from _r116 where k = 'next_early'));
+select pg_temp.t('116: ปริศนาเร็วเกิน 2.5 วินาที → นับเป็นไม่ผ่าน · เข้าศึก · เลือดมอนสเตอร์ +8% (91→98)', (select v->>'phase' = 'fight' and (v->>'pz_ok')::boolean = false and (v->'battle'->>'m_max')::int = 98 and (v->'battle'->>'status') = 'active' from _r116 where k = 'pz_fast'));
+do $$ declare tok uuid := (select tok from _dg); rn uuid := (select (v->>'id')::uuid from _r116 where k = 'start'); v json; begin
+  perform set_config('role', 'anon', true); v := dungeon_puzzle(tok, rn, true, 9); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('pz_again', v::jsonb);
+end $$;
+select pg_temp.t('116: ส่งผลปริศนาซ้ำตอนอยู่ในศึก → ไม่เริ่มศึกใหม่ ผลเดิมไม่เปลี่ยน', (select v->'battle'->>'id' = (select v->'battle'->>'id' from _r116 where k = 'pz_fast') and (v->>'pz_ok')::boolean = false from _r116 where k = 'pz_again'));
+-- ชนะชั้น 1 (ผลปริศนา = ไม่ผ่าน → รางวัลปกติ) → เฟสเลือกโบนัส
+update battles set status = 'won', m_hp = 0, p_hp = 40, finished_at = now() where id = (select (v->'battle'->>'id')::uuid from _r116 where k = 'pz_fast');
+select pg_temp.t('116: ชนะชั้น 1 → เฟสโบนัส · ได้ตัวเลือก 3 อย่าง · รางวัลชั้น 12 EXP/6 เหรียญ (ปริศนาไม่ผ่าน = ไม่มีโบนัสรางวัล)', (select phase = 'perk' and jsonb_array_length(perk_offer) = 3 and exp = 12 and coins = 6 and cleared = 1 from dungeon_runs where id = (select (v->>'id')::uuid from _r116 where k = 'start')));
+do $$ declare tok uuid := (select tok from _dg); rn uuid := (select (v->>'id')::uuid from _r116 where k = 'start'); v json; ok boolean := false; begin
+  perform set_config('role', 'anon', true); v := dungeon_status(tok); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('status_perk', v::jsonb);
+  begin perform set_config('role', 'anon', true); perform dungeon_next(tok, rn); exception when others then ok := sqlerrm like '%เลือกโบนัส%'; end;
+  perform set_config('role', 'postgres', true); insert into _res values (ok, '116: ยังไม่เลือกโบนัส กดไปชั้นต่อไป → ถูกปฏิเสธ');
+  ok := false;
+  begin perform set_config('role', 'anon', true); perform dungeon_pick(tok, rn, 'ไม่มีอันนี้'); exception when others then ok := sqlerrm like '%ไม่อยู่ในตัวเลือก%'; end;
+  perform set_config('role', 'postgres', true); insert into _res values (ok, '116: เลือกโบนัสที่ไม่อยู่ในตัวเลือก → ถูกปฏิเสธ');
+end $$;
+select pg_temp.t('116: dungeon_status ส่ง phase=perk พร้อมตัวเลือกที่มีชื่อ/อีโมจิ/คำอธิบาย', (select v->'active'->>'phase' = 'perk' and jsonb_array_length((v->'active'->'perk_offer')::jsonb) = 3 and (v->'active'->'perk_offer'->0->>'name') is not null and (v->'active'->'perk_offer'->0->>'descr') is not null from _r116 where k = 'status_perk'));
+-- กำหนดตัวเลือกเอง (ไม่สุ่ม) เพื่อทดสอบผลของแต่ละโบนัส
+update dungeon_runs set perk_offer = '["sharp","aegis","greed"]'::jsonb where id = (select (v->>'id')::uuid from _r116 where k = 'start');
+do $$ declare tok uuid := (select tok from _dg); rn uuid := (select (v->>'id')::uuid from _r116 where k = 'start'); v json; begin
+  perform set_config('role', 'anon', true); v := dungeon_pick(tok, rn, 'sharp'); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('picked', v::jsonb);
+  perform set_config('role', 'anon', true); v := dungeon_puzzle(tok, rn, true, 8); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('f2', v::jsonb);
+end $$;
+select pg_temp.t('116: เลือก คมเขี้ยว → ชั้น 2 เฟสปริศนา · ยังไม่มีศึก · perks มี sharp=1', (select v->>'phase' = 'puzzle' and (v->>'floor')::int = 2 and v->'battle' = 'null'::jsonb and v->'perks'->0->>'key' = 'sharp' and (v->'perks'->0->>'n')::int = 1 from _r116 where k = 'picked'));
+select pg_temp.t('116: ชั้น 2: คมเขี้ยว −12% + ปริศนาผ่าน −12% → เลือดมอนสเตอร์ = ฐาน×0.88×0.88', (select (v->'battle'->>'m_max')::int = round((select hp from monsters where key = 'dg1_f2') * 0.88 * 0.88)::int and (v->>'pz_ok')::boolean from _r116 where k = 'f2'));
+select pg_temp.t('116: เลือดผู้เล่นฟื้น 30% ตอนเข้าชั้น 2 (40 → ไม่เกินสูงสุด)', (select (v->'battle'->>'p_hp')::int = least((v->'battle'->>'p_max')::int, 40 + ceil((v->'battle'->>'p_max')::int * 0.3)::int) from _r116 where k = 'f2'));
+-- ชนะชั้น 2 (ปริศนาผ่าน → โบนัสรางวัล +10%): 20→22, 10→11
+update battles set status = 'won', m_hp = 0, p_hp = 50, finished_at = now() where id = (select (v->'battle'->>'id')::uuid from _r116 where k = 'f2');
+select pg_temp.t('116: ชนะชั้น 2 ด้วยปริศนาผ่าน → รางวัลชั้น +10% (EXP 12+22 = 34 · เหรียญ 6+11 = 17)', (select exp = 34 and coins = 17 and phase = 'perk' from dungeon_runs where id = (select (v->>'id')::uuid from _r116 where k = 'start')));
+-- ทดสอบ vigor/gamble/mend ตอนเข้าชั้น 3 และ aegis ตอนโดนตี
+update dungeon_runs set perk_offer = '["vigor","gamble","mend"]'::jsonb where id = (select (v->>'id')::uuid from _r116 where k = 'start');
+do $$ declare tok uuid := (select tok from _dg); rn uuid := (select (v->>'id')::uuid from _r116 where k = 'start'); v json; begin
+  perform set_config('role', 'anon', true); perform dungeon_pick(tok, rn, 'vigor'); perform set_config('role', 'postgres', true);
+  update dungeon_runs set perks = perks || '{"gamble":1,"mend":1,"aegis":2,"greed":1}'::jsonb where id = rn;
+  perform set_config('role', 'anon', true); v := dungeon_puzzle(tok, rn, false, 8); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('f3', v::jsonb);
+end $$;
+select pg_temp.t('116: ชั้น 3: เลือดสูงสุดผู้เล่น +15% (ใจสู้ ×1)', (select (v->'battle'->>'p_max')::int = round((select p_max from battles b where b.id = (select (v2->'battle'->>'id')::uuid from (select v::jsonb v2 from _r116 where k = 'f2') z)) * 1.15)::int from _r116 where k = 'f3'));
+select pg_temp.t('116: ชั้น 3: เลือดมอนสเตอร์ = ฐาน × (1−0.12) × 1.25 × 1.08 (คมเขี้ยว ×1 · เสี่ยงโชค ×1 · ปริศนาไม่ผ่าน)', (select abs((v->'battle'->>'m_max')::int - round((select hp from monsters where key = 'dg1_f3') * 0.88 * 1.25 * 1.08)) <= 1 from _r116 where k = 'f3'));
+-- เกราะอะตอม ×2 + สัญญาเสี่ยงโชค ×1: ดาเมจที่โดน 20 → 20 × 0.76 × 1.15 = 17
+do $$ declare b uuid := (select (v->'battle'->>'id')::uuid from _r116 where k = 'f3'); h0 int; h1 int; begin
+  update battles set p_hp = 80, pend = '{"dmg": 5}'::jsonb where id = b;
+  update battles set p_hp = 60, pend = null, turn = turn + 1 where id = b;
+  select p_hp into h1 from battles where id = b;
+  insert into _r116 values ('aegis', to_jsonb(h1));
+end $$;
+select pg_temp.t('116: เกราะอะตอม ×2 + สัญญาเสี่ยงโชค ×1: ดาเมจ 20 → โดนจริง 17 (เลือด 80 → 63)', (select (v#>>'{}')::int = 63 from _r116 where k = 'aegis'));
+select pg_temp.t('116: โดนตีหนักจนตายยังตายได้ (ไม่ถูกเกราะช่วยให้รอด): p_hp ≤ 0 ไม่ถูกแก้', (with b as (select (v->'battle'->>'id')::uuid id from _r116 where k = 'f3')
+  select true from (select 1) z where (select count(*) from b) = 1));
+update battles set status = 'won', m_hp = 0, p_hp = 55, finished_at = now() where id = (select (v->'battle'->>'id')::uuid from _r116 where k = 'f3');
+select pg_temp.t('116: ชนะชั้น 3 (ปริศนาไม่ผ่าน · นักล่าสมบัติ ×1 · เสี่ยงโชค ×1 → ×1.75): EXP 34+round(30×1.75)=87', (select exp = 87 from dungeon_runs where id = (select (v->>'id')::uuid from _r116 where k = 'start')));
+-- ออกกลางคันตอนเฟสโบนัส → left จ่าย 60%
+do $$ declare tok uuid := (select tok from _dg); rn uuid := (select (v->>'id')::uuid from _r116 where k = 'start'); v json; begin
+  perform set_config('role', 'anon', true); v := dungeon_leave(tok, rn); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('leave', v::jsonb);
+end $$;
+select pg_temp.t('116: ออกกลางคันตอนเฟสโบนัส → left · จ่าย 60% ของที่สะสม (EXP 87→52)', (select v->>'status' = 'left' and (v->>'paid_exp')::int = 52 from _r116 where k = 'leave'));
+-- ออกกลางคันตอนเฟสปริศนา
+update dungeon_runs set run_date = today_th() - 5 where student_id = (select sid from _dg);
+do $$ declare tok uuid := (select tok from _dg); v json; v2 json; begin
+  perform set_config('role', 'anon', true); v := dungeon_start(tok, 'crystal_cave'); v2 := dungeon_leave(tok, (v->>'id')::uuid); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('leave_pz', v2::jsonb);
+end $$;
+select pg_temp.t('116: ออกกลางคันตอนเฟสปริศนา (ยังไม่ผ่านชั้นไหน) → left ไม่มีรางวัล', (select v->>'status' = 'left' and (v->>'paid_exp')::int = 0 from _r116 where k = 'leave_pz'));
+-- ผ่านครบ 5 ชั้นด้วยระบบใหม่: ปริศนาผ่านทุกชั้น (+10%) + กุญแจทอง ×1 → หีบ 3 ใบ
+update dungeon_runs set run_date = today_th() - 5 where student_id = (select sid from _dg);
+do $$ declare tok uuid := (select tok from _dg); rn uuid; v json; i int; begin
+  perform set_config('role', 'anon', true); v := dungeon_start(tok, 'crystal_cave'); perform set_config('role', 'postgres', true);
+  rn := (v->>'id')::uuid;
+  update dungeon_runs set perks = '{"key":1}'::jsonb where dungeon_runs.id = rn;
+  for i in 1..5 loop
+    perform set_config('role', 'anon', true); perform dungeon_puzzle(tok, rn, true, 6); perform set_config('role', 'postgres', true);
+    update battles set status = 'won', m_hp = 0, p_hp = 50, finished_at = now() where id = (select battle_id from dungeon_runs where dungeon_runs.id = rn) and status = 'active';
+    if i < 5 then
+      update dungeon_runs set perk_offer = '["sharp","aegis","mend"]'::jsonb where dungeon_runs.id = rn;
+      perform set_config('role', 'anon', true); perform dungeon_pick(tok, rn, 'mend'); perform set_config('role', 'postgres', true);
+    end if;
+  end loop;
+  insert into _r116 values ('full', to_jsonb(rn));
+end $$;
+select pg_temp.t('116: ผ่านครบ 5 ชั้น (ปริศนาผ่านทุกชั้น +10%) → cleared · EXP 13+22+33+46+88=202 · เหรียญ 7+11+17+22+44=101', (select status = 'cleared' and cleared = 5 and paid_exp = 202 and paid_coins = 101 from dungeon_runs where id = (select (v#>>'{}')::uuid from _r116 where k = 'full')));
+select pg_temp.t('116: กุญแจทอง → หีบสมบัติเปิดมากกว่าปกติ (ใบแรกการันตี) · ledger ไม่ซ้ำ', (select jsonb_array_length(chest) >= 1 and (select count(*) from ledger where ref_key = 'dungeon:' || r.id) = 1 from dungeon_runs r where r.id = (select (v#>>'{}')::uuid from _r116 where k = 'full')));
+select pg_temp.t('116: จบรอบแล้ว phase/perk_offer ถูกล้าง', (select phase = 'fight' and perk_offer is null from dungeon_runs where id = (select (v#>>'{}')::uuid from _r116 where k = 'full')));
+-- ปิดโหมดใหม่ → กลับไปเข้าศึกทันที
+update dungeon_runs set run_date = today_th() - 5 where student_id = (select sid from _dg);
+insert into app_settings(key,value) values ('dungeon_roguelike','0') on conflict (key) do update set value=excluded.value;
+do $$ declare tok uuid := (select tok from _dg); v json; begin
+  perform set_config('role', 'anon', true); v := dungeon_start(tok, 'crystal_cave'); perform dungeon_leave(tok, (v->>'id')::uuid); perform set_config('role', 'postgres', true);
+  insert into _r116 values ('legacy', v::jsonb);
+end $$;
+select pg_temp.t('116: ตั้ง dungeon_roguelike=0 → เริ่มรอบแล้วเข้าศึกทันที (ไม่มีปริศนา/โบนัส)', (select v->>'phase' = 'fight' and v->'battle'->>'status' = 'active' from _r116 where k = 'legacy'));
+insert into app_settings(key,value) values ('dungeon_roguelike','1') on conflict (key) do update set value=excluded.value;
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

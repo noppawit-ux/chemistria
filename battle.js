@@ -34,10 +34,12 @@ const BATTLE = (() => {
   const dgBgCls = () => { const bg = S.dg && S.dg.bg; return bg ? "bt-cbg" + (/\/a\d+\.webp$/.test(bg) ? " px" : "") : ""; };
   const dgPips = (r) => Array.from({ length: r.floors }, (_, i) => { const f = i + 1, m = (r.map || [])[i] || {}; return `<i class="dgp ${f <= r.cleared ? "done" : f === r.floor ? "now" : ""} ${m.boss ? "boss" : ""}">${m.boss ? "👑" : f}</i>`; }).join("");
   const dgStars = (key) => { const x = S.dgs && (S.dgs.dungeons || []).find((d) => d.key === key); return x && x.stars ? "⭐".repeat(x.stars) : ""; };
-  const dgBar = (bid) => inDg(bid) ? `<div class="dg-bar"><b>${esc(S.dg.dungeon.emoji)} ${esc(S.dg.dungeon.name)} <small>${dgStars(S.dg.dungeon.key)}</small></b><span class="dg-pips">${dgPips(S.dg)}</span></div>` : "";
+  const perkChips = (r) => (r && r.perks && r.perks.length ? `<span class="dg-perks">${r.perks.map((p) => `<i class="dgk" title="${esc(p.name)}: ${esc(p.descr)}">${p.emoji}${p.n > 1 ? `<sup>${p.n}</sup>` : ""}</i>`).join("")}</span>` : "");
+  const dgBar = (bid) => inDg(bid) ? `<div class="dg-bar"><b>${esc(S.dg.dungeon.emoji)} ${esc(S.dg.dungeon.name)} <small>${dgStars(S.dg.dungeon.key)}</small></b><span class="dg-pips">${dgPips(S.dg)}</span>${perkChips(S.dg)}</div>` : "";
   async function dgLoad() { try { S.dgs = await rpc("dungeon_status", { p_token: tk() }); } catch (e) { S.dgs = null; } return S.dgs; }
   async function dgOpen() { S.screen = "dg"; S.bat = null; paint(); await dgLoad(); paint(); }
-  function dgEnter(run) { S.dg = run; S.bat = run.battle; S.dgBat = run.battle && run.battle.id; S.trial = null; S.fb = null; S.drop = null; S.screen = "fight"; resume(); }
+  function dgEnter(run) { S.dg = run; if (run.status === "active" && (run.phase === "puzzle" || run.phase === "perk")) { S.bat = null; S.dgBat = null; S.trial = null; S.fb = null; S.drop = null; S.screen = "dgph"; return; }
+    S.bat = run.battle; S.dgBat = run.battle && run.battle.id; S.trial = null; S.fb = null; S.drop = null; S.screen = "fight"; resume(); }
   async function dgStart(key) {
     if (S.busy) return; S.busy = true;
     try { const r = await rpc("dungeon_start", { p_token: tk(), p_key: key }); dgEnter(r); S.msg = `เข้าสู่ ${r.dungeon.name} ชั้น ${r.floor}/${r.floors}! เลือกสกิลแล้วตอบคำถามให้ถูก`; }
@@ -56,7 +58,38 @@ const BATTLE = (() => {
     try { S.dg = await rpc("dungeon_leave", { p_token: tk(), p_run: S.dg.id }); } catch (e) { toast(e.message); }
     S.busy = false; S.bat = null; S.fb = null; S.dgBat = null; const r = S.dg; S.dg = null; if (r && r.paid_exp + r.paid_coins > 0) toast(`ออกจากดันเจี้ยน +${r.paid_exp} EXP +${r.paid_coins} 🪙`); open();
   }
+  /* ---- ประตูมิติ: ปริศนาก่อนสู้ + เลือกโบนัสหลังจบชั้น ---- */
+  const dgPh = () => { if (!S.dg) return; DGPZ.stop(); S.bat = null; S.dgBat = null; S.screen = "dgph"; paint(); };
+  function dgPzGo() {
+    const host = document.getElementById("dgpz"); if (!host || !S.dg || !S.dg.pz) return;
+    DGPZ.mount(S.dg.pz.type, host, async (ok, secs) => {
+      if (!document.getElementById("dgpz") || !S.dg) return;
+      S.busy = true; host.innerHTML = '<div class="center"><i class="sk-spin"></i> <small class="muted">กำลังเข้าสู่ศึก…</small></div>';
+      try { const r = await rpc("dungeon_puzzle", { p_token: tk(), p_run: S.dg.id, p_ok: ok, p_secs: Math.round(secs * 10) / 10 }); dgEnter(r); S.msg = ok ? "🧠 ผ่านปริศนา! มอนสเตอร์อ่อนแรงลง เลือกสกิลแล้วตอบคำถามให้ถูก" : "ปริศนาไม่ผ่าน… มอนสเตอร์ได้เปรียบเล็กน้อย สู้ๆ!"; }
+      catch (e) { toast(e.message); }
+      S.busy = false; if (S.screen === "fight" && S.bat) await scene(S.bat); else paint();
+    });
+  }
+  async function dgPick(key) {
+    if (S.busy || !S.dg) return; S.busy = true;
+    try { const r = await rpc("dungeon_pick", { p_token: tk(), p_run: S.dg.id, p_key: key }); dgEnter(r); }
+    catch (e) { toast(e.message); }
+    S.busy = false; paint();
+  }
+  function dgPhView() {
+    const r = S.dg; if (!r) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
+    const top = `<div class="dg-bar"><b>${esc(r.dungeon.emoji)} ${esc(r.dungeon.name)} <small>${dgStars(r.dungeon.key)}</small></b><span class="dg-pips">${dgPips(r)}</span>${perkChips(r)}</div>`;
+    const leave = '<button class="btn ghost small" onclick="BATTLE.dgLeave()">🚪 รับรางวัลสะสมแล้วออก</button>';
+    if (r.phase === "perk") return `${top}<div class="card center dg-ph"><div style="font-size:46px">🎁</div><h2 style="margin:4px 0">ผ่านชั้น ${r.floor} แล้ว! เลือกโบนัส 1 อย่าง</h2><p class="muted">โบนัสอยู่กับคุณจนจบรอบนี้ · เลือกให้เข้ากับแผนของคุณ</p>
+      <div class="dg-perkrow">${(r.perk_offer || []).map((p) => `<button class="dg-perk" onclick="BATTLE.dgPick('${esc(p.key)}')"><span class="pe">${p.emoji}</span><b>${esc(p.name)}</b><small>${esc(p.descr)}</small><i>ระดับ ${p.n}/${p.max}</i></button>`).join("")}</div>${leave}</div>`;
+    const t = (r.pz && DGPZ.INFO[r.pz.type]) || DGPZ.INFO.tap;
+    return `${top}<div class="card center dg-ph"><div class="dg-portal">🌀</div><h2 style="margin:4px 0">ประตูมิติ ชั้น ${r.floor}/${r.floors}${r.boss ? " 👑 บอส" : ""}</h2>
+      <div id="dgpz"><div class="pz-intro"><div style="font-size:40px">${t.ico}</div><h3 style="margin:2px 0">ปริศนา: ${t.name}</h3><p>${t.how}</p>
+        <p class="muted" style="font-size:.85em">ผ่านปริศนา → เลือดมอนสเตอร์ −12% และรางวัลชั้น +10% · ไม่ผ่าน → มอนสเตอร์เลือด +8% (ยังสู้ต่อได้)</p>
+        <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.dgPzGo()">▶️ เริ่มปริศนา</button>${leave}</div></div></div></div>`;
+  }
   const dgEntry = () => { const x = S.dgs; return `<div class="card dg-entry"><div class="row"><div class="grow"><h3 style="margin:0">🏰 ท้าดันเจี้ยน</h3><p class="muted" style="margin:2px 0 0">ไต่ทีละชั้น สู้บอส เปิดหีบสมบัติ${x ? ` · เข้าได้วันนี้อีก ${Math.max(0, x.limit - x.used)}/${x.limit} รอบ${x.active ? " · มีรอบค้างอยู่" : ""}` : ""}</p></div><button class="btn gold" onclick="BATTLE.dgOpen()">เข้าสู่ดันเจี้ยน</button></div></div>`; };
+  async function dgGate() { GAMES.setMode("battle"); DGPZ.stop(); S.bat = null; S.dg = null; await dgOpen(); }
   const dgBack = () => { S.dgSkip = true; open(); };
   const dgDone = () => { S.dg = null; S.dgBat = null; S.bat = null; S.fb = null; S.drop = null; LC.cls = LC.hst = LC.gbest = LC.gear = 0; open(); };
   function dgChest(r) {
@@ -70,7 +103,7 @@ const BATTLE = (() => {
     const head = `<div class="dg-pips big">${dgPips(r)}</div>`;
     if (win && r.status === "active") return `<div class="card center gm-res perfect"><div style="font-size:54px">🏆</div><h2>ผ่านชั้น ${r.floor}/${r.floors}!</h2>${head}
       <p><span class="pill">สะสม +${r.exp} EXP</span> <span class="pill">+${r.coins} 🪙</span></p><p class="muted">รับรางวัลสะสมเมื่อจบรอบ · HP จะฟื้นให้ ${r.heal_pct}% ของสูงสุดตอนเข้าชั้นต่อไป</p>
-      <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.dgNext()">➡️ ไปชั้น ${r.floor + 1}${(r.map[r.floor] || {}).boss ? " 👑 บอส" : ""}</button><button class="btn ghost" onclick="BATTLE.dgLeave()">🚪 รับรางวัล 60% แล้วออก</button></div></div>`;
+      <div class="row" style="justify-content:center">${r.phase === "perk" ? `<button class="btn gold" onclick="BATTLE.dgPh()">🎁 เลือกโบนัส แล้วเข้าประตูมิติชั้น ${r.floor + 1}${(r.map[r.floor] || {}).boss ? " 👑" : ""}</button>` : `<button class="btn gold" onclick="BATTLE.dgNext()">➡️ ไปชั้น ${r.floor + 1}${(r.map[r.floor] || {}).boss ? " 👑 บอส" : ""}</button>`}<button class="btn ghost" onclick="BATTLE.dgLeave()">🚪 รับรางวัล 60% แล้วออก</button></div></div>`;
     if (r.status === "cleared") return `<div class="card center gm-res perfect"><div style="font-size:54px">🎉</div><h2>พิชิต ${esc(r.dungeon.name)}!</h2>${head}
       <p><span class="pill">+${r.paid_exp} EXP</span> <span class="pill">+${r.paid_coins} 🪙</span></p>${dgChest(r)}
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="BATTLE.dgDone()">กลับ</button></div></div>`;
@@ -119,7 +152,7 @@ const BATTLE = (() => {
   const pickArena = (k) => { const a = (S.data.arenas || []).find((x) => x.key === k); if (!a) return; if (a.locked) return toast(`ปลดล็อกที่เลเวล ${a.min_level} 🔒`); S.arena = k; paint(); };
 
   async function open() {
-    S.screen = "list"; S.fb = null; S.msg = ""; S.drop = null; GAMES.setMode("battle"); paint(); try { gearLoad(true); } catch (e) {}
+    DGPZ.stop(); S.screen = "list"; S.fb = null; S.msg = ""; S.drop = null; GAMES.setMode("battle"); paint(); try { gearLoad(true); } catch (e) {}
     try {
       S.data = await rpc("battle_status", { p_token: tk() });
       if (S.data.active && S.data.active.status === "active") { S.bat = S.data.active; S.screen = "fight"; resume();
@@ -494,6 +527,6 @@ const BATTLE = (() => {
   }
 
   function endTrial() { S.trial = null; S.bat = null; S.screen = "list"; LC.cls = LC.hst = LC.gbest = LC.gear = 0; load().then(() => go("home")).catch(() => go("home")); }
-  const view = () => (S.screen === "dg" ? dgView() : S.screen === "list" || !S.bat ? listView() : fightView());
-  return { dgBack, dgOpen, dgStart, dgNext, dgLeave, dgDone, deathFx, info: skInfo, arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
+  const view = () => (S.screen === "dgph" ? dgPhView() : S.screen === "dg" ? dgView() : S.screen === "list" || !S.bat ? listView() : fightView());
+  return { dgGate, dgBack, dgOpen, dgStart, dgNext, dgLeave, dgDone, dgPh, dgPick, dgPzGo, deathFx, info: skInfo, arena: pickArena, sprite, hp, skyHtml, pfx, num, pop, flash, shot, span, put, ctr, later, SKFX, COL, open, view, start, guard, begin, endTrial, skill: useSkill, pick: answer, next: afterFb, arrow: tapArrow, flee, heal, back, exit };
 })();

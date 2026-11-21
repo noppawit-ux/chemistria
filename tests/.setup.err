@@ -127,3 +127,7 @@ psql:/home/claude/chemistria/db/setup_all.sql:15023: NOTICE:  trigger "monster_a
 psql:/home/claude/chemistria/db/setup_all.sql:15081: NOTICE:  policy "teacher_all" for relation "run_stages" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:15178: NOTICE:  policy "teacher_all" for relation "loot_items" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:15311: NOTICE:  trigger "dungeon_qpool" for relation "battles" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:15412: NOTICE:  column "id" of relation "dungeon_perks" already exists, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:15415: NOTICE:  policy "teacher_all" for relation "dungeon_perks" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:15505: NOTICE:  trigger "dungeon_perk" for relation "battles" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:15631: NOTICE:  policy "teacher_all" for relation "dg_patch" does not exist, skipping

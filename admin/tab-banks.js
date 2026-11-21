@@ -28,4 +28,10 @@ TAB.banks = async function (v) {
       { k: "decor_id", label: "ไอเทมตกแต่ง", t: "select", opts: () => [["", "—"], ...decs.map((d) => [d.id, d.name])] },
       { k: "image", label: "รูป (ไม่บังคับ)", w: 140 }, { k: "weight", label: "น้ำหนัก", t: "number", w: 60 },
       { k: "boss_only", label: "เฉพาะบอส", t: "bool" }, { k: "active", label: "เปิด", t: "bool" }] });
+
+  const hp = holder(v, "🌀 โบนัส roguelike ของประตูมิติ",
+    "หลังจบแต่ละชั้น (ยกเว้นชั้นบอส) นักเรียนเลือกโบนัส 1 ใน 3 ที่สุ่มจากรายการนี้ · แก้ชื่อ/อีโมจิ/คำอธิบาย/ขีดสะสม/เปิด-ปิดได้ แต่ค่าผลของแต่ละรหัสถูกกำหนดในระบบ (sharp ลดเลือดมอนสเตอร์ · aegis ลดดาเมจ · vigor เลือดสูงสุด · mend ฟื้นเพิ่ม · greed รางวัลชั้น · key หีบเพิ่ม · wise โบนัสปริศนา · gamble เสี่ยงโชค) · เพิ่มรหัสใหม่ไม่มีผลอะไร · ปิดทั้งระบบปริศนา+โบนัสได้ที่ตั้งค่า dungeon_roguelike = 0 ในตารางตั้งค่าแอป");
+  await crud(hp, { table: "dungeon_perks", order: "sort", noDelete: true, defaults: { emoji: "✨", max_stack: 3, active: true, sort: 20 },
+    cols: [{ k: "key", label: "รหัส (ห้ามแก้ซ้ำ)", w: 80 }, { k: "emoji", label: "อีโมจิ", w: 50 }, { k: "name", label: "ชื่อ", w: 130 }, { k: "descr", label: "คำอธิบาย", w: 320 },
+      { k: "max_stack", label: "สะสมสูงสุด", t: "number", w: 60 }, { k: "sort", label: "ลำดับ", t: "number", w: 50 }, { k: "active", label: "เปิด", t: "bool" }] });
 };
