@@ -119,12 +119,16 @@ const BATTLE = (() => {
       <button class="btn gold" onclick="BATTLE.dgStart('${esc(act.dungeon.key)}')">▶️ เล่นต่อ</button> <button class="btn ghost" onclick="BATTLE.dgLeave()">🚪 ออก (ได้ 60%)</button></div>` : "";
     return `<div class="card"><div class="row"><h3 style="margin:0" class="grow">🏰 ท้าดันเจี้ยน</h3><button class="btn ghost small" onclick="BATTLE.dgBack()">⬅️ ศึกปกติ</button></div>
       <p><span class="pill">🗝️ เข้าได้วันนี้อีก ${left}/${d.limit} รอบ</span></p><p class="muted" style="margin:4px 0 0">ไต่ทีละชั้นให้ถึงบอส · HP ยกต่อชั้น (ฟื้นให้เล็กน้อย) · แพ้หรือออกกลางคันได้ 60% ของรางวัลสะสม · ผ่านครบได้หีบบอส</p></div>${resume}
-      ${d.dungeons.map((x) => `<div class="card dg-card ${x.locked ? "locked" : ""}"><div class="row"><h3 style="margin:0" class="grow">${esc(x.emoji)} ${esc(x.name)}</h3><span class="tag">${x.stars ? "⭐".repeat(x.stars) + " · " : ""}${x.floors} ชั้น</span></div>
-        <p class="muted" style="margin:2px 0 8px">${esc(x.descr || "")}</p>
+      ${d.dungeons.map((x) => { const bs = x.map[x.map.length - 1] || {}, bm = bs.monster || {}, bg = bs.bg || "", px = /\/a\d+\.webp$/.test(bg) ? " px" : "";
+        const bimg = bm.image ? `<img class="dgc-spr" src="${esc(bm.image)}" alt="${esc(bm.name || "บอส")}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'dgc-spr em',textContent:'${esc(bm.emoji || "👑")}'}))">` : `<span class="dgc-spr em">${esc(bm.emoji || "👑")}</span>`;
+        return `<div class="card dg-card dg-cover ${x.locked ? "locked" : ""}"><div class="dgc-hero${px}" style="--bgi:url(${esc(bg)})">
+          <div class="dgc-fx" aria-hidden="true">${"<i></i>".repeat(8)}</div>
+          <div class="dgc-boss"><div class="dgc-aura"></div>${bimg}<div class="dgc-shadow"></div></div>
+          <div class="dgc-info"><span class="tag">${x.stars ? "⭐".repeat(x.stars) + " · " : ""}${x.floors} ชั้น</span><h3>${esc(x.emoji)} ${esc(x.name)}</h3><p>${esc(x.descr || "")}</p><small>👑 บอสประจำดันเจี้ยน: <b>${esc(bm.name || "?")}</b></small>${x.locked ? `<span class="dgc-lock">🔒 เลเวล ${x.min_level}</span>` : ""}</div></div>
         <div class="dg-map">${x.map.map((f) => `<div class="dg-fl ${f.boss ? "boss" : ""} ${f.floor <= x.best ? "done" : ""}"><div class="dg-fbg" style="background-image:url(${esc(f.bg || "")})"></div>${(f.monster.image ? `<img src="${esc(f.monster.image)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc(f.monster.emoji || "👾")}'}))">` : `<span>${esc(f.monster.emoji || "👾")}</span>`)}<small>${f.boss ? "👑 บอส" : "ชั้น " + f.floor}</small><small class="muted">+${f.exp}</small></div>`).join("")}</div>
         <p style="margin:8px 0"><span class="pill">🏅 ชั้นสูงสุด ${x.best}/${x.floors}</span> <span class="pill">🏆 พิชิต ${x.clears} ครั้ง</span></p>
         ${x.locked ? `<p class="muted">🔒 ต้องถึงเลเวล ${x.min_level}</p>` : act ? "" : left > 0 ? `<button class="btn gold" onclick="BATTLE.dgStart('${esc(x.key)}')">⚔️ เข้าดันเจี้ยน</button>` : '<p class="muted">วันนี้เข้าครบโควตาแล้ว พรุ่งนี้มาใหม่</p>'}
-        ${x.board.length ? `<details class="clsdet" open><summary>🥇 อันดับในห้อง (ชั้นสูงสุด)</summary><div class="dg-board">${x.board.map((b, i) => `<div class="row ${b.mine ? "mine" : ""}"><span>${["🥇", "🥈", "🥉"][i] || i + 1}</span><span class="grow">${esc(b.avatar || "")} ${esc(b.name)}</span><b>${b.best}/${x.floors}</b><small class="muted">${b.clears ? "🏆" + b.clears : ""}</small></div>`).join("")}</div></details>` : ""}</div>`).join("")}`;
+        ${x.board.length ? `<details class="clsdet" open><summary>🥇 อันดับในห้อง (ชั้นสูงสุด)</summary><div class="dg-board">${x.board.map((b, i) => `<div class="row ${b.mine ? "mine" : ""}"><span>${["🥇", "🥈", "🥉"][i] || i + 1}</span><span class="grow"><span class="dgav">${avHtml(b.avatar)}</span> ${esc(b.name)}</span><b>${b.best}/${x.floors}</b><small class="muted">${b.clears ? "🏆" + b.clears : ""}</small></div>`).join("")}</div></details>` : ""}</div>`; }).join("")}`;
   }
   const preload = (urls, ms = 9000) => Promise.race([Promise.all(urls.filter(Boolean).map((u) => new Promise((r) => { const i = new Image(); i.onload = i.onerror = r; i.src = u; if (i.complete) r(); }))), new Promise((r) => setTimeout(r, ms))]);
   function sceneUrls(bat) {
@@ -446,13 +450,13 @@ const BATTLE = (() => {
     const ph = b.phase, cs = ph === "question" && b.q ? (b.skills.find((x) => x.key === b.q.skill) || {}) : null;
     const fm = S.shown.m, fp = S.shown.p; S.shown = { m: b.m_hp, p: b.p_hp };
     const th = m.theme || "lab"; if (S.ldg) return loadView();
-    const dgo = inDg(b.id), arena = dgBar(b.id) + `<div class="card bt-field ar-${esc(th)} ${dgo ? dgBgCls() : ""} ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}"${dgo ? dgBgStyle() : ""}>
+    const dgo = inDg(b.id), bar = dgBar(b.id), field = `<div class="card bt-field ar-${esc(th)} ${dgo ? dgBgCls() : ""} ${cs ? "charge" : ""} ${ph === "defend" ? "alert" : ""}"${dgo ? dgBgStyle() : ""}>
       ${skyHtml(th)}<div class="bt-floor"></div>${m.arena_name ? `<div class="bt-arname">${esc(m.arena_name)}</div>` : ""}
       <div class="bt-plate bt-pm"><b>${esc(m.name)}</b> <small>Lv.${m.level}</small> ${elBadge(monElem(m.id))}${matchupNote(monElem(m.id))}${hp(b.m_hp, b.m_max, "mon", fm, S.hpDelay)}</div>
       <div class="bt-mo ${ph === "defend" ? "lunge" : ""} ${S.mdead === b.id ? "dead gone" : ""}"><div class="bt-shadow"></div>${mimg(m, "float")}</div>
       <div class="bt-pl ${cs ? "charging" : ""}"><div class="bt-shadow"></div>${sprite(me)}${cs ? `<div class="bt-chg">${cs.emoji}</div>` : ""}</div>
       <div class="bt-plate bt-pp"><b>${esc(me.name)}</b> <small>เทิร์น ${b.turn}</small>${hp(b.p_hp, b.p_max, "me", fp, S.hpDelay)}<div class="bt-buffs">${buffs}</div></div>
-      <div id="btfx" class="bt-fxl"></div></div>`;
+      <div id="btfx" class="bt-fxl"></div></div>`, arena = bar + field;
     const arenaF = arena + (b.status === "active" ? abStrip(b) : "");
     if (S.fb) return arenaF + fbView();
     if (b.status !== "active") return arena + resultView();
@@ -460,9 +464,10 @@ const BATTLE = (() => {
     if (b.phase === "defend") return arenaF + defendView();
     const skills = b.skills.map((s) => { return `<div class="bt-skw"><button class="bt-skill big ${s.kind}" ${s.left > 0 || S.busy ? "disabled" : ""} onclick="BATTLE.skill('${s.key}')"><span class="bt-big">${aico(s.key, s.emoji)}${s.left > 0 ? `<i class="bt-cd" aria-label="รออีก ${s.left} เทิร์น">${s.left}</i>` : ""}</span><b>${esc(s.name)}</b><small>${s.left > 0 ? `รอ ${s.left} เทิร์น` : s.kind === "buff" ? "บัพ" : `${KIND[s.kind][1]} ${s.power}`}</small></button><button class="bt-info" onclick="BATTLE.info('${s.key}')" aria-label="รายละเอียด ${esc(s.name)}">ℹ️</button></div>`; }).join("");
     const warn = heavyNow() ? '<p class="bt-warn">⚠️ มอนสเตอร์กำลังรวบรวมพลัง! การโจมตีครั้งหน้าแรง ×1.5 — “ตั้งรับ” คุ้มมาก</p>' : "";
-    return arenaF + statsPanel(false) + `<div class="card bt-msg bt-m-choose">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
+    const act = `<div class="card bt-msg bt-m-choose bt-top">${warn}<div class="row"><b class="grow">${S.msg ? esc(S.msg) : "เลือกสกิลของคุณ"}</b><button class="btn ghost small" onclick="BATTLE.heal()">💚 ยา</button> <button class="btn ghost small" onclick="BATTLE.flee()">🏃 หนี</button></div>
       <details class="clsdet"><summary>วิธีเล่น</summary><ul><li>เลือกสกิล แล้วตอบคำถามให้ถูกภายใน ${qs()} วิ สกิลถึงจะออกผล</li><li>ตอบภายใน 8 วิ ดาเมจโจมตี +25% ⚡</li><li>มอนสเตอร์โจมตีเอง (รับ 70%) ทุกเทิร์นที่ 3 โจมตีหนัก</li></ul></details><div class="bt-skillrow">${skills}${guardBtn(b)}</div>
       ${S.trial ? '<p class="muted" style="margin:8px 0 0">🎖️ ด่านบอสเลื่อนแรงค์ — HP ของคุณ 85% · เวลา 15 วิ · ตอบผิดบอสจะฟื้น HP 5% · ชนะเพื่อเลื่อนแรงค์ (แพ้ท้าใหม่ได้พรุ่งนี้)</p>' : b.rewarded ? "" : '<p class="muted" style="margin:8px 0 0">โหมดฝึก: รอบนี้ไม่ได้รางวัล</p>'}</div>`;
+    return bar + act + field + (b.status === "active" ? abStrip(b) : "");
   }
 
   function questionView() {
