@@ -1302,8 +1302,8 @@ update _tq set ans = (select answer from quiz_questions where id=(select cur_q f
 set role anon;
 create temp table _sp4 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
 reset role;
-select pg_temp.t('แรงค์ 100: เกณฑ์ EXP ช่วงหลังยากขึ้น (Emerald 2900 · Challenger 12000→18000 ใน 117 · Platinum เท่าเดิม 1800)',
-  (select min_exp from ch_ranks where key='emerald')=2900 and (select min_exp from ch_ranks where key='challenger')=18000 and (select min_exp from ch_ranks where key='platinum')=1800);
+select pg_temp.t('แรงค์ 100: เกณฑ์ EXP ช่วงหลังยากขึ้น (Emerald 2900 · Challenger 12000→14500 ใน 117 · Platinum เท่าเดิม 1800)',
+  (select min_exp from ch_ranks where key='emerald')=2900 and (select min_exp from ch_ranks where key='challenger')=14500 and (select min_exp from ch_ranks where key='platinum')=1800);
 select pg_temp.t('สมดุล 99: โบนัสตอบไว ≤4 วิ +50% · ≤8 วิ +30% · ≤12 วิ +15% · ช้ากว่านั้น 0', (select (r->'event'->>'spd')::int from _sp1) = 50 and (select (r->'event'->>'spd')::int from _sp2) = 30
   and (select (r->'event'->>'spd')::int from _sp3) = 15 and (select (r->'event'->>'spd')::int from _sp4) = 0);
 select pg_temp.t('สมดุล 99: ตอบไวดาเมจมากกว่าช้า (≤4 วิ > ช้า)', (select (r->'event'->>'dmg')::int from _sp1) > (select (r->'event'->>'dmg')::int from _sp4));
@@ -1999,9 +1999,9 @@ do $$ declare tk uuid; v json; begin
   insert into _p117 values ('cap', (v->>'cap')::int), ('used', (v->>'used')::int);
 end $$;
 select pg_temp.t('117: play_exp_status คืน cap=100 และ used=90', (select v from _p117 where k='cap') = 100 and (select v from _p117 where k='used') = 90);
-select pg_temp.t('117: เกณฑ์แรงค์ใหม่ Diamond 5000 · Master 8500 · Grandmaster 12500 · Challenger 18000',
-  (select min_exp from ch_ranks where key='diamond') = 5000 and (select min_exp from ch_ranks where key='master') = 8500
-  and (select min_exp from ch_ranks where key='grandmaster') = 12500 and (select min_exp from ch_ranks where key='challenger') = 18000);
+select pg_temp.t('117: เกณฑ์แรงค์ใหม่ Diamond 4700 · Master 7000 · Grandmaster 10000 · Challenger 14500',
+  (select min_exp from ch_ranks where key='diamond') = 4700 and (select min_exp from ch_ranks where key='master') = 7000
+  and (select min_exp from ch_ranks where key='grandmaster') = 10000 and (select min_exp from ch_ranks where key='challenger') = 14500);
 select pg_temp.t('117: เกณฑ์เพิ่มขึ้นเรียงลำดับตามแรงค์', (select bool_and(min_exp > lag_exp) from (select min_exp, lag(min_exp) over (order by sort) lag_exp from ch_ranks) x where lag_exp is not null));
 insert into app_settings(key,value) values ('play_daily_cap_exp','0') on conflict (key) do update set value = excluded.value;
 
@@ -2061,12 +2061,12 @@ insert into ledger(student_id, exp, coins, reason, ref_key, created_at) select (
   from (values (80,'เกมวัน -20 ก','game:h120:1',20),(90,'ดันเจี้ยนวัน -20','dungeon:h120:2',20),(500,'เช็คชื่อวัน -20','att:h120:3',20),
                (120,'เกมวัน -21 พอดีเพดาน','game:h120:4',21),(30,'ดรอปมอนสเตอร์: วัน -22',null,22),(40,'เกมวัน -22','game:h120:5',22),(200,'ดันเจี้ยนวัน -22','dungeon:h120:6',22)) v(e,r,k,d);
 update students set exp = 80+90+500+120+30+40+200 where id = (select id from _h120);
-select _fix_exp_history(120);
-select pg_temp.t('120: ตัดเฉพาะวันที่เกิน: วัน -20 เกิน 50 · วัน -22 เกิน 150 · วัน -21 พอดีเพดานไม่ตัด',
-  (select count(*) = 2 and sum(cut) = 200 from exp_fix_log where student_id = (select id from _h120)));
-select pg_temp.t('120: EXP นักเรียนลดลงรวม 200 (1060→860) · เช็คชื่อไม่ถูกนับ', (select exp = 860 from students where id = (select id from _h120)));
-select pg_temp.t('120: ledger มีแถวปรับสมดุลแถวเดียว exp = -200', (select count(*) = 1 and sum(exp) = -200 from ledger where ref_key = 'fix:exp120:' || (select id from _h120)));
-select pg_temp.t('120: รันซ้ำไม่หักซ้ำ', (select _fix_exp_history(120) = 0) and (select exp = 860 from students where id = (select id from _h120)));
+select _fix_exp_history(120, 50);
+select pg_temp.t('120: ตัดเฉพาะวันที่เกิน: หักครึ่งของส่วนเกิน: วัน -20 เกิน 50→25 · วัน -22 เกิน 150→75 · วัน -21 พอดีเพดานไม่ตัด',
+  (select count(*) = 2 and sum(cut) = 100 from exp_fix_log where student_id = (select id from _h120)));
+select pg_temp.t('120: EXP นักเรียนลดลงรวม 100 (1060→960) · เช็คชื่อไม่ถูกนับ', (select exp = 960 from students where id = (select id from _h120)));
+select pg_temp.t('120: ledger มีแถวปรับสมดุลแถวเดียว exp = -100', (select count(*) = 1 and sum(exp) = -100 from ledger where ref_key = 'fix:exp120:' || (select id from _h120)));
+select pg_temp.t('120: รันซ้ำไม่หักซ้ำ', (select _fix_exp_history(120, 50) = 0) and (select exp = 960 from students where id = (select id from _h120)));
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

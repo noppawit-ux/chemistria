@@ -15649,14 +15649,14 @@ end $$;
 --    นับรวม: มินิเกม · สู้มอนสเตอร์/บอส · ท้าดวล · ดันเจี้ยน · EXP จากหีบ/ดรอป · ประลองครูบุ๊ค (ledger ref game:* / dungeon:* และ EXP จากดรอป)
 --    ไม่นับ (ครูเป็นคนกำหนด จึงไม่จำกัด): เช็คชื่อ · ส่งงาน · เควส · สอบ · ของขวัญ/ปรับ EXP จากครู · Achievement
 --    เกินเพดานแล้วยังได้เหรียญ/ไอเทมตามปกติ แต่ EXP ส่วนที่เกินจะไม่เข้า (บันทึกใน ledger ว่า "ครบเพดาน")
--- 2) เกณฑ์แรงค์ Diamond ขึ้นไป: Diamond 4,400→5,000 · Master 6,300→8,500 · Grandmaster 8,700→12,500 · Challenger 12,000→18,000
---    เปลี่ยนเฉพาะแรงค์ที่ยังเป็นค่าจาก SQL 100 (ถ้าครูแก้เองไว้จะไม่ทับ) · EXP นักเรียนไม่หาย แต่แรงค์ที่แสดงอาจลดลงตามเกณฑ์ใหม่
+-- 2) เกณฑ์แรงค์ Diamond ขึ้นไป (ปรับแบบเบา): Diamond 4,400→4,700 · Master 6,300→7,000 · Grandmaster 8,700→10,000 · Challenger 12,000→14,500
+--    เปลี่ยนเฉพาะแรงค์ที่ยังเป็นค่าจาก SQL 100 (ถ้าครูแก้เองไว้จะไม่ทับ) · EXP นักเรียนไม่หาย แต่แรงค์ที่แสดงอาจลดลงเล็กน้อยตามเกณฑ์ใหม่
 
 insert into app_settings (key, value) values ('play_daily_cap_exp', '100') on conflict (key) do nothing;
 
 update ch_ranks r set min_exp = v.new_exp
-  from (values ('diamond',4400,5000),('master',6300,8500),('grandmaster',8700,12500),('challenger',12000,18000)) v(key, old_exp, new_exp)
- where r.key = v.key and r.min_exp = v.old_exp;
+  from (values ('diamond',4400,4700),('master',6300,7000),('grandmaster',8700,10000),('challenger',12000,14500)) v(key, old_exp, new_exp)
+ where r.key = v.key and r.min_exp in (v.old_exp, v.new_exp);
 
 -- แถว ledger ที่ถือว่าเป็น "EXP จากการเล่น"
 create or replace function _is_play_ledger(p_ref text, p_reason text) returns boolean
@@ -15816,7 +15816,7 @@ revoke execute on function trg_play_cap() from public, anon, authenticated;
 --   1) เพดานเล่นต่อวัน: EXP 100→120 · เหรียญ 150→180 (เปลี่ยนเฉพาะที่ยังเป็นค่าเริ่มต้น ถ้าครูตั้งเองไว้จะไม่ทับ)
 --   2) รางวัล Achievement (EXP/เหรียญ) ลดเหลือ 50% (ผู้ที่รับไปแล้วไม่ถูกเรียกคืน)
 --   3) ดันเจี้ยน: EXP/เหรียญต่อชั้น และ EXP/เหรียญในหีบ (loot_items ของ dungeon:*) ลดเหลือ 50%
---   4) ย้อนหลัง: แต่ละวันที่ EXP จากการเล่น (มินิเกม/ต่อสู้/ท้าดวล/ดันเจี้ยน/หีบ) เกินเพดานใหม่ → หักส่วนเกินออกจาก EXP นักเรียน
+--   4) ย้อนหลัง: แต่ละวันที่ EXP จากการเล่น (มินิเกม/ต่อสู้/ท้าดวล/ดันเจี้ยน/หีบ) เกินเพดานใหม่ → หัก "บางส่วน" (50% ของส่วนที่เกิน ปรับได้ที่ play_fix_pct) ออกจาก EXP นักเรียน
 --      บันทึกรายวันใน exp_fix_log + แถว ledger "ปรับสมดุล EXP" (ref fix:exp120:<id>) · แก้เฉพาะ EXP ไม่เรียกคืนเหรียญที่ใช้ไปแล้ว
 --
 -- ดูตัวอย่างก่อนรันจริง (อ่านอย่างเดียว ไม่แก้ข้อมูล) — แต่ละแถวคือ นักเรียน/วัน ที่จะถูกหัก EXP:
@@ -15864,27 +15864,27 @@ do $$ begin
 end $$;
 
 -- 4) แก้ประวัติ EXP เกินเพดานย้อนหลัง
-create or replace function _fix_exp_history(p_cap int) returns int
+create or replace function _fix_exp_history(p_cap int, p_pct int default 50) returns int
 language plpgsql security definer set search_path = public as $$
 declare r record; n int := 0; tot int;
 begin
   if p_cap <= 0 then return 0; end if;
   insert into exp_fix_log (student_id, day, play_exp, cap, cut)
-  select student_id, d, s, p_cap, s - p_cap from (
+  select student_id, d, s, p_cap, ceil((s - p_cap) * least(100, greatest(0, p_pct)) / 100.0)::int from (
     select student_id, (created_at at time zone 'Asia/Bangkok')::date d, sum(exp)::int s from ledger
      where exp > 0 and _is_play_ledger(ref_key, reason) group by 1, 2) x
-   where s > p_cap
+   where s > p_cap and p_pct > 0
   on conflict (student_id, day) do nothing;
   for r in select student_id, sum(cut)::int cut, count(*)::int days from exp_fix_log group by student_id loop
-    if award(r.student_id, -r.cut, 0, 'ปรับสมดุล EXP: ตัดส่วนที่เกินเพดานการเล่น ' || r.days || ' วัน (รวม ' || r.cut || ')', 'fix:exp120:' || r.student_id) then n := n + 1; end if;
+    if award(r.student_id, -r.cut, 0, 'ปรับสมดุล EXP: ตัดบางส่วนของ EXP ที่เกินเพดานการเล่น ' || r.days || ' วัน (รวม ' || r.cut || ')', 'fix:exp120:' || r.student_id) then n := n + 1; end if;
   end loop;
   return n;
 end $$;
-revoke execute on function _fix_exp_history(int) from public, anon, authenticated;
+revoke execute on function _fix_exp_history(int, int) from public, anon, authenticated;
 
 do $$ begin
   if not exists (select 1 from bal_patch where key = 'exp_history_fix') then
-    perform _fix_exp_history(_setting_int('play_daily_cap_exp', 120));
+    perform _fix_exp_history(_setting_int('play_daily_cap_exp', 120), _setting_int('play_fix_pct', 50));
     insert into bal_patch (key) values ('exp_history_fix');
   end if;
 end $$;

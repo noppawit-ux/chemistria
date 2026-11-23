@@ -5,14 +5,14 @@
 --    นับรวม: มินิเกม · สู้มอนสเตอร์/บอส · ท้าดวล · ดันเจี้ยน · EXP จากหีบ/ดรอป · ประลองครูบุ๊ค (ledger ref game:* / dungeon:* และ EXP จากดรอป)
 --    ไม่นับ (ครูเป็นคนกำหนด จึงไม่จำกัด): เช็คชื่อ · ส่งงาน · เควส · สอบ · ของขวัญ/ปรับ EXP จากครู · Achievement
 --    เกินเพดานแล้วยังได้เหรียญ/ไอเทมตามปกติ แต่ EXP ส่วนที่เกินจะไม่เข้า (บันทึกใน ledger ว่า "ครบเพดาน")
--- 2) เกณฑ์แรงค์ Diamond ขึ้นไป: Diamond 4,400→5,000 · Master 6,300→8,500 · Grandmaster 8,700→12,500 · Challenger 12,000→18,000
---    เปลี่ยนเฉพาะแรงค์ที่ยังเป็นค่าจาก SQL 100 (ถ้าครูแก้เองไว้จะไม่ทับ) · EXP นักเรียนไม่หาย แต่แรงค์ที่แสดงอาจลดลงตามเกณฑ์ใหม่
+-- 2) เกณฑ์แรงค์ Diamond ขึ้นไป (ปรับแบบเบา): Diamond 4,400→4,700 · Master 6,300→7,000 · Grandmaster 8,700→10,000 · Challenger 12,000→14,500
+--    เปลี่ยนเฉพาะแรงค์ที่ยังเป็นค่าจาก SQL 100 (ถ้าครูแก้เองไว้จะไม่ทับ) · EXP นักเรียนไม่หาย แต่แรงค์ที่แสดงอาจลดลงเล็กน้อยตามเกณฑ์ใหม่
 
 insert into app_settings (key, value) values ('play_daily_cap_exp', '100') on conflict (key) do nothing;
 
 update ch_ranks r set min_exp = v.new_exp
-  from (values ('diamond',4400,5000),('master',6300,8500),('grandmaster',8700,12500),('challenger',12000,18000)) v(key, old_exp, new_exp)
- where r.key = v.key and r.min_exp = v.old_exp;
+  from (values ('diamond',4400,4700),('master',6300,7000),('grandmaster',8700,10000),('challenger',12000,14500)) v(key, old_exp, new_exp)
+ where r.key = v.key and r.min_exp in (v.old_exp, v.new_exp);
 
 -- แถว ledger ที่ถือว่าเป็น "EXP จากการเล่น"
 create or replace function _is_play_ledger(p_ref text, p_reason text) returns boolean
