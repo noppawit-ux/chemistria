@@ -22,7 +22,7 @@ insert into students(class_id, no, name, pin_hash) select id, 1, 'ทดสอ�
 create temp table _s as select (select id from students where name='ทดสอบ เอ') a, (select id from students where name='ทดสอบ บี') b;
 grant all on _res, _s to anon, authenticated;
 -- เพดาน EXP จากการเล่น (SQL 117) ปิดไว้ตลอดชุดทดสอบเก่า · เปิดเฉพาะหมวด 117 ท้ายไฟล์
-insert into app_settings(key,value) values ('play_daily_cap_exp','0') on conflict (key) do update set value = excluded.value;
+insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0') on conflict (key) do update set value = excluded.value;
 
 -- ================= ความปลอดภัย =================
 select pg_temp.t('ทุกตารางใน public เปิด RLS',
@@ -1987,6 +1987,52 @@ select pg_temp.t('117: เกณฑ์แรงค์ใหม่ Diamond 5000 �
   and (select min_exp from ch_ranks where key='grandmaster') = 12500 and (select min_exp from ch_ranks where key='challenger') = 18000);
 select pg_temp.t('117: เกณฑ์เพิ่มขึ้นเรียงลำดับตามแรงค์', (select bool_and(min_exp > lag_exp) from (select min_exp, lag(min_exp) over (order by sort) lag_exp from ch_ranks) x where lag_exp is not null));
 insert into app_settings(key,value) values ('play_daily_cap_exp','0') on conflict (key) do update set value = excluded.value;
+
+-- ================= 118: เพดานเหรียญจากการเล่น =================
+insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','150') on conflict (key) do update set value = excluded.value;
+update ledger set created_at = created_at - interval '3 days' where student_id = (select b from _s);
+create temp table _c118(k text, v int);
+create or replace function pg_temp.co118() returns int language sql as $$ select coins from students where id = (select b from _s) $$;
+insert into _c118 values ('c0', pg_temp.co118());
+select award((select b from _s), 10, 100, 'เกม118 ก', 'game:t118:1');
+insert into _c118 values ('c1', pg_temp.co118());
+select award((select b from _s), 10, 100, 'เกม118 ข', 'dungeon:t118:2');
+insert into _c118 values ('c2', pg_temp.co118());
+select award((select b from _s), 10, 40, 'เกม118 ค', 'game:t118:3');
+insert into _c118 values ('c3', pg_temp.co118());
+select award((select b from _s), 0, 60, 'เควส118', 'quest:t118:4');
+insert into _c118 values ('c4', pg_temp.co118());
+select award((select b from _s), 0, -30, 'ซื้อของ118', null);
+insert into _c118 values ('c5', pg_temp.co118());
+select award((select b from _s), 0, 20, 'ดรอปมอนสเตอร์: ทดสอบ118', null);
+insert into _c118 values ('c6', pg_temp.co118());
+select pg_temp.t('118: เหรียญก้อนแรก 100 เข้าเต็ม', (select (select v from _c118 where k='c1') - (select v from _c118 where k='c0') = 100));
+select pg_temp.t('118: ก้อนสอง 100 เกินเพดาน 150 → เข้า 50', (select (select v from _c118 where k='c2') - (select v from _c118 where k='c1') = 50));
+select pg_temp.t('118: ครบเพดาน → เหรียญ 0 แต่ EXP ยังเข้า (เพดาน EXP ปิด)', (select (select v from _c118 where k='c3') = (select v from _c118 where k='c2')) and (select exp from ledger where ref_key='game:t118:3') = 10);
+select pg_temp.t('118: เควส (ครูกำหนด) ไม่ถูกจำกัด → +60', (select (select v from _c118 where k='c4') - (select v from _c118 where k='c3') = 60));
+select pg_temp.t('118: ใช้เหรียญซื้อของ (ติดลบ) ไม่ถูกจำกัด → -30', (select (select v from _c118 where k='c5') - (select v from _c118 where k='c4') = -30));
+select pg_temp.t('118: เหรียญจากดรอป (ref ว่าง) นับรวมเพดาน → ไม่เพิ่ม', (select (select v from _c118 where k='c6') = (select v from _c118 where k='c5')));
+select pg_temp.t('118: ledger บันทึกครบเพดานเหรียญ', exists (select 1 from ledger where ref_key='dungeon:t118:2' and coins = 50 and reason like '%ตัดเหรียญ 50%'));
+select pg_temp.t('118: _play_coins_today = 150', _play_coins_today((select b from _s)) = 150);
+insert into app_settings(key,value) values ('play_daily_cap_exp','20') on conflict (key) do update set value = excluded.value;
+update ledger set created_at = created_at - interval '3 days' where student_id = (select b from _s);
+insert into _c118 values ('x0', pg_temp.ex117()), ('d0', pg_temp.co118());
+select award((select b from _s), 50, 200, 'เกม118 ตัดสองอย่าง', 'game:t118:7');
+select pg_temp.t('118: ตัด EXP และเหรียญพร้อมกันในครั้งเดียว (EXP +20 · เหรียญ +150)',
+  pg_temp.ex117() - (select v from _c118 where k='x0') = 20 and pg_temp.co118() - (select v from _c118 where k='d0') = 150);
+insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0') on conflict (key) do update set value = excluded.value;
+select award((select b from _s), 0, 500, 'เกม118 ไม่จำกัด', 'game:t118:8');
+select pg_temp.t('118: ตั้ง 0 = ไม่จำกัด → +500', (select coins from ledger where ref_key='game:t118:8') = 500);
+update ledger set created_at = created_at - interval '3 days' where student_id = (select b from _s);
+insert into app_settings(key,value) values ('play_daily_cap_exp','100'),('play_daily_cap_coins','150') on conflict (key) do update set value = excluded.value;
+select award((select b from _s), 0, 120, 'เกม118 ใช้ตรวจสถานะ', 'game:t118:9');
+do $$ declare tk uuid; v json; begin
+  insert into student_sessions(student_id) values ((select b from _s)) returning token into tk;
+  perform set_config('role', 'anon', true); v := play_exp_status(tk); perform set_config('role', 'postgres', true);
+  insert into _c118 values ('cc', (v->>'coin_cap')::int), ('cu', (v->>'coin_used')::int);
+end $$;
+select pg_temp.t('118: play_exp_status คืน coin_cap=150 และ coin_used=120', (select v from _c118 where k='cc') = 150 and (select v from _c118 where k='cu') = 120);
+insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0') on conflict (key) do update set value = excluded.value;
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

@@ -26,7 +26,7 @@ const GAMES = (() => {
         <span class="pill" title="ทำควิซติดต่อกันหลายวัน ได้เหรียญโบนัส">🔥 ติดต่อกัน ${s.streak} วัน</span></div>
       <div class="lvrow" style="margin-top:8px"><span>EXP จากเกมวันนี้</span><b style="color:var(--text)">${s.exp_today} / ${s.cap}</b></div>
       <div class="lvgauge"><i style="width:${pct}%"></i></div>
-      ${st.play && st.play.cap > 0 ? `<p class="muted" style="margin:6px 0 0" title="นับรวมมินิเกม ต่อสู้ ท้าดวล ดันเจี้ยน และ EXP จากหีบ — เช็คชื่อ/ส่งงาน/เควสไม่ถูกจำกัด">⚔️ EXP จากการเล่นรวมวันนี้ <b style="color:var(--text)">${st.play.used} / ${st.play.cap}</b>${st.play.used >= st.play.cap ? " · ครบแล้ว (เหรียญและไอเทมยังได้)" : ""}</p>` : ""}
+      ${st.play && st.play.cap > 0 ? `<p class="muted" style="margin:6px 0 0" title="นับรวมมินิเกม ต่อสู้ ท้าดวล ดันเจี้ยน และของจากหีบ — เช็คชื่อ/ส่งงาน/เควสไม่ถูกจำกัด">⚔️ EXP จากการเล่นรวมวันนี้ <b style="color:var(--text)">${st.play.used} / ${st.play.cap}</b>${st.play.coin_cap > 0 ? ` · 🪙 เหรียญ <b style="color:var(--text)">${st.play.coin_used} / ${st.play.coin_cap}</b>` : ""}${st.play.used >= st.play.cap ? " · EXP ครบแล้ว" : ""}</p>` : ""}
       <p class="muted" style="margin:4px 0 0">${s.exp_today >= s.cap ? "วันนี้ได้ EXP จากเกมครบแล้ว พรุ่งนี้มาเล่นต่อนะ 🌙" : "เล่นให้ครบทุกวันเพื่อเก็บ EXP และสะสมวันติดต่อกัน"}</p></div>`;
   }
 
