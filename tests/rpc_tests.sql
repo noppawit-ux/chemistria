@@ -2033,6 +2033,9 @@ do $$ declare tk uuid; v json; begin
 end $$;
 select pg_temp.t('118: play_exp_status คืน coin_cap=150 และ coin_used=120', (select v from _c118 where k='cc') = 150 and (select v from _c118 where k='cu') = 120);
 insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0') on conflict (key) do update set value = excluded.value;
+
+-- ================= 119: ล็อกเพดานกันส่งพร้อมกัน =================
+select pg_temp.t('119: ทริกเกอร์เพดานใช้ advisory lock ต่อนักเรียน (กัน race)', pg_get_functiondef('trg_play_cap()'::regprocedure) like '%pg_advisory_xact_lock%');
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
