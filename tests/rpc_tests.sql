@@ -21,8 +21,25 @@ insert into students(class_id, no, name, pin_hash) select id, 1, 'ทดสอ�
 insert into students(class_id, no, name, pin_hash) select id, 1, 'ทดสอบ บี', crypt('5678', gen_salt('bf')) from classes where code='T11';
 create temp table _s as select (select id from students where name='ทดสอบ เอ') a, (select id from students where name='ทดสอบ บี') b;
 grant all on _res, _s to anon, authenticated;
+create temp table _d120 as select (select value from app_settings where key='play_daily_cap_exp') cx, (select value from app_settings where key='play_daily_cap_coins') cc;
 -- เพดาน EXP จากการเล่น (SQL 117) ปิดไว้ตลอดชุดทดสอบเก่า · เปิดเฉพาะหมวด 117 ท้ายไฟล์
 insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0') on conflict (key) do update set value = excluded.value;
+-- SQL 120 ลดรางวัลดันเจี้ยน/Achievement ครึ่งหนึ่ง: ตรวจค่าใหม่ก่อน แล้วคืนค่าตารางดันเจี้ยนเดิมเพื่อให้ชุดทดสอบ 110–116 ใช้ตัวเลขเดิมได้
+create temp table _b120 as select
+  (select array_agg(exp order by floor) from dungeon_floors where dungeon_key = 'crystal_cave') fx,
+  (select array_agg(coins order by floor) from dungeon_floors where dungeon_key = 'crystal_cave') fc,
+  (select value from loot_items where source = 'dungeon:space_lab' and kind = 'exp' limit 1) lootx,
+  (select sum(reward_exp) from achievements) ax, (select sum(reward_coins) from achievements) ac,
+  (select count(*) from bal_patch where key in ('ach_half','dungeon_half','exp_history_fix')) marks,
+  1 g;
+select pg_temp.t('120: เพดานเริ่มต้นใหม่ EXP 120 · เหรียญ 180', (select cx = '120' and cc = '180' from _d120));
+select pg_temp.t('120: Crystal Cave ลดครึ่ง EXP 6,10,15,21,40 · เหรียญ 3,5,8,10,20', (select fx = array[6,10,15,21,40] and fc = array[3,5,8,10,20] from _b120));
+select pg_temp.t('120: หีบดันเจี้ยน Space Lab ลดครึ่ง EXP 120→60', (select lootx = 60 from _b120));
+select pg_temp.t('120: Achievement ลดครึ่ง (EXP ~3980→~1990 · เหรียญ ~1635→~820)', (select ax between 1900 and 2150 and ac between 780 and 900 from _b120));
+select pg_temp.t('120: บันทึก bal_patch ครบ 3 ส่วน', (select marks = 3 from _b120));
+-- คืนค่าตารางดันเจี้ยนเดิมให้ชุดทดสอบ 110–116 (ใช้ตัวเลขชุดเดิม)
+update dungeon_floors f set exp = v.e, coins = v.c from (values (1,12,6),(2,20,10),(3,30,15),(4,42,20),(5,80,40)) v(fl,e,c) where f.dungeon_key = 'crystal_cave' and f.floor = v.fl;
+update loot_items set value = value * 2 where source like 'dungeon:%' and kind in ('exp', 'coins');
 
 -- ================= ความปลอดภัย =================
 select pg_temp.t('ทุกตารางใน public เปิด RLS',
@@ -2036,6 +2053,20 @@ insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_dai
 
 -- ================= 119: ล็อกเพดานกันส่งพร้อมกัน =================
 select pg_temp.t('119: ทริกเกอร์เพดานใช้ advisory lock ต่อนักเรียน (กัน race)', pg_get_functiondef('trg_play_cap()'::regprocedure) like '%pg_advisory_xact_lock%');
+
+-- ================= 120: แก้ประวัติ EXP เกินเพดานย้อนหลัง =================
+insert into students(class_id, no, name, pin_hash) select id, 77, 'ทดสอบ ย้อนหลัง', crypt('1111', gen_salt('bf')) from classes where code='T99';
+create temp table _h120 as select id from students where name = 'ทดสอบ ย้อนหลัง';
+insert into ledger(student_id, exp, coins, reason, ref_key, created_at) select (select id from _h120), v.e, 0, v.r, v.k, now() - (v.d || ' days')::interval
+  from (values (80,'เกมวัน -20 ก','game:h120:1',20),(90,'ดันเจี้ยนวัน -20','dungeon:h120:2',20),(500,'เช็คชื่อวัน -20','att:h120:3',20),
+               (120,'เกมวัน -21 พอดีเพดาน','game:h120:4',21),(30,'ดรอปมอนสเตอร์: วัน -22',null,22),(40,'เกมวัน -22','game:h120:5',22),(200,'ดันเจี้ยนวัน -22','dungeon:h120:6',22)) v(e,r,k,d);
+update students set exp = 80+90+500+120+30+40+200 where id = (select id from _h120);
+select _fix_exp_history(120);
+select pg_temp.t('120: ตัดเฉพาะวันที่เกิน: วัน -20 เกิน 50 · วัน -22 เกิน 150 · วัน -21 พอดีเพดานไม่ตัด',
+  (select count(*) = 2 and sum(cut) = 200 from exp_fix_log where student_id = (select id from _h120)));
+select pg_temp.t('120: EXP นักเรียนลดลงรวม 200 (1060→860) · เช็คชื่อไม่ถูกนับ', (select exp = 860 from students where id = (select id from _h120)));
+select pg_temp.t('120: ledger มีแถวปรับสมดุลแถวเดียว exp = -200', (select count(*) = 1 and sum(exp) = -200 from ledger where ref_key = 'fix:exp120:' || (select id from _h120)));
+select pg_temp.t('120: รันซ้ำไม่หักซ้ำ', (select _fix_exp_history(120) = 0) and (select exp = 860 from students where id = (select id from _h120)));
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

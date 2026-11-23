@@ -133,3 +133,5 @@ psql:/home/claude/chemistria/db/setup_all.sql:15505: NOTICE:  trigger "dungeon_p
 psql:/home/claude/chemistria/db/setup_all.sql:15631: NOTICE:  policy "teacher_all" for relation "dg_patch" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:15693: NOTICE:  trigger "play_cap" for relation "ledger" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:15708: NOTICE:  trigger "play_cap_apply" for relation "students" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:15830: NOTICE:  policy "teacher_all" for relation "bal_patch" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:15840: NOTICE:  policy "teacher_all" for relation "exp_fix_log" does not exist, skipping
