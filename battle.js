@@ -34,6 +34,7 @@ const BATTLE = (() => {
   const dgBgCls = () => { const bg = S.dg && S.dg.bg; return bg ? "bt-cbg" + (/\/a\d+\.webp$/.test(bg) ? " px" : "") : ""; };
   const dgPips = (r) => Array.from({ length: r.floors }, (_, i) => { const f = i + 1, m = (r.map || [])[i] || {}; return `<i class="dgp ${f <= r.cleared ? "done" : f === r.floor ? "now" : ""} ${m.boss ? "boss" : ""}">${m.boss ? "👑" : f}</i>`; }).join("");
   const dgStars = (key) => { const x = S.dgs && (S.dgs.dungeons || []).find((d) => d.key === key); return x && x.stars ? "⭐".repeat(x.stars) : ""; };
+  const PCAT = { sharp: "atk", gamble: "atk", aegis: "def", vigor: "def", mend: "def", greed: "sup", key: "sup", wise: "sup" }, PCATN = { atk: ["⚔️", "สายโจมตี"], def: ["🛡️", "สายป้องกัน"], sup: ["✨", "สายสนับสนุน"] };
   const perkChips = (r) => (r && r.perks && r.perks.length ? `<span class="dg-perks">${r.perks.map((p) => `<i class="dgk" title="${esc(p.name)}: ${esc(p.descr)}">${p.emoji}${p.n > 1 ? `<sup>${p.n}</sup>` : ""}</i>`).join("")}</span>` : "");
   const dgBar = (bid) => inDg(bid) ? `<div class="dg-bar"><b>${esc(S.dg.dungeon.emoji)} ${esc(S.dg.dungeon.name)} <small>${dgStars(S.dg.dungeon.key)}</small></b><span class="dg-pips">${dgPips(S.dg)}</span>${perkChips(S.dg)}</div>` : "";
   async function dgLoad() { try { S.dgs = await rpc("dungeon_status", { p_token: tk() }); } catch (e) { S.dgs = null; } return S.dgs; }
@@ -80,8 +81,12 @@ const BATTLE = (() => {
     const r = S.dg; if (!r) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
     const top = `<div class="dg-bar"><b>${esc(r.dungeon.emoji)} ${esc(r.dungeon.name)} <small>${dgStars(r.dungeon.key)}</small></b><span class="dg-pips">${dgPips(r)}</span>${perkChips(r)}</div>`;
     const leave = '<button class="btn ghost small" onclick="BATTLE.dgLeave()">🚪 รับรางวัลสะสมแล้วออก</button>';
-    if (r.phase === "perk") return `${top}<div class="card center dg-ph"><div style="font-size:46px">🎁</div><h2 style="margin:4px 0">ผ่านชั้น ${r.floor} แล้ว! เลือกโบนัส 1 อย่าง</h2><p class="muted">โบนัสอยู่กับคุณจนจบรอบนี้ · เลือกให้เข้ากับแผนของคุณ</p>
-      <div class="dg-perkrow">${(r.perk_offer || []).map((p) => `<button class="dg-perk" onclick="BATTLE.dgPick('${esc(p.key)}')"><span class="pe">${p.emoji}</span><b>${esc(p.name)}</b><small>${esc(p.descr)}</small><i>ระดับ ${p.n}/${p.max}</i></button>`).join("")}</div>${leave}</div>`;
+    if (r.phase === "perk") return `${top}<div class="card center dg-ph"><div style="font-size:46px">🎁</div><h2 style="margin:4px 0">ผ่านชั้น ${r.floor} แล้ว! เลือกโบนัส 1 อย่าง</h2><p class="muted">แตะการ์ดเพื่อเปิดดู แล้วเลือก 1 ใบ · โบนัสอยู่กับคุณจนจบรอบนี้ <button class="btn ghost small" onclick="document.querySelectorAll(\'.dg-pk\').forEach((e)=>e.classList.add(\'open\'))">เปิดทั้งหมด</button></p>
+      <div class="dg-perkrow">${(r.perk_offer || []).map((p) => { const c = PCAT[p.key] || "sup", cn = PCATN[c];
+        return `<div class="dg-pk c-${c}" role="button" tabindex="0" aria-label="การ์ดโบนัส แตะเพื่อเปิด" onclick="this.classList.add('open')" onkeydown="if(event.key==='Enter'||event.key===' ')this.classList.add('open')"><div class="in">
+          <div class="face back"><span>🎴</span><b>แตะเพื่อเปิดการ์ด</b></div>
+          <div class="face front"><i class="cat">${cn[0]} ${cn[1]}</i><span class="pe">${p.emoji}</span><b class="nm">${esc(p.name)}</b><small>${esc(p.descr)}</small><em>ระดับ ${p.n}/${p.max}</em>
+            <button class="btn gold small" onclick="event.stopPropagation();BATTLE.dgPick('${esc(p.key)}')">เลือกใบนี้</button></div></div></div>`; }).join("")}</div>${leave}</div>`;
     const t = (r.pz && DGPZ.INFO[r.pz.type]) || DGPZ.INFO.tap;
     return `${top}<div class="card center dg-ph"><div class="dg-portal">🌀</div><h2 style="margin:4px 0">ประตูมิติ ชั้น ${r.floor}/${r.floors}${r.boss ? " 👑 บอส" : ""}</h2>
       <div id="dgpz"><div class="pz-intro"><div style="font-size:40px">${t.ico}</div><h3 style="margin:2px 0">ปริศนา: ${t.name}</h3><p>${t.how}</p>
