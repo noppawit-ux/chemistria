@@ -21,6 +21,8 @@ insert into students(class_id, no, name, pin_hash) select id, 1, 'ทดสอ�
 insert into students(class_id, no, name, pin_hash) select id, 1, 'ทดสอบ บี', crypt('5678', gen_salt('bf')) from classes where code='T11';
 create temp table _s as select (select id from students where name='ทดสอบ เอ') a, (select id from students where name='ทดสอบ บี') b;
 grant all on _res, _s to anon, authenticated;
+-- เพดาน EXP จากการเล่น (SQL 117) ปิดไว้ตลอดชุดทดสอบเก่า · เปิดเฉพาะหมวด 117 ท้ายไฟล์
+insert into app_settings(key,value) values ('play_daily_cap_exp','0') on conflict (key) do update set value = excluded.value;
 
 -- ================= ความปลอดภัย =================
 select pg_temp.t('ทุกตารางใน public เปิด RLS',
@@ -1283,8 +1285,8 @@ update _tq set ans = (select answer from quiz_questions where id=(select cur_q f
 set role anon;
 create temp table _sp4 as select battle_answer((select t13 from _fr), (select id from _tb), (select ans from _tq)) r;
 reset role;
-select pg_temp.t('แรงค์ 100: เกณฑ์ EXP ช่วงหลังยากขึ้น (Emerald 2900 · Challenger 12000 · Platinum เท่าเดิม 1800)',
-  (select min_exp from ch_ranks where key='emerald')=2900 and (select min_exp from ch_ranks where key='challenger')=12000 and (select min_exp from ch_ranks where key='platinum')=1800);
+select pg_temp.t('แรงค์ 100: เกณฑ์ EXP ช่วงหลังยากขึ้น (Emerald 2900 · Challenger 12000→18000 ใน 117 · Platinum เท่าเดิม 1800)',
+  (select min_exp from ch_ranks where key='emerald')=2900 and (select min_exp from ch_ranks where key='challenger')=18000 and (select min_exp from ch_ranks where key='platinum')=1800);
 select pg_temp.t('สมดุล 99: โบนัสตอบไว ≤4 วิ +50% · ≤8 วิ +30% · ≤12 วิ +15% · ช้ากว่านั้น 0', (select (r->'event'->>'spd')::int from _sp1) = 50 and (select (r->'event'->>'spd')::int from _sp2) = 30
   and (select (r->'event'->>'spd')::int from _sp3) = 15 and (select (r->'event'->>'spd')::int from _sp4) = 0);
 select pg_temp.t('สมดุล 99: ตอบไวดาเมจมากกว่าช้า (≤4 วิ > ช้า)', (select (r->'event'->>'dmg')::int from _sp1) > (select (r->'event'->>'dmg')::int from _sp4));
@@ -1939,6 +1941,52 @@ do $$ declare tok uuid := (select tok from _dg); v json; begin
 end $$;
 select pg_temp.t('116: ตั้ง dungeon_roguelike=0 → เริ่มรอบแล้วเข้าศึกทันที (ไม่มีปริศนา/โบนัส)', (select v->>'phase' = 'fight' and v->'battle'->>'status' = 'active' from _r116 where k = 'legacy'));
 insert into app_settings(key,value) values ('dungeon_roguelike','1') on conflict (key) do update set value=excluded.value;
+
+-- ================= 117: เพดาน EXP จากการเล่น + เกณฑ์แรงค์ =================
+insert into app_settings(key,value) values ('play_daily_cap_exp','100') on conflict (key) do update set value = excluded.value;
+update ledger set created_at = created_at - interval '3 days' where student_id = (select b from _s);
+create temp table _p117(k text, v int);
+create or replace function pg_temp.ex117() returns int language sql as $$ select exp from students where id = (select b from _s) $$;
+insert into _p117 values ('e0', pg_temp.ex117());
+select award((select b from _s), 60, 5, 'เกม117 ก', 'game:t117:1');
+insert into _p117 values ('e1', pg_temp.ex117());
+select award((select b from _s), 60, 5, 'เกม117 ข', 'game:t117:2');
+insert into _p117 values ('e2', pg_temp.ex117());
+select award((select b from _s), 30, 0, 'เกม117 ค', 'dungeon:t117:3');
+insert into _p117 values ('e3', pg_temp.ex117());
+select award((select b from _s), 50, 0, 'เช็คชื่อ117', 'att:t117:4');
+insert into _p117 values ('e4', pg_temp.ex117());
+select award((select b from _s), 20, 0, 'ดรอปมอนสเตอร์: ทดสอบ', null);
+insert into _p117 values ('e5', pg_temp.ex117());
+select award((select b from _s), 20, 0, 'เกม117 ซ้ำ', 'game:t117:1');
+insert into _p117 values ('e6', pg_temp.ex117());
+select pg_temp.t('117: EXP เล่นก้อนแรก 60 เข้าเต็ม', (select (select v from _p117 where k='e1') - (select v from _p117 where k='e0') = 60));
+select pg_temp.t('117: ก้อนสองเกินเพดานรวม 100 → เข้าแค่ 40', (select (select v from _p117 where k='e2') - (select v from _p117 where k='e1') = 40));
+select pg_temp.t('117: ledger บันทึกว่าครบเพดาน (exp 40 + ข้อความ)', exists (select 1 from ledger where ref_key='game:t117:2' and exp = 40 and reason like '%ครบเพดาน%'));
+select pg_temp.t('117: ครบเพดานแล้ว ดันเจี้ยนเพิ่ม → EXP 0 แต่ยังบันทึก', (select (select v from _p117 where k='e3') = (select v from _p117 where k='e2')) and exists (select 1 from ledger where ref_key='dungeon:t117:3' and exp = 0));
+select pg_temp.t('117: เหรียญยังได้เต็มแม้ครบเพดาน EXP', (select coins from ledger where ref_key='game:t117:2') = 5);
+select pg_temp.t('117: เช็คชื่อ/ส่งงาน (ครูกำหนด) ไม่ถูกจำกัด → +50', (select (select v from _p117 where k='e4') - (select v from _p117 where k='e3') = 50));
+select pg_temp.t('117: EXP จากดรอป (ref ว่าง) นับรวมเพดาน → ไม่เพิ่ม', (select (select v from _p117 where k='e5') = (select v from _p117 where k='e4')));
+select pg_temp.t('117: ref ซ้ำ → ถูกข้าม EXP ไม่เปลี่ยน/ไม่ถูกหักซ้ำ', (select (select v from _p117 where k='e6') = (select v from _p117 where k='e5')));
+select pg_temp.t('117: _play_exp_today = 100', _play_exp_today((select b from _s)) = 100);
+insert into app_settings(key,value) values ('play_daily_cap_exp','0') on conflict (key) do update set value = excluded.value;
+select award((select b from _s), 70, 0, 'เกม117 ไม่จำกัด', 'game:t117:5');
+select pg_temp.t('117: ตั้งเพดาน 0 = ไม่จำกัด → +70', (select exp from students where id=(select b from _s)) - (select v from _p117 where k='e6') = 70);
+update ledger set created_at = created_at - interval '2 days' where ref_key like '%t117%';
+insert into app_settings(key,value) values ('play_daily_cap_exp','100') on conflict (key) do update set value = excluded.value;
+select award((select b from _s), 90, 0, 'เกม117 วันใหม่', 'game:t117:6');
+select pg_temp.t('117: ขึ้นวันใหม่ เพดานรีเซ็ต → ได้ 90 เต็ม', (select exp from ledger where ref_key='game:t117:6') = 90);
+do $$ declare tk uuid; v json; begin
+  insert into student_sessions(student_id) values ((select b from _s)) returning token into tk;
+  perform set_config('role', 'anon', true); v := play_exp_status(tk); perform set_config('role', 'postgres', true);
+  insert into _p117 values ('cap', (v->>'cap')::int), ('used', (v->>'used')::int);
+end $$;
+select pg_temp.t('117: play_exp_status คืน cap=100 และ used=90', (select v from _p117 where k='cap') = 100 and (select v from _p117 where k='used') = 90);
+select pg_temp.t('117: เกณฑ์แรงค์ใหม่ Diamond 5000 · Master 8500 · Grandmaster 12500 · Challenger 18000',
+  (select min_exp from ch_ranks where key='diamond') = 5000 and (select min_exp from ch_ranks where key='master') = 8500
+  and (select min_exp from ch_ranks where key='grandmaster') = 12500 and (select min_exp from ch_ranks where key='challenger') = 18000);
+select pg_temp.t('117: เกณฑ์เพิ่มขึ้นเรียงลำดับตามแรงค์', (select bool_and(min_exp > lag_exp) from (select min_exp, lag(min_exp) over (order by sort) lag_exp from ch_ranks) x where lag_exp is not null));
+insert into app_settings(key,value) values ('play_daily_cap_exp','0') on conflict (key) do update set value = excluded.value;
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
