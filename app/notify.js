@@ -13,6 +13,7 @@ function notifs() {
   (D.quests || []).filter((q) => q.status === "pending").forEach((q) => L.push({ k: "qp" + q.id, ic: "🕒", t: `เควส “${q.title}” รอครูตรวจ`, d: "ครูจะอนุมัติเร็วๆ นี้", go: "quest" }));
   (D.privileges || []).filter((p) => p.status === "requested").forEach((p) => L.push({ k: "pv" + p.id, ic: "🎟️", t: `สิทธิ์ “${p.name}” รอครูอนุมัติ`, d: "", go: "bag" }));
   if (B.unread > 0) L.push({ k: "bd" + B.unread, ic: "📢", t: `มีโพสต์/ประกาศใหม่ในบอร์ด ${B.unread} รายการ`, d: "กดเพื่ออ่าน", go: "board" });
+  (NOTICES || []).filter((n) => !n.read).forEach((n) => L.push({ k: "sn" + n.id, ic: n.icon || "📢", t: n.title, d: (n.body || "").slice(0, 70) + ((n.body || "").length > 70 ? "…" : ""), sn: n.id }));
   return L;
 }
 const SEEN_KEY = "kb_notif_seen";
@@ -31,9 +32,19 @@ function openNotif() {
   window._np = L;
 }
 function closeNotif() { $("#notifp")?.remove(); }
-function readAllNotif() { try { localStorage.setItem(SEEN_KEY, JSON.stringify(notifs().map((n) => n.k))); } catch (e) {} closeNotif(); render(); }
+function readAllNotif() { if (!PEEK && (NOTICES || []).some((n) => !n.read)) { NOTICES.forEach((n) => { n.read = true; }); rpc("notice_read", { p_token: tk() }).catch(() => {}); } try { localStorage.setItem(SEEN_KEY, JSON.stringify(notifs().map((n) => n.k))); } catch (e) {} closeNotif(); render(); }
 function goNotif(i) {
   const n = (window._np || [])[i]; if (!n) return;
   try { const sn = seenSet(); if (!sn.includes(n.k)) { sn.push(n.k); localStorage.setItem(SEEN_KEY, JSON.stringify(sn.slice(-80))); } } catch (e) {}
+  if (n.sn) return noticeOpen(n.sn);
   go(n.go);
+}
+function noticeOpen(id) {
+  const n = (NOTICES || []).find((x) => x.id === id); if (!n) return;
+  if (!n.read && !PEEK) { n.read = true; rpc("notice_read", { p_token: tk(), p_id: id }).catch(() => {}); }
+  closeNotif(); $("#noticeov")?.remove();
+  const el = document.createElement("div"); el.id = "noticeov"; el.className = "notifp";
+  el.innerHTML = `<div class="np-bg" onclick="$('#noticeov')?.remove()"></div><div class="np-box"><div class="row"><h3 class="grow" style="margin:0">${esc(n.icon || "📢")} ${esc(n.title)}</h3><button class="btn ghost small" onclick="$('#noticeov')?.remove()">✕</button></div>
+    <p style="white-space:pre-line;margin:10px 0">${esc((n.body || "").replace(/ · /g, "\n• ").replace(/^/, "• "))}</p><div class="muted" style="font-size:12px">${esc(new Date(n.created_at).toLocaleDateString("th-TH"))}</div></div>`;
+  document.body.appendChild(el); render();
 }

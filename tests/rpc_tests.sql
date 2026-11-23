@@ -2067,6 +2067,39 @@ select pg_temp.t('120: ตัดเฉพาะวันที่เกิน: �
 select pg_temp.t('120: EXP นักเรียนลดลงรวม 100 (1060→960) · เช็คชื่อไม่ถูกนับ', (select exp = 960 from students where id = (select id from _h120)));
 select pg_temp.t('120: ledger มีแถวปรับสมดุลแถวเดียว exp = -100', (select count(*) = 1 and sum(exp) = -100 from ledger where ref_key = 'fix:exp120:' || (select id from _h120)));
 select pg_temp.t('120: รันซ้ำไม่หักซ้ำ', (select _fix_exp_history(120, 50) = 0) and (select exp = 960 from students where id = (select id from _h120)));
+
+-- ================= 121: แจ้งเตือนรายบุคคล + ข่าวหน้าแรก =================
+insert into news_posts(kind,title,summary,ends_at,active) values ('event','อีเว้นท์เก่า 121','เก่า', today_th() - 3, true), ('event','อีเว้นท์ยังไม่จบ 121','ใหม่', today_th() + 3, true), ('news','ข่าวไม่มีวันจบ 121','ถาวร', null, true);
+delete from bal_patch where key = 'notice_balance_121';
+delete from news_posts where title = 'ปรับสมดุล EXP และเหรียญ ⚖️';
+select _notice_balance();
+delete from news_posts where ends_at is not null and ends_at < today_th();
+select pg_temp.t('121: ทุกนักเรียนได้ประกาศปรับสมดุล คนละ 1 รายการ', (select count(*) = (select count(*) from students) from student_notices where ref = 'balance:2026-11'));
+select pg_temp.t('121: เฉพาะคนที่ถูกหัก EXP ได้แจ้งเตือนเฉพาะตัว (ยอด −100)', (select count(*) = (select count(distinct student_id) from exp_fix_log) from student_notices where ref = 'balance-cut:2026-11')
+  and exists (select 1 from student_notices where ref = 'balance-cut:2026-11' and student_id = (select id from _h120) and title like '%−100%'));
+select pg_temp.t('121: รันซ้ำไม่สร้างซ้ำ', (select _notice_balance() = 0));
+select pg_temp.t('121: ข่าวที่จบแล้วถูกลบ · ที่ยังไม่จบ/ไม่มีวันจบอยู่ครบ', not exists (select 1 from news_posts where title = 'อีเว้นท์เก่า 121') and (select count(*) = 2 from news_posts where title in ('อีเว้นท์ยังไม่จบ 121','ข่าวไม่มีวันจบ 121')));
+do $$ declare tk uuid; tk2 uuid; v json; v2 json; begin
+  insert into student_sessions(student_id) values ((select id from _h120)) returning token into tk;
+  insert into student_sessions(student_id) select _s.b from _s returning token into tk2;
+  perform set_config('role', 'anon', true);
+  v := my_notices(tk); v2 := my_notices(tk2);
+  perform set_config('role', 'postgres', true);
+  insert into _p117 values ('n_h', json_array_length(v)), ('n_b', json_array_length(v2)), ('n_h_unread', (select count(*) from json_array_elements(v) e where (e->>'read')::boolean = false));
+  perform set_config('role', 'anon', true);
+  perform notice_read(tk, (v->0->>'id')::uuid);
+  v := my_notices(tk);
+  perform set_config('role', 'postgres', true);
+  insert into _p117 values ('n_h_unread2', (select count(*) from json_array_elements(v) e where (e->>'read')::boolean = false));
+  perform set_config('role', 'anon', true);
+  perform notice_read(tk);
+  v := my_notices(tk); v2 := my_notices(tk2);
+  perform set_config('role', 'postgres', true);
+  insert into _p117 values ('n_h_unread3', (select count(*) from json_array_elements(v) e where (e->>'read')::boolean = false)), ('n_b_unread', (select count(*) from json_array_elements(v2) e where (e->>'read')::boolean = false));
+end $$;
+select pg_temp.t('121: my_notices คืนเฉพาะของตัวเอง (ตรงกับจำนวนในตารางของแต่ละคน)', (select v from _p117 where k='n_h') = 2 and (select v from _p117 where k='n_b') = (select count(*) from student_notices where student_id = (select b from _s)));
+select pg_temp.t('121: notice_read ทีละรายการ แล้วอ่านทั้งหมด · ไม่กระทบคนอื่น', (select v from _p117 where k='n_h_unread') = 2 and (select v from _p117 where k='n_h_unread2') = 1 and (select v from _p117 where k='n_h_unread3') = 0 and (select v from _p117 where k='n_b_unread') = (select count(*) from student_notices where student_id = (select b from _s)));
+select pg_temp.t('121: anon อ่านตาราง student_notices ตรงๆ ไม่ได้', not has_table_privilege('anon', 'student_notices', 'select'));
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
