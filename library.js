@@ -55,6 +55,7 @@ const LIB = (() => {
   function readView() {
     const i = S.item, l = left(), ok = l === 0, vid = ytId(i.url), url = safeUrl(i.url);
     const media = i.kind === "video" && vid ? `<div style="position:relative;padding-top:56.25%;margin:8px 0"><iframe src="https://www.youtube-nocookie.com/embed/${vid}" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:10px" allow="encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
+      : i.kind === "video" && /\.(mp4|webm|mov)(\?.*)?$/i.test(url) ? `<video src="${esc(url)}" controls playsinline preload="metadata" style="width:100%;max-height:70vh;border-radius:10px;margin:8px 0;background:#000"></video>`
       : url ? `<p><a class="btn small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 เปิดเนื้อหา${i.kind === "video" ? "วิดีโอ" : ""}ในแท็บใหม่</a> <small class="muted">แล้วกลับมาตอบคำถามที่นี่</small></p>` : "";
     const q = i.q ? `<div class="card" style="margin-top:10px"><h4 style="margin:0 0 6px">❓ ${esc(i.q.text)}</h4>${i.q.opts.map((o, k) => `<button class="btn small ${S.pick === k + 1 ? "gold" : "ghost"}" style="display:block;width:100%;text-align:left;margin:4px 0" ${i.done ? "disabled" : ""} onclick="LIB.pick(${k + 1})">${"กขคง"[k] || k + 1}. ${esc(o)}</button>`).join("")}</div>` : "";
     const act = i.done ? `<div class="card center bt-ok"><b>✅ รับรางวัลแล้ว</b> ${i.got ? `<span class="pill">+${i.got.exp} EXP</span> <span class="pill">+${i.got.coins} 🪙</span>` : ""}</div>`
