@@ -2252,6 +2252,7 @@ do $$ declare tk uuid; begin
   perform set_config('role', 'anon', true); perform league_status(tk); perform set_config('role', 'postgres', true); end $$;
 select pg_temp.t('124: เรียกซ้ำไม่แจกรางวัลซ้ำ', (select exp from students where id = (select a from _s)) = (select e0 from _l124) + 80);
 select pg_temp.t('124: anon อ่านตารางลีกตรงๆ ไม่ได้ / เรียกฟังก์ชันภายในไม่ได้', not has_table_privilege('anon', 'league_points', 'select') and not has_function_privilege('anon', '_league_finalize_old()', 'execute') and not has_function_privilege('anon', 'trg_duel_settle()', 'execute') and has_function_privilege('anon', 'league_status(uuid)', 'execute'));
+select pg_temp.t('125: ข่าวโหมดประลองและปลูกผักเคมีอยู่ในหน้าแรก พร้อมรูป', (select count(*) from news_posts where image in ('assets/news/duel.jpg','assets/news/farm.jpg') and active) = 2);
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;
