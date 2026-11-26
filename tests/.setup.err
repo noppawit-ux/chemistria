@@ -144,3 +144,5 @@ psql:/home/claude/chemistria/db/setup_all.sql:16197: NOTICE:  policy "teacher_al
 psql:/home/claude/chemistria/db/setup_all.sql:16197: NOTICE:  policy "teacher_all" for relation "public.league_done" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:16215: NOTICE:  trigger "trg_duel_stake_hold" for relation "duels" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:16265: NOTICE:  trigger "trg_duel_settle" for relation "duels" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16392: NOTICE:  policy "teacher_all" for relation "public.library_items" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16392: NOTICE:  policy "teacher_all" for relation "public.library_reads" does not exist, skipping

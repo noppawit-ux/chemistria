@@ -44,6 +44,7 @@ TAB.games = async function (v) {
   await TAB.kbBank(v);
   await TAB.banks(v);
   await TAB.flip(v);
+  await TAB.library(v);
   await TAB.monstersAdmin(v);
   const ha = holder(v, "🏟️ สนามต่อสู้", "ธีม: lab / ice / volcano / swamp / storm / crystal · ปลดล็อกตามเลเวล · โบนัสรางวัล % ใช้กับโหมดล่ามอนสเตอร์ · ผูกมอนสเตอร์กับสนามด้วย “รหัสสนาม” ในตารางด้านบน");
   await crud(ha, { table: "arenas", order: "sort", defaults: { emoji: "🏟️", theme: "lab", min_level: 1, reward_pct: 100, active: true, sort: 9 },

@@ -55,6 +55,7 @@ const GAMES = (() => {
     if (st.mode === "matchres") return matchResult();
     if (st.mode === "battle") return BATTLE.view();
     if (st.mode === "duel") return DUEL.view();
+    if (st.mode === "lib") return LIB.view();
     if (st.mode === "spell") return SPELL.view();
     if (st.mode === "kb") return KB.view();
     if (st.mode === "run") return RUN.view();
@@ -98,6 +99,11 @@ const GAMES = (() => {
         <div class="gm-ico">🤝</div><h3>ท้าดวลเพื่อน (เรียลไทม์)</h3>
         <p class="muted">ท้าเพื่อนในห้องที่ออนไลน์ ตอบคำถามพร้อมกันทุกรอบ ตอบถูก/ไวกว่า = ทำดาเมจใส่อีกฝ่าย · มีท่าไม้ตายประจำคลาส · ชนะได้ EXP + เหรียญ</p>
         ${gsBest("duel")}<button class="btn gold" onclick="DUEL.open()">🤝 เข้าห้องท้าดวล</button>
+      </div>
+      <div class="card gm-card">
+        <div class="gm-ico">📚</div><h3>ห้องสมุด</h3>
+        <p class="muted">อ่านบทความหรือดูวิดีโอให้ครบ ตอบคำถามท้ายเรื่อง แล้วรับ EXP และเหรียญ (ได้ครั้งเดียวต่อเรื่อง)</p>
+        <button class="btn gold" onclick="LIB.open()">📚 เข้าห้องสมุด</button>
       </div></div>`;
   }
 

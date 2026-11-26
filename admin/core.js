@@ -95,6 +95,7 @@ function cellInput(c, val, id) {
   if (c.t === "select")
     return `<select ${a}>${c.opts().map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(val ?? "") ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
   if (c.t === "abil") { const s = Array.isArray(val) ? val.map((x) => [x.icon, x.name, x.desc].join("|")).join(" ;; ") : ""; return `<input type="text" ${a} value="${esc(s)}" placeholder="ไอคอน|ชื่อ|คำอธิบาย ;; อีกอัน" style="min-width:${c.w || 80}px">`; }
+  if (c.t === "area") return `<textarea ${a} rows="4" style="min-width:${c.w || 220}px">${esc(val ?? "")}</textarea>`;
   const type = c.t === "number" ? "number" : c.t === "date" ? "date" : "text";
   return `<input type="${type}" ${c.t === "number" ? 'step="any"' : ""} value="${esc(val ?? "")}" ${a} style="min-width:${c.w || 80}px">`;
 }

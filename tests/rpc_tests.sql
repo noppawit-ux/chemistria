@@ -2253,6 +2253,49 @@ do $$ declare tk uuid; begin
 select pg_temp.t('124: เรียกซ้ำไม่แจกรางวัลซ้ำ', (select exp from students where id = (select a from _s)) = (select e0 from _l124) + 80);
 select pg_temp.t('124: anon อ่านตารางลีกตรงๆ ไม่ได้ / เรียกฟังก์ชันภายในไม่ได้', not has_table_privilege('anon', 'league_points', 'select') and not has_function_privilege('anon', '_league_finalize_old()', 'execute') and not has_function_privilege('anon', 'trg_duel_settle()', 'execute') and has_function_privilege('anon', 'league_status(uuid)', 'execute'));
 select pg_temp.t('125: ข่าวโหมดประลองและปลูกผักเคมีอยู่ในหน้าแรก พร้อมรูป', (select count(*) from news_posts where image in ('assets/news/duel.jpg','assets/news/farm.jpg') and active) = 2);
+-- ================= 126: ห้องสมุด =================
+insert into app_settings(key,value) values ('library_daily_max','2') on conflict (key) do update set value = excluded.value;
+create temp table _lb as select id, title from library_items where title in ('อะตอมคืออะไร', 'อ่านตารางธาตุให้เป็น');
+insert into library_items (kind, title, min_secs, exp, coins, url) values ('video', 'ทดสอบวิดีโอ126', 0, 7, 2, 'https://www.youtube.com/watch?v=abc'), ('article', 'ทดสอบเรื่องที่ 3', 0, 1, 1, null);
+create temp table _lt as select (select id from library_items where title = 'ทดสอบวิดีโอ126') v, (select id from library_items where title = 'ทดสอบเรื่องที่ 3') x, (select id from _lb where title = 'อะตอมคืออะไร') a;
+grant all on _lt to anon;
+select pg_temp.t('126: มีเนื้อหาตัวอย่าง 2 เรื่อง', (select count(*) from _lb) = 2);
+grant all on _p117, _lt to anon, authenticated;
+create temp table _lk (tk uuid); grant all on _lk to anon, authenticated;
+do $$ declare tk uuid; v json; bad text := ''; e0 int; r json; begin
+  insert into student_sessions(student_id) select a from _s returning token into tk; insert into _lk values (tk);
+  select exp into e0 from students where id = (select a from _s);
+  perform set_config('role', 'anon', true);
+  v := library_list(tk); insert into _p117 values ('lb_n', json_array_length(v->'items'));
+  begin perform library_finish(tk, (select a from _lt)); exception when others then bad := bad || 'A'; end;            -- ยังไม่เปิด
+  perform library_open(tk, (select a from _lt));
+  begin perform library_finish(tk, (select a from _lt), 3); exception when others then bad := bad || 'B'; end;         -- ยังไม่ครบเวลา
+  perform set_config('role', 'postgres', true);
+  update library_reads set started_at = now() - interval '60 seconds' where item_id = (select a from _lt);
+  perform set_config('role', 'anon', true);
+  begin perform library_finish(tk, (select a from _lt), 1); exception when others then bad := bad || 'C'; end;         -- ตอบผิด
+  begin perform library_finish(tk, (select a from _lt)); exception when others then bad := bad || 'D'; end;            -- ไม่ตอบ
+  r := library_finish(tk, (select a from _lt), 3);
+  perform set_config('role', 'postgres', true);
+  insert into _p117 values ('lb_exp', (r->>'exp')::int), ('lb_gain', (select exp from students where id = (select a from _s)) - e0), ('lb_bad', length(bad));
+end $$;
+select pg_temp.t('126: library_list ส่งเนื้อหาที่เปิดอยู่ให้เห็น (≥2)', (select v from _p117 where k = 'lb_n') >= 2);
+select pg_temp.t('126: ยังไม่เปิด / ไม่ครบเวลา / ตอบผิด / ไม่ตอบ → รับรางวัลไม่ได้ (4 ครั้งถูกปฏิเสธ)', (select v from _p117 where k = 'lb_bad') = 4);
+select pg_temp.t('126: ครบเวลา + ตอบถูก ได้ 5 EXP เข้า ledger ref lib:*', (select v from _p117 where k = 'lb_exp') = 5 and (select v from _p117 where k = 'lb_gain') = 5 and exists (select 1 from ledger where ref_key = 'lib:' || (select a from _lt) || ':' || (select a from _s) and exp = 5));
+do $$ declare tk uuid; r json; bad int := 0; e0 int; begin
+  select _lk.tk into tk from _lk limit 1;
+  select exp into e0 from students where id = (select a from _s);
+  perform set_config('role', 'anon', true);
+  r := library_finish(tk, (select a from _lt), 3);                                     -- รับซ้ำ
+  perform library_open(tk, (select v from _lt)); perform library_finish(tk, (select v from _lt));
+  perform library_open(tk, (select x from _lt));
+  begin perform library_finish(tk, (select x from _lt)); exception when others then bad := 1; end;   -- เกินโควตา 2 เรื่อง/วัน
+  perform set_config('role', 'postgres', true);
+  insert into _p117 values ('lb_again', (r->>'already' = 'true')::int), ('lb_quota', bad), ('lb_gain2', (select exp from students where id = (select a from _s)) - e0);
+end $$;
+select pg_temp.t('126: รับซ้ำเรื่องเดิมไม่ได้เพิ่ม', (select v from _p117 where k = 'lb_again') = 1);
+select pg_temp.t('126: วิดีโอไม่มีคำถามรับได้ (+7) แล้วเรื่องที่ 3 ติดโควตา 2 เรื่อง/วัน', (select v from _p117 where k = 'lb_gain2') = 7 and (select v from _p117 where k = 'lb_quota') = 1);
+select pg_temp.t('126: anon อ่านตาราง/เฉลย (q_ans) ตรงๆ ไม่ได้', not has_table_privilege('anon', 'library_items', 'select') and not has_table_privilege('anon', 'library_reads', 'select'));
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

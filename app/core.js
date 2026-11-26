@@ -15,7 +15,7 @@ let NOTICES = [], HST = null, PROMO = { active: false }, TT = [], NEWS = [], D =
 const TOKEN_KEY = "kb_token";
 /* โหมดส่องนักเรียน (ครูเปิดจากหน้าครู): ใช้โทเคนใน sessionStorage อ่านอย่างเดียว ไม่แตะ login จริง */
 const PEEK = (() => { try { const m = location.hash.match(/peek=([0-9a-f-]{36})/); if (m) { sessionStorage.setItem("kb_peek", m[1]); history.replaceState(null, "", location.pathname); } return sessionStorage.getItem("kb_peek"); } catch (e) { return null; } })();
-const PEEK_OK = ["guild_status", "guild_board", "student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "run_status", "home_stats", "news_list", "my_notices", "timetable_list", "promo_status", "list_classes"];
+const PEEK_OK = ["guild_status", "guild_board", "student_dashboard", "student_extras", "hall_of_fame", "board_list", "celebrations_feed", "game_status", "spell_status", "kb_status", "run_status", "home_stats", "news_list", "my_notices", "library_list", "timetable_list", "promo_status", "list_classes"];
 if (PEEK) { const _r = rpc; rpc = async (n, a) => { if (!PEEK_OK.includes(n)) throw new Error("👁 โหมดส่องนักเรียน: ดูได้อย่างเดียว"); return _r(n, a); }; }
 const app = $("#app");
 
