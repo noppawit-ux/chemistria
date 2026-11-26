@@ -138,3 +138,9 @@ psql:/home/claude/chemistria/db/setup_all.sql:15840: NOTICE:  policy "teacher_al
 psql:/home/claude/chemistria/db/setup_all.sql:15904: NOTICE:  policy "teacher_all" for relation "student_notices" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:16071: NOTICE:  policy "teacher_all" for relation "flip_events" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:16071: NOTICE:  policy "teacher_all" for relation "flip_results" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16197: NOTICE:  policy "teacher_all" for relation "public.league_points" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16197: NOTICE:  policy "teacher_all" for relation "public.league_log" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16197: NOTICE:  policy "teacher_all" for relation "public.league_results" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16197: NOTICE:  policy "teacher_all" for relation "public.league_done" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16215: NOTICE:  trigger "trg_duel_stake_hold" for relation "duels" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16265: NOTICE:  trigger "trg_duel_settle" for relation "duels" does not exist, skipping

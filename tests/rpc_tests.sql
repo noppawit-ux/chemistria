@@ -2172,6 +2172,86 @@ do $$ declare tk uuid; begin
 end $$;
 select pg_temp.t('123: กิจกรรมที่พ้นวันสิ้นสุดถูกปิดอัตโนมัติเมื่อมีคนเปิดหน้าเกม', (select finalized_at is not null from flip_events where title = 'ทดสอบจบอัตโนมัติ123'));
 select pg_temp.t('123: anon อ่านตารางกิจกรรมโดยตรงไม่ได้', not has_table_privilege('anon', 'flip_events', 'select') and not has_table_privilege('anon', 'flip_results', 'select'));
+-- ================= 124: เดิมพันท้าดวล + ลีก =================
+insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0'),('catchup_on','0') on conflict (key) do update set value = excluded.value;
+update students set exp = 100, coins = 100 where id = (select a from _s);
+update students set exp = 1000, coins = 100 where id = (select b from _s);
+create temp table _d124 (k text primary key, id uuid);
+create function pg_temp.nd124(st int) returns uuid language sql as $f$ insert into duels (class_id, a_id, b_id, stake) select class_id, (select a from _s), (select b from _s), st from students where id = (select a from _s) returning id $f$;
+insert into _d124 select 'w', pg_temp.nd124(20);
+update duels set status = 'active' where id = (select id from _d124 where k = 'w');
+select pg_temp.t('124: กดรับ → หักเดิมพันทั้งสองฝ่าย (80/80)', (select coins from students where id = (select a from _s)) = 80 and (select coins from students where id = (select b from _s)) = 80 and (select stake_held from duels where id = (select id from _d124 where k='w')));
+update duels set round = 4, status = 'done', winner = (select a from _s), finished_at = now() where id = (select id from _d124 where k = 'w');
+select pg_temp.t('124: ผู้ชนะได้กองเดิมพัน 40 เหรียญ (รวม 120) + 8 EXP + โบนัสผู้ท้าชิง 6 EXP (100→114)', (select coins from students where id = (select a from _s)) = 120 and (select exp from students where id = (select a from _s)) = 114);
+select pg_temp.t('124: ผู้แพ้เสียเดิมพัน (80)', (select coins from students where id = (select b from _s)) = 80);
+select pg_temp.t('124: ลีก: ผู้ชนะ 30 แต้ม · ผู้แพ้ 5 แต้ม', (select pts from league_points where season = _league_season() and student_id = (select a from _s)) = 30 and (select pts from league_points where season = _league_season() and student_id = (select b from _s)) = 5);
+select pg_temp.t('124: pot_done ถูกตั้ง และจ่ายแล้วไม่ซ้ำเมื่ออัปเดตอีก', (select pot_done from duels where id = (select id from _d124 where k='w')));
+-- เสมอ = คืนเดิมพัน
+insert into _d124 select 'd', pg_temp.nd124(10);
+update duels set status = 'active' where id = (select id from _d124 where k = 'd');
+update duels set round = 5, status = 'done', winner = null where id = (select id from _d124 where k = 'd');
+select pg_temp.t('124: เสมอ = คืนเดิมพันทั้งคู่ (120 / 80 เท่าเดิม)', (select coins from students where id = (select a from _s)) = 120 and (select coins from students where id = (select b from _s)) = 80);
+select pg_temp.t('124: เสมอได้แต้มลีก +10 ทั้งคู่ (40 / 15)', (select pts from league_points where season = _league_season() and student_id = (select a from _s)) = 40 and (select pts from league_points where season = _league_season() and student_id = (select b from _s)) = 15);
+-- ออกก่อน 3 รอบ = คืนเดิมพัน ไม่นับลีก
+insert into _d124 select 'e', pg_temp.nd124(15);
+update duels set status = 'active' where id = (select id from _d124 where k = 'e');
+update duels set round = 1, status = 'done', winner = (select b from _s) where id = (select id from _d124 where k = 'e');
+select pg_temp.t('124: ออกก่อน 3 รอบ = คืนเดิมพัน ไม่ได้แต้มลีก', (select coins from students where id = (select a from _s)) = 120 and (select coins from students where id = (select b from _s)) = 80 and (select pts from league_points where season = _league_season() and student_id = (select b from _s)) = 15);
+-- ดวลที่ 3 กับคู่เดิมในวันเดียวกัน: ไม่นับแต้ม (limit 2)
+insert into _d124 select 'x', pg_temp.nd124(0);
+update duels set status = 'active' where id = (select id from _d124 where k = 'x');
+update duels set round = 4, status = 'done', winner = (select b from _s) where id = (select id from _d124 where k = 'x');
+select pg_temp.t('124: คู่เดิมครั้งที่ 3 ของวัน ไม่นับแต้มลีก', (select pts from league_points where season = _league_season() and student_id = (select b from _s)) = 15 and not exists (select 1 from league_log where duel_id = (select id from _d124 where k = 'x')));
+-- เหรียญไม่พอ = กดรับไม่ได้
+update students set coins = 5 where id = (select b from _s);
+insert into _d124 select 'p', pg_temp.nd124(20);
+do $$ declare ok boolean := false; begin
+  begin update duels set status = 'active' where id = (select id from _d124 where k = 'p'); exception when others then ok := true; end;
+  insert into _p117 values ('d_poor', ok::int); end $$;
+select pg_temp.t('124: เหรียญไม่พอ → กดรับเดิมพันไม่ได้ ไม่หักใคร', (select v from _p117 where k = 'd_poor') = 1 and (select status from duels where id = (select id from _d124 where k='p')) = 'invited' and (select coins from students where id = (select a from _s)) = 120);
+update students set coins = 100 where id = (select b from _s);
+-- RPC ท้าดวลมีเดิมพัน
+update students set class_id = (select class_id from students where id = (select a from _s)), no = 998 where id = (select b from _s);
+insert into duel_presence (student_id) select b from _s on conflict (student_id) do update set seen_at = now();
+update duels set status = 'cancelled' where id = (select id from _d124 where k = 'p');
+do $$ declare tk uuid; r json; bad int := 0; begin
+  insert into student_sessions(student_id) select a from _s returning token into tk;
+  perform set_config('role', 'anon', true);
+  begin perform duel_invite2(tk, (select b from _s), 'lab', 31); exception when others then bad := bad + 1; end;
+  begin perform duel_invite2(tk, (select b from _s), 'lab', 5); bad := bad + 10; exception when others then null; end;
+  perform set_config('role', 'postgres', true); update app_settings set value = '10' where key = 'duel_stake_per_day'; perform set_config('role', 'anon', true);
+  r := duel_invite2(tk, (select b from _s), 'lab', 12);
+  perform set_config('role', 'postgres', true);
+  insert into _p117 values ('d_bad', bad), ('d_stake', (r->>'stake')::int);
+  insert into _d124 values ('r', (r->>'id')::uuid);
+end $$;
+select pg_temp.t('124: duel_invite2 เกินเดิมพันสูงสุด/เกินโควตาต่อวัน (3 ครั้ง) ถูกปฏิเสธ · เดิมพัน 12 บันทึกลงดวล', (select v from _p117 where k = 'd_bad') = 1 and (select stake from duels where id = (select id from _d124 where k='r')) = 12);
+update duels set status = 'cancelled' where id = (select id from _d124 where k = 'r');
+-- ล้มยักษ์ในลีก: b (แต้ม 15) ชนะ a (แต้ม 45) ในดวลที่นับ → โบนัส 10 + (45-15)/10 = 13
+delete from league_log where duel_id = (select id from _d124 where k = 'x');
+update league_points set pts = 15 where student_id = (select b from _s) and season = _league_season();
+delete from league_log where student_id in (select a from _s union select b from _s) and day = today_th() and duel_id <> (select id from _d124 where k='w');
+insert into _d124 select 'u', pg_temp.nd124(0);
+update duels set status = 'active' where id = (select id from _d124 where k = 'u');
+update duels set round = 4, status = 'done', winner = (select b from _s) where id = (select id from _d124 where k = 'u');
+select pg_temp.t('124: ชนะคนแต้มสูงกว่า = โบนัสล้มยักษ์ (30 + 13)', (select upset from league_log where duel_id = (select id from _d124 where k='u') and student_id = (select b from _s)) = 13 and (select pts from league_log where duel_id = (select id from _d124 where k='u') and student_id = (select b from _s)) = 43);
+-- ปิดฤดูกาลที่แล้ว
+insert into league_points (season, student_id, class_id, pts, wins) select _league_season() - 7, a, (select class_id from students where id = a), 100, 3 from _s;
+insert into league_points (season, student_id, class_id, pts, wins) select _league_season() - 7, b, (select class_id from students where id = b), 20, 1 from _s;
+create temp table _l124 as select (select exp from students where id = (select a from _s)) e0, (select coins from students where id = (select a from _s)) c0;
+do $$ declare tk uuid; v json; begin
+  insert into student_sessions(student_id) select a from _s returning token into tk;
+  perform set_config('role', 'anon', true); v := league_status(tk); perform set_config('role', 'postgres', true);
+  insert into _p117 values ('l_rank', coalesce((v->'me'->>'rank')::int, 0)), ('l_top', json_array_length(v->'top'));
+end $$;
+select pg_temp.t('124: จบสัปดาห์: อันดับ 1 ได้ 80 EXP + 60 เหรียญ ref league:*', (select exp from students where id = (select a from _s)) = (select e0 from _l124) + 80 and (select coins from students where id = (select a from _s)) = (select c0 from _l124) + 60 and exists (select 1 from ledger where ref_key like 'league:%' and student_id = (select a from _s)));
+select pg_temp.t('124: แต้มต่ำกว่าขั้นต่ำ (20) ไม่ได้รางวัลลีก · แจ้งเตือนอันดับ 1', not exists (select 1 from league_results where student_id = (select b from _s)) and exists (select 1 from student_notices where student_id = (select a from _s) and ref like 'league:%'));
+select pg_temp.t('124: league_status ส่งอันดับสัปดาห์นี้ของห้อง', (select v from _p117 where k = 'l_top') >= 1 and (select v from _p117 where k = 'l_rank') >= 1);
+do $$ declare tk uuid; begin
+  insert into student_sessions(student_id) select a from _s returning token into tk;
+  perform set_config('role', 'anon', true); perform league_status(tk); perform set_config('role', 'postgres', true); end $$;
+select pg_temp.t('124: เรียกซ้ำไม่แจกรางวัลซ้ำ', (select exp from students where id = (select a from _s)) = (select e0 from _l124) + 80);
+select pg_temp.t('124: anon อ่านตารางลีกตรงๆ ไม่ได้ / เรียกฟังก์ชันภายในไม่ได้', not has_table_privilege('anon', 'league_points', 'select') and not has_function_privilege('anon', '_league_finalize_old()', 'execute') and not has_function_privilege('anon', 'trg_duel_settle()', 'execute') and has_function_privilege('anon', 'league_status(uuid)', 'execute'));
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

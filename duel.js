@@ -2,7 +2,7 @@
    เรียลไทม์ด้วยการโพลล์ RPC (~1 วิตอนดวล, ~2.5 วิตอนรอ) · เซิร์ฟเวอร์ตัดสินทุกอย่าง · ใช้ฉาก/เอฟเฟกต์ร่วมกับ BATTLE */
 const DUEL = (() => {
   const S = { lobby: null, d: null, screen: "lobby", arena: "lab", busy: false, picked: null, skillOn: false, t: null, qint: null,
-    sig: "", round: 0, revFor: -1, shown: null, hpDelay: 0, fin: false, finAt: 0, seenInv: {}, msg: "" };
+    sig: "", round: 0, revFor: -1, shown: null, hpDelay: 0, fin: false, finAt: 0, seenInv: {}, msg: "", stake: 0, stakes: {}, lg: null, ex: null };
   const LET = "กขคง";
   const paint = () => GAMES.paint();
   const alive = () => GAMES.mode() === "duel" && document.body.dataset.tab === "game";
@@ -13,8 +13,12 @@ const DUEL = (() => {
   async function open() {
     S.screen = "lobby"; S.d = null; S.fin = false; S.msg = ""; S.sig = ""; GAMES.setMode("duel"); paint();
     try { S.lobby = await rpc("duel_lobby", { p_token: tk() }); } catch (e) { toast(e.message); }
+    await side();
     if (S.lobby && S.lobby.active) enter(S.lobby.active);
     paint(); loop();
+  }
+  async function side() {
+    try { const [a, b] = await Promise.all([rpc("duel_stakes", { p_token: tk() }), rpc("league_status", { p_token: tk() })]); S.stakes = {}; for (const x of a || []) S.stakes[x.id] = x; S.lg = b; } catch (e) { /* ยังไม่ได้รัน SQL 124 → ใช้โหมดเดิม */ S.lg = null; }
   }
   function enter(v) { S.d = v; S.screen = "fight"; S.fin = false; S.picked = null; S.skillOn = false; S.round = 0; S.revFor = -1; S.shown = null; S.sig = ""; }
   function loop() {
@@ -25,8 +29,9 @@ const DUEL = (() => {
         if (S.screen === "fight" && S.d && S.d.status === "active") apply(await rpc("duel_state", { p_token: tk(), p_duel: S.d.id }));
         else if (S.screen === "lobby") {
           const l = await rpc("duel_lobby", { p_token: tk() }); S.lobby = l;
+          if (l.invites.length || l.sent) { try { const a = await rpc("duel_stakes", { p_token: tk() }); S.stakes = {}; for (const x of a || []) S.stakes[x.id] = x; } catch (e) {} }
           for (const iv of l.invites) if (!S.seenInv[iv.id]) { S.seenInv[iv.id] = 1; toast(`🤝 ${iv.from.name} ท้าคุณดวล!`, 4000); try { navigator.vibrate && navigator.vibrate(120); } catch (e) {} }
-          if (l.active) { enter(l.active); paint(); } else sigPaint("L" + JSON.stringify([l.invites.map((i) => i.id), l.sent && l.sent.id, l.online.map((o) => o.f.id + o.busy), l.used]));
+          if (l.active) { enter(l.active); paint(); } else sigPaint("L" + JSON.stringify([l.invites.map((i) => i.id + (S.stakes[i.id] || {}).stake), l.sent && l.sent.id, l.online.map((o) => o.f.id + o.busy), l.used]));
         }
       } catch (e) { /* ปล่อยให้โพลล์รอบหน้าลองใหม่ */ }
       loop();
@@ -40,7 +45,7 @@ const DUEL = (() => {
     if (v.round !== S.round) { S.round = v.round; S.picked = null; S.skillOn = false; qTimer(v.elapsed || 0); }
     const reveal = (v.phase === "reveal" || v.status === "done") && v.last && S.revFor !== v.round;
     if (reveal) { S.revFor = v.round; S.hpDelay = 0; S.shown = old ? { me: old.me_hp, opp: old.opp_hp } : S.shown; paint(); setTimeout(() => playReveal(v), 40); }
-    if (v.status === "done" && !S.fin) { S.fin = true; { const rs = v.result || {}, did = v.id; gsRecord("duel", { hp_left: rs.win ? v.me_hp : undefined, rounds: rs.win ? v.round : undefined, wins: rs.win ? 1 : 0 }).then((r) => { if (r) { r.did = did; S.gs = r; if (S.screen === "result") paint(); } }); } S.finAt = Date.now() + 3600; setTimeout(() => { S.screen = "result"; paint(); if (v.result && v.result.win) FX.victory(); else if (v.result && !v.result.draw) FX.screen("curse", 0.5, 0.45, { scale: 3 }); setTimeout(() => { try { load(); } catch (e) {} }, 300); }, 3600); }
+    if (v.status === "done" && !S.fin) { S.fin = true; setTimeout(async () => { await side(); S.ex = S.stakes[v.id] || null; S.sig = ""; paint(); }, 700); { const rs = v.result || {}, did = v.id; gsRecord("duel", { hp_left: rs.win ? v.me_hp : undefined, rounds: rs.win ? v.round : undefined, wins: rs.win ? 1 : 0 }).then((r) => { if (r) { r.did = did; S.gs = r; if (S.screen === "result") paint(); } }); } S.finAt = Date.now() + 3600; setTimeout(() => { S.screen = "result"; paint(); if (v.result && v.result.win) FX.victory(); else if (v.result && !v.result.draw) FX.screen("curse", 0.5, 0.45, { scale: 3 }); setTimeout(() => { try { load(); } catch (e) {} }, 300); }, 3600); }
     if (v.status === "cancelled" || v.status === "expired") { toast("การดวลถูกยกเลิก (ไม่มีการตอบ)"); toLobby(); return; }
     sigPaint(["F", v.status, v.phase, v.round, v.answered, v.opp_answered, S.picked, S.skillOn, reveal].join("|"));
   }
@@ -56,7 +61,7 @@ const DUEL = (() => {
   /* ----- แอ็กชัน ----- */
   async function invite(to) {
     if (S.busy) return; S.busy = true;
-    try { await rpc("duel_invite", { p_token: tk(), p_to: to, p_arena: S.arena }); toast("ส่งคำท้าแล้ว ⚔️ รอเพื่อนกดรับ", 2500); S.lobby = await rpc("duel_lobby", { p_token: tk() }); }
+    try { await rpc(S.lg ? "duel_invite2" : "duel_invite", S.lg ? { p_token: tk(), p_to: to, p_arena: S.arena, p_stake: S.stake } : { p_token: tk(), p_to: to, p_arena: S.arena }); toast(S.stake > 0 ? `ส่งคำท้าเดิมพัน ${S.stake} 🪙 แล้ว รอเพื่อนกดรับ` : "ส่งคำท้าแล้ว ⚔️ รอเพื่อนกดรับ", 2500); await side(); S.lobby = await rpc("duel_lobby", { p_token: tk() }); }
     catch (e) { toast(e.message); }
     S.busy = false; S.sig = ""; paint();
   }
@@ -79,7 +84,7 @@ const DUEL = (() => {
     try { if (d.status === "active") await rpc("duel_leave", { p_token: tk(), p_duel: d.id }); } catch (e) {}
     toLobby(); try { load(); } catch (e) {}
   }
-  function toLobby() { S.screen = "lobby"; S.d = null; S.fin = false; S.sig = ""; clearInterval(S.qint); rpc("duel_lobby", { p_token: tk() }).then((l) => { S.lobby = l; paint(); loop(); }).catch(() => { paint(); loop(); }); paint(); loop(); }
+  function toLobby() { S.screen = "lobby"; S.d = null; S.fin = false; S.sig = ""; clearInterval(S.qint); S.ex = null; rpc("duel_lobby", { p_token: tk() }).then(async (l) => { S.lobby = l; await side(); paint(); loop(); }).catch(() => { paint(); loop(); }); paint(); loop(); }
   const exit = () => { stop(); GAMES.home(); };
   const pickArena = (k) => { const a = ((S.lobby || {}).arenas || []).find((x) => x.key === k); if (!a || a.locked) return toast(a ? `ปลดล็อกที่เลเวล ${a.min_level} 🔒` : ""); S.arena = k; S.sig = ""; paint(); };
 
@@ -119,9 +124,20 @@ const DUEL = (() => {
     const l = S.lobby; if (!l) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
     const left = Math.max(0, l.limit - l.used);
     const arenas = `<div class="ar-grid">${l.arenas.map((a) => `<div class="ar-card t-${esc(a.theme)} ${S.arena === a.key ? "on" : ""} ${a.locked ? "lock" : ""}" onclick="DUEL.arena('${a.key}')"><div class="ae">${a.locked ? "🔒" : esc(a.emoji)}</div><b>${esc(a.name)}</b><small>${a.locked ? "Lv." + a.min_level : ""}</small></div>`).join("")}</div>`;
-    const inv = l.invites.map((i) => `<div class="dl-inv dl-row">${face(i.from)}<div class="grow"><b>${esc(i.from.name)}</b> ท้าคุณดวล!<br><small class="muted">สนาม ${esc(i.arena_name || i.arena)} · เหลือเวลา ${i.secs} วิ</small></div>
+    const rl = S.lg && S.lg.rules, mx = rl ? rl.stake_max : 0;
+    const stakeOpts = mx ? [...new Set([0, 5, 10, 20, mx].filter((x) => x <= mx))].sort((a, b) => a - b) : [];
+    const stakeCard = rl ? `<div class="card"><h3 style="margin:0 0 4px">💰 เดิมพันเหรียญ</h3><div class="row" style="flex-wrap:wrap;gap:6px">${stakeOpts.map((x) => `<button class="btn small ${S.stake === x ? "gold" : "ghost"}" onclick="DUEL.stake(${x})">${x ? x + " 🪙" : "ไม่เดิมพัน"}</button>`).join("")}</div>
+      <small class="muted">${S.stake ? `ทั้งสองฝ่ายวาง ${S.stake} 🪙 ผู้ชนะได้ ${S.stake * 2} 🪙 + ${rl.stake_win_exp} EXP · เสมอ/ออกก่อน 3 รอบ = คืนเดิมพัน` : "เลือกเดิมพันก่อนกดท้าดวล · ผู้ชนะได้เหรียญทั้งกอง"} · ชนะคนที่ EXP สูงกว่ามาก +${rl.underdog_exp} EXP (ผู้ท้าชิง)</small></div>` : "";
+    const lg = S.lg, me = lg && lg.me;
+    const leagueCard = lg ? `<div class="card"><h3 style="margin:0 0 4px">🏆 ลีกประลองประจำสัปดาห์ <small class="muted">(ถึง ${esc(String(lg.ends).slice(5))})</small></h3>
+      <p style="margin:2px 0"><span class="pill">แต้มของคุณ ${me ? me.pts : 0}</span> ${me ? `<span class="pill">อันดับ ${me.rank} ของห้อง</span> <span class="pill">ชนะ ${me.wins} · เสมอ ${me.draws} · แพ้ ${me.losses}</span>` : '<span class="pill">ยังไม่มีแต้ม — ไปดวลกัน!</span>'}</p>
+      ${lg.top.length ? `<ol style="margin:4px 0;padding-left:20px">${lg.top.slice(0, 5).map((t) => `<li${t.me ? ' style="font-weight:700"' : ""}>${esc(t.name)} — ${t.pts} แต้ม (ชนะ ${t.wins})</li>`).join("")}</ol>` : ""}
+      <small class="muted">ชนะ +${lg.rules.win} · เสมอ +${lg.rules.draw} · แพ้ +${lg.rules.loss} · ชนะคนที่แต้มสูงกว่าได้โบนัส · จบสัปดาห์ อันดับ 1–3 ได้ ${lg.prizes.map((p) => p.exp + " EXP/" + p.coins + "🪙").join(" · ")} (ต้อง ≥ ${lg.rules.min} แต้ม) · นับ ${lg.per_day} ดวล/วัน (วันนี้ ${lg.today})</small>
+      ${lg.last ? `<p class="muted" style="margin:4px 0">สัปดาห์ก่อนคุณได้อันดับ ${lg.last.rank} (+${lg.last.exp} EXP, +${lg.last.coins} 🪙)</p>` : ""}</div>` : "";
+    const stk = (id) => { const x = S.stakes[id]; return x && x.stake > 0 ? ` · 💰 เดิมพัน <b>${x.stake} 🪙</b>` : ""; };
+    const inv = l.invites.map((i) => `<div class="dl-inv dl-row">${face(i.from)}<div class="grow"><b>${esc(i.from.name)}</b> ท้าคุณดวล!<br><small class="muted">สนาม ${esc(i.arena_name || i.arena)}${stk(i.id)} · เหลือเวลา ${i.secs} วิ</small></div>
         <button class="btn small gold" onclick="DUEL.respond('${i.id}',true)">⚔️ รับคำท้า</button><button class="btn small ghost" onclick="DUEL.respond('${i.id}',false)">ปฏิเสธ</button></div>`).join("");
-    const sent = l.sent ? `<div class="dl-inv dl-row">${face(l.sent.to)}<div class="grow">⏳ รอ <b>${esc(l.sent.to.name)}</b> ตอบรับ… <small class="muted">(${l.sent.secs} วิ)</small></div><button class="btn small ghost" onclick="DUEL.cancel('${l.sent.id}')">ยกเลิก</button></div>` : "";
+    const sent = l.sent ? `<div class="dl-inv dl-row">${face(l.sent.to)}<div class="grow">⏳ รอ <b>${esc(l.sent.to.name)}</b> ตอบรับ… <small class="muted">(${l.sent.secs} วิ)${stk(l.sent.id)}</small></div><button class="btn small ghost" onclick="DUEL.cancel('${l.sent.id}')">ยกเลิก</button></div>` : "";
     const on = l.online.map((o) => `<div class="dl-row">${face(o.f)}<div class="grow"><span class="dl-on"></span><b>${esc(o.f.name)}</b> <small class="muted">Lv.${o.f.level}</small>${o.busy ? ' <small class="muted">· กำลังดวล</small>' : ""}</div>
         <button class="btn small gold" ${o.busy || l.sent || S.busy ? "disabled" : ""} onclick="DUEL.invite('${o.f.id}')">⚔️ ท้าดวล</button></div>`).join("")
       || '<p class="muted center" style="margin:10px 0">ยังไม่มีเพื่อนออนไลน์ในห้อง<br><small>ชวนเพื่อนเปิดหน้านี้ไว้พร้อมกัน แล้วท้าดวลได้เลย</small></p>';
@@ -129,6 +145,7 @@ const DUEL = (() => {
       <div class="run-info"><section><h4>🎮 วิธีเล่น</h4><ul><li>ตอบคำถามพร้อมกัน 8 รอบ</li><li>ตอบถูกทำดาเมจใส่อีกฝ่าย</li><li>ตอบไว (≤6 วิ) และตอบก่อนได้โบนัส</li></ul></section><section><h4>💥 ท่าไม้ตาย</h4><ul><li>ประจำคลาส ใช้ได้ 1 ครั้ง/แมตช์</li><li>ตอบผิด = เสียสิทธิ์</li></ul></section></div>
       <p><span class="pill">🏆 ชนะ ${l.wins}</span> <span class="pill">💀 แพ้ ${l.losses}</span> ${left > 0 ? `<span class="pill">🎁 รอบที่ได้รางวัลวันนี้เหลือ ${left}/${l.limit}</span>` : '<span class="pill">โควตารางวัลวันนี้หมดแล้ว — เล่นเพื่อความสนุกได้</span>'}</p></div>
       ${inv ? `<div class="card"><h3 style="margin:0 0 4px">📨 คำท้าที่ได้รับ</h3>${inv}</div>` : ""}
+      ${leagueCard}${stakeCard}
       <div class="card"><h3 style="margin:0 0 4px">🏟️ เลือกสนามที่จะท้าดวล</h3>${arenas}</div>
       <div class="card"><h3 style="margin:0 0 4px">🟢 เพื่อนในห้องที่ออนไลน์ (${l.online.length})</h3>${sent}${on}</div>`;
   }
@@ -166,15 +183,24 @@ const DUEL = (() => {
       ${L.explain ? `<p class="muted" style="margin:6px 0">💡 ${esc(L.explain)}</p>` : ""}<p class="dl-wait" id="dlw">${fin ? "จบการดวล…" : "รอบถัดไปเริ่มเร็วๆ นี้…"}</p></div>`);
   }
 
+  function exHtml() {
+    const x = S.ex; if (!x) return "";
+    const bits = [];
+    if (x.stake > 0 && x.held) bits.push(x.won ? `<span class="pill">💰 ชนะเดิมพัน +${x.stake * 2} 🪙</span>` : (d_draw() ? '<span class="pill">💰 คืนเดิมพัน</span>' : `<span class="pill">💸 เสียเดิมพัน ${x.stake} 🪙</span>`));
+    if (x.up_exp > 0) bits.push(`<span class="pill">🚀 โบนัสผู้ท้าชิง +${x.up_exp} EXP</span>`);
+    if (x.lp != null) bits.push(`<span class="pill">🏆 ลีก +${x.lp} แต้ม${x.upset ? ` (ล้มยักษ์ +${x.upset})` : ""}</span>`);
+    return bits.length ? `<p>${bits.join(" ")}</p>` : "";
+  }
+  const d_draw = () => !!(S.d && ((S.d.result && S.d.result.draw) || S.d.round < 3));
   function resultView() {
     const d = S.d, r = d.result || {}, win = r.win, draw = r.draw;
     return `<div class="card center gm-res ${win ? "perfect" : ""}"><div style="font-size:54px">${win ? "🏆" : draw ? "🤝" : "💀"}</div>
       <h2>${win ? `ชนะ ${esc(d.opp.name)}!` : draw ? `เสมอกับ ${esc(d.opp.name)}` : `แพ้ให้ ${esc(d.opp.name)}`}</h2>
-      <p>HP คุณ ${d.me_hp} · ${esc(d.opp.name)} ${d.opp_hp}</p>${S.gs && S.gs.did === d.id ? gsCard(S.gs) : ""}
+      <p>HP คุณ ${d.me_hp} · ${esc(d.opp.name)} ${d.opp_hp}</p>${exHtml()}${S.gs && S.gs.did === d.id ? gsCard(S.gs) : ""}
       <p>${r.exp || r.coins ? `<span class="pill">+${r.exp} EXP</span> ${r.coins ? `<span class="pill">+${r.coins} 🪙</span>` : ""}` : '<span class="pill">ไม่ได้รางวัล (โควตาหมด/เล่นน้อยกว่า 3 รอบ/ดวลคู่เดิมซ้ำ)</span>'}</p>
       <div class="row" style="justify-content:center"><button class="btn gold" onclick="DUEL.lobby()">🤝 กลับห้องท้าดวล</button><button class="btn ghost" onclick="DUEL.exit()">ออก</button></div></div>`;
   }
 
   const view = () => (S.screen === "lobby" ? lobbyView() : fightView());
-  return { open, view, invite, respond, cancel: cancelSent, pick, skill: toggleSkill, leave, lobby: toLobby, exit, arena: pickArena };
+  return { open, view, invite, respond, cancel: cancelSent, pick, skill: toggleSkill, leave, lobby: toLobby, exit, arena: pickArena, stake: (n) => { S.stake = n; S.sig = ""; paint(); } };
 })();
