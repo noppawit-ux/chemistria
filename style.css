@@ -1799,3 +1799,6 @@ img.isk,.aic.sk{background:linear-gradient(100deg,var(--card) 30%,color-mix(in s
 @media (prefers-reduced-motion:reduce){.dg-pk .in{transition:none}}
 .dg-perkrow{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .dg-pk{height:250px}.dg-pk .nm{font-size:clamp(1.05em,4.2vw,1.5em)}.dg-pk .face{padding:10px 6px}.dg-pk .front .btn{padding:6px 8px}
+.dl-bg{background-size:cover;background-position:center;color:#fff}.dl-bg h3,.dl-bg p,.dl-bg small,.dl-bg li{text-shadow:0 1px 2px rgba(0,0,0,.7)}.dl-bg .muted{color:#d6d9ff}
+.dl-league{background-image:linear-gradient(rgba(10,6,30,.35),rgba(10,6,30,.35)),url(assets/bg/duel_league.webp)}
+.dl-stake{background-image:linear-gradient(rgba(10,6,4,.3),rgba(10,6,4,.3)),url(assets/bg/duel_stake.webp)}
