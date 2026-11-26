@@ -136,3 +136,5 @@ psql:/home/claude/chemistria/db/setup_all.sql:15708: NOTICE:  trigger "play_cap_
 psql:/home/claude/chemistria/db/setup_all.sql:15830: NOTICE:  policy "teacher_all" for relation "bal_patch" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:15840: NOTICE:  policy "teacher_all" for relation "exp_fix_log" does not exist, skipping
 psql:/home/claude/chemistria/db/setup_all.sql:15904: NOTICE:  policy "teacher_all" for relation "student_notices" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16071: NOTICE:  policy "teacher_all" for relation "flip_events" does not exist, skipping
+psql:/home/claude/chemistria/db/setup_all.sql:16071: NOTICE:  policy "teacher_all" for relation "flip_results" does not exist, skipping

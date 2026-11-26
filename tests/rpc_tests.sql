@@ -23,7 +23,7 @@ create temp table _s as select (select id from students where name='ทดสอ
 grant all on _res, _s to anon, authenticated;
 create temp table _d120 as select (select value from app_settings where key='play_daily_cap_exp') cx, (select value from app_settings where key='play_daily_cap_coins') cc;
 -- เพดาน EXP จากการเล่น (SQL 117) ปิดไว้ตลอดชุดทดสอบเก่า · เปิดเฉพาะหมวด 117 ท้ายไฟล์
-insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0') on conflict (key) do update set value = excluded.value;
+insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0'),('catchup_on','0') on conflict (key) do update set value = excluded.value;
 -- SQL 120 ลดรางวัลดันเจี้ยน/Achievement ครึ่งหนึ่ง: ตรวจค่าใหม่ก่อน แล้วคืนค่าตารางดันเจี้ยนเดิมเพื่อให้ชุดทดสอบ 110–116 ใช้ตัวเลขเดิมได้
 create temp table _b120 as select
   (select array_agg(exp order by floor) from dungeon_floors where dungeon_key = 'crystal_cave') fx,
@@ -32,7 +32,7 @@ create temp table _b120 as select
   (select sum(reward_exp) from achievements) ax, (select sum(reward_coins) from achievements) ac,
   (select count(*) from bal_patch where key in ('ach_half','dungeon_half','exp_history_fix')) marks,
   1 g;
-select pg_temp.t('120: เพดานเริ่มต้นใหม่ EXP 120 · เหรียญ 180', (select cx = '120' and cc = '180' from _d120));
+select pg_temp.t('122: เพดานเริ่มต้นใหม่ EXP 150 · เหรียญ 200 (120/180 เดิมถูกยกขึ้น)', (select cx = '150' and cc = '200' from _d120));
 select pg_temp.t('120: Crystal Cave ลดครึ่ง EXP 6,10,15,21,40 · เหรียญ 3,5,8,10,20', (select fx = array[6,10,15,21,40] and fc = array[3,5,8,10,20] from _b120));
 select pg_temp.t('120: หีบดันเจี้ยน Space Lab ลดครึ่ง EXP 120→60', (select lootx = 60 from _b120));
 select pg_temp.t('120: Achievement ลดครึ่ง (EXP ~3980→~1990 · เหรียญ ~1635→~820)', (select ax between 1900 and 2150 and ac between 780 and 900 from _b120));
@@ -2100,6 +2100,78 @@ end $$;
 select pg_temp.t('121: my_notices คืนเฉพาะของตัวเอง (ตรงกับจำนวนในตารางของแต่ละคน)', (select v from _p117 where k='n_h') = 2 and (select v from _p117 where k='n_b') = (select count(*) from student_notices where student_id = (select b from _s)));
 select pg_temp.t('121: notice_read ทีละรายการ แล้วอ่านทั้งหมด · ไม่กระทบคนอื่น', (select v from _p117 where k='n_h_unread') = 2 and (select v from _p117 where k='n_h_unread2') = 1 and (select v from _p117 where k='n_h_unread3') = 0 and (select v from _p117 where k='n_b_unread') = (select count(*) from student_notices where student_id = (select b from _s)));
 select pg_temp.t('121: anon อ่านตาราง student_notices ตรงๆ ไม่ได้', not has_table_privilege('anon', 'student_notices', 'select'));
+
+-- ================= 122: ยกเพดาน + โบนัสไล่ตามทัน =================
+insert into classes(name, code, subject_name) values ('ห้องทดสอบ 122', 'T122', 'x');
+insert into app_settings(key,value) values ('catchup_on','1') on conflict (key) do update set value = excluded.value;
+create temp table _c122 as select id from classes where code = 'T122';
+insert into students(class_id, no, name) select (select id from _c122), g, 'ท122-' || g from generate_series(1, 7) g;
+update students set exp = case no when 1 then 1000 when 2 then 1000 when 3 then 1000 when 4 then 1000 when 5 then 1000 when 6 then 300 when 7 then 700 end where class_id = (select id from _c122);
+create temp table _m122 as select
+  (select _play_cap_mult(id) from students where class_id = (select id from _c122) and no = 1) top,
+  (select _play_cap_mult(id) from students where class_id = (select id from _c122) and no = 7) mid,
+  (select _play_cap_mult(id) from students where class_id = (select id from _c122) and no = 6) low;
+select pg_temp.t('122: ตัวคูณไล่ตามทัน: ค่ากลาง 1000 → 1000 ได้ ×1 · 700 (70%) ได้ ×1.5 · 300 (30%) ได้ ×2', (select top = 1 and mid = 1.5 and low = 2 from _m122));
+insert into app_settings(key,value) values ('play_daily_cap_exp','100'),('play_daily_cap_coins','100') on conflict (key) do update set value = excluded.value;
+select award((select id from students where class_id = (select id from _c122) and no = 6), 400, 400, 'เกม122 ล่าง', 'game:t122:1');
+select award((select id from students where class_id = (select id from _c122) and no = 1), 400, 400, 'เกม122 บน', 'game:t122:2');
+select pg_temp.t('122: คนตามหลัง (×2) ได้ 200 EXP/เหรียญ ส่วนคนนำ (×1) ได้ 100', 
+  (select exp = 200 and coins = 200 from ledger where ref_key = 'game:t122:1') and (select exp = 100 and coins = 100 from ledger where ref_key = 'game:t122:2'));
+insert into app_settings(key,value) values ('catchup_on','0') on conflict (key) do update set value = excluded.value;
+select pg_temp.t('122: ปิดโหมดไล่ตามทัน (catchup_on=0) → ตัวคูณ 1', (select _play_cap_mult(id) = 1 from students where class_id = (select id from _c122) and no = 6));
+insert into app_settings(key,value) values ('catchup_on','1') on conflict (key) do update set value = excluded.value;
+do $$ declare tk uuid; v json; begin
+  insert into student_sessions(student_id) select id from students where class_id = (select id from _c122) and no = 6 returning token into tk;
+  perform set_config('role', 'anon', true); v := play_exp_status(tk); perform set_config('role', 'postgres', true);
+  insert into _p117 values ('b122', ((v->>'boost')::numeric * 10)::int), ('c122', (v->>'cap')::int);
+end $$;
+select pg_temp.t('122: play_exp_status คืน boost และ cap รวมตัวคูณ (หลังได้ EXP ขึ้นมา 500/1000 → ×1.5 → cap 150)', (select v from _p117 where k = 'b122') = 15 and (select v from _p117 where k = 'c122') = 150);
+insert into app_settings(key,value) values ('play_daily_cap_exp','0'),('play_daily_cap_coins','0') on conflict (key) do update set value = excluded.value;
+
+-- ================= 123: กิจกรรมพลิกเกม =================
+insert into app_settings(key,value) values ('catchup_on','0') on conflict (key) do update set value = excluded.value;
+create temp table _f123 as select
+  (select id from classes where code = 'T122') cls;
+insert into students(class_id, no, name) select (select cls from _f123), 20 + g, 'ฟ123-' || g from generate_series(1, 5) g;
+create temp table _fs as select id, no from students where name like 'ฟ123-%';
+insert into game_plays(student_id, game, play_date, score, exp, coins) select id, 'match', today_th(), case no when 21 then 900 when 22 then 700 when 23 then 500 when 24 then 300 else 0 end, 0, 0 from _fs;
+insert into game_plays(student_id, game, play_date, score, exp, coins) select id, 'spell', today_th(), case no when 21 then 100 when 22 then 400 when 23 then 100 when 24 then 100 else 0 end, 0, 0 from _fs;
+insert into game_plays(student_id, game, play_date, score, exp, coins) select id, 'match', today_th() - 30, 99999, 0, 0 from _fs where no = 25;
+insert into flip_events(title, descr, game, starts_on, ends_on, handicap, part_exp, part_coins) values ('ทดสอบพลิกเกม123', 'x', null, today_th() - 1, today_th() + 3, false, 10, 5);
+create temp table _fe as select id from flip_events where title = 'ทดสอบพลิกเกม123';
+select pg_temp.t('123: อันดับสด: รวมคะแนนสูงสุดแต่ละเกม (22 = 700+400 = 1100 นำ 21 = 900+100 = 1000) · เกมนอกช่วงวันที่ไม่นับ',
+  (select string_agg(student_id::text, ',' order by rnk) from _flip_board((select id from _fe), (select cls from _f123)) where student_id in (select id from _fs)) like (select (select id from _fs where no = 22)::text || ',' || (select id from _fs where no = 21)::text || '%')
+  and not exists (select 1 from _flip_board((select id from _fe), (select cls from _f123)) where student_id = (select id from _fs where no = 25)));
+-- โบนัสพลิกเกม: เปิด handicap + ตัวคูณ ×2 ให้ 24 (คะแนนดิบ 400 → 500) แซงอันดับ
+update flip_events set handicap = true where id = (select id from _fe);
+update students set exp = 10000 where class_id = (select cls from _f123) and id <> (select id from _fs where no = 24);
+update students set exp = 1000 where id = (select id from _fs where no = 24);
+insert into app_settings(key,value) values ('catchup_on','1') on conflict (key) do update set value = excluded.value;
+select pg_temp.t('123: โบนัสพลิกเกม ×2 → +25% (คะแนน 400 → 500)', (select adj = 500 and score = 400 from _flip_board((select id from _fe), (select cls from _f123)) where student_id = (select id from _fs where no = 24)));
+insert into app_settings(key,value) values ('catchup_on','0') on conflict (key) do update set value = excluded.value;
+update flip_events set handicap = false where id = (select id from _fe);
+create temp table _e123 as select student_id, (select exp from students s where s.id = student_id) e0 from (select id student_id from _fs) z;
+select _flip_finalize((select id from _fe));
+select pg_temp.t('123: ปิดกิจกรรม: ผู้ชนะ (22) ได้ 300+10 EXP · 150+5 เหรียญ · อันดับ 1', exists (select 1 from flip_results where event_id = (select id from _fe) and student_id = (select id from _fs where no = 22) and rank = 1 and exp = 310 and coins = 155));
+select pg_temp.t('123: อันดับ 2 และ 3 ได้รางวัลตามชั้น (210 / 130 EXP)', (select exp from flip_results where event_id = (select id from _fe) and student_id = (select id from _fs where no = 21)) = 210 and (select exp from flip_results where event_id = (select id from _fe) and rank = 3 and class_id = (select cls from _f123) and student_id in (select id from _fs)) = 130);
+select pg_temp.t('123: คนที่เล่นแต่คะแนนต่ำสุดได้เฉพาะรางวัลร่วมกิจกรรม (10 EXP)', (select exp from flip_results where event_id = (select id from _fe) and student_id = (select id from _fs where no = 24)) = 10 or (select rank from flip_results where event_id = (select id from _fe) and student_id = (select id from _fs where no = 24)) <= 3);
+select pg_temp.t('123: คนไม่เคยเล่นในช่วงกิจกรรมไม่ได้อะไร', not exists (select 1 from flip_results where event_id = (select id from _fe) and student_id = (select id from _fs where no = 25)));
+select pg_temp.t('123: รางวัลเข้า ledger ref flip:* และไม่ถูกเพดานเล่นต่อวันตัด', exists (select 1 from ledger where ref_key = 'flip:' || (select id from _fe) || ':' || (select id from _fs where no = 22) and exp = 310 and coins = 155));
+select pg_temp.t('123: แจ้งเตือนผลกิจกรรมถึงผู้เล่นทุกคนที่ร่วม', (select count(*) from student_notices where ref = 'flip:' || (select id from _fe)) = (select count(*) from flip_results where event_id = (select id from _fe)));
+select pg_temp.t('123: ปิดซ้ำไม่แจกซ้ำ', (select _flip_finalize((select id from _fe)) = 0));
+do $$ declare tk uuid; v json; begin
+  insert into student_sessions(student_id) select id from _fs where no = 22 returning token into tk;
+  perform set_config('role', 'anon', true); v := flip_status(tk); perform set_config('role', 'postgres', true);
+  insert into _p117 values ('f_n', json_array_length(v)), ('f_rank', (v->0->'me'->>'rank')::int), ('f_done', case when (v->0->>'done')::boolean then 1 else 0 end), ('f_top', json_array_length(v->0->'top'));
+end $$;
+select pg_temp.t('123: flip_status ส่งผลของตัวเอง (อันดับ 1 · จบแล้ว) พร้อมอันดับห้อง', (select v from _p117 where k = 'f_n') >= 1 and (select v from _p117 where k = 'f_rank') = 1 and (select v from _p117 where k = 'f_done') = 1 and (select v from _p117 where k = 'f_top') >= 4);
+insert into flip_events(title, starts_on, ends_on) values ('ทดสอบจบอัตโนมัติ123', today_th() - 5, today_th() - 1);
+do $$ declare tk uuid; begin
+  insert into student_sessions(student_id) select id from _fs where no = 21 returning token into tk;
+  perform set_config('role', 'anon', true); perform flip_status(tk); perform set_config('role', 'postgres', true);
+end $$;
+select pg_temp.t('123: กิจกรรมที่พ้นวันสิ้นสุดถูกปิดอัตโนมัติเมื่อมีคนเปิดหน้าเกม', (select finalized_at is not null from flip_events where title = 'ทดสอบจบอัตโนมัติ123'));
+select pg_temp.t('123: anon อ่านตารางกิจกรรมโดยตรงไม่ได้', not has_table_privilege('anon', 'flip_events', 'select') and not has_table_privilege('anon', 'flip_results', 'select'));
 set role anon;
 -- ================= สรุป =================
 do $$ declare p int; f int; begin select count(*) filter (where ok), count(*) filter (where not ok) into p, f from _res;

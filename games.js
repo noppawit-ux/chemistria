@@ -15,9 +15,26 @@ const GAMES = (() => {
     if (st.loading) return; st.loading = true;
     try { st.status = await rpc("game_status", { p_token: tk() }); } catch (e) { toast(e.message); }
     try { st.play = await rpc("play_exp_status", { p_token: tk() }); } catch (e) { st.play = null; }
+    try { st.flip = await rpc("flip_status", { p_token: tk() }); } catch (e) { st.flip = []; }
     st.loading = false; paint();
   }
   const view = () => { if (!st.status) refresh(); return `<div id="gm">${inner()}</div>`; };
+
+
+  const GN = { quiz: "ควิซ", match: "จับคู่", spell: "สเปลล์", kb: "ประลองครูบุ๊ค", run: "เคมีรัน" };
+  const fdate = (d) => { try { return new Date(d + "T00:00:00").toLocaleDateString("th-TH", { day: "numeric", month: "short" }); } catch (e) { return d; } };
+  function flipHtml() {
+    return (st.flip || []).map((f) => {
+      const medal = ["🥇", "🥈", "🥉"], pz = f.prizes.map((p, i) => `${medal[i]} ${p.exp} EXP + ${p.coins}🪙`).join(" · ");
+      const top = (f.top || []).map((t) => `<div class="item" style="padding:4px 6px"><b style="width:28px">${t.rank <= 3 ? medal[t.rank - 1] : t.rank}</b><span class="grow">${typeof avHtml === "function" ? avHtml(t.avatar) : ""} ${esc(t.name)}</span><b>${t.score}</b></div>`).join("") || '<p class="muted center" style="margin:4px 0">ยังไม่มีใครมีคะแนน เป็นคนแรกเลย!</p>';
+      const me = f.me ? (f.done ? `<p class="center" style="margin:6px 0 0">ผลของคุณ: อันดับ <b>${f.me.rank}</b> · ได้ ${f.me.exp} EXP + ${f.me.coins} 🪙</p>` : `<p class="center" style="margin:6px 0 0">คุณอยู่อันดับ <b>${f.me.rank}</b> · ${f.me.score} คะแนน</p>`) : (f.done ? "" : '<p class="muted center" style="margin:6px 0 0">เล่นเกมเพื่อเข้าร่วม</p>');
+      return `<div class="card" style="border:1px solid var(--gold,#e0b341)"><div class="row"><h3 style="margin:0" class="grow">🔥 ${esc(f.title)}</h3><span class="pill">${f.done ? "จบแล้ว" : f.upcoming ? "เร็วๆ นี้" : "กำลังแข่ง"}</span></div>
+        <p class="muted" style="margin:4px 0">${esc(f.descr || "")} ${f.game ? "· เกม: " + GN[f.game] : "· ทุกเกมรวมกัน"} · ${fdate(f.starts_on)}–${fdate(f.ends_on)}</p>
+        <p style="margin:4px 0;font-size:13px">${pz}${f.part.exp || f.part.coins ? ` · ร่วมกิจกรรม +${f.part.exp} EXP +${f.part.coins}🪙` : ""}</p>
+        ${f.handicap && f.boost > 1 ? `<p class="muted" style="margin:2px 0;font-size:12px">🚀 คะแนนคุณได้โบนัสพลิกเกม +${Math.round((f.boost - 1) * 25)}%</p>` : ""}
+        ${top}${me}</div>`;
+    }).join("");
+  }
 
   function head() {
     const s = st.status; if (!s) return '<div class="card"><p class="muted">กำลังโหลด…</p></div>';
@@ -26,7 +43,7 @@ const GAMES = (() => {
         <span class="pill" title="ทำควิซติดต่อกันหลายวัน ได้เหรียญโบนัส">🔥 ติดต่อกัน ${s.streak} วัน</span></div>
       <div class="lvrow" style="margin-top:8px"><span>EXP จากเกมวันนี้</span><b style="color:var(--text)">${s.exp_today} / ${s.cap}</b></div>
       <div class="lvgauge"><i style="width:${pct}%"></i></div>
-      ${st.play && st.play.cap > 0 ? `<p class="muted" style="margin:6px 0 0" title="นับรวมมินิเกม ต่อสู้ ท้าดวล ดันเจี้ยน และของจากหีบ — เช็คชื่อ/ส่งงาน/เควสไม่ถูกจำกัด">⚔️ EXP จากการเล่นรวมวันนี้ <b style="color:var(--text)">${st.play.used} / ${st.play.cap}</b>${st.play.coin_cap > 0 ? ` · 🪙 เหรียญ <b style="color:var(--text)">${st.play.coin_used} / ${st.play.coin_cap}</b>` : ""}${st.play.used >= st.play.cap ? " · EXP ครบแล้ว" : ""}</p>` : ""}
+      ${st.play && st.play.cap > 0 ? `<p class="muted" style="margin:6px 0 0" title="นับรวมมินิเกม ต่อสู้ ท้าดวล ดันเจี้ยน และของจากหีบ — เช็คชื่อ/ส่งงาน/เควสไม่ถูกจำกัด">⚔️ EXP จากการเล่นรวมวันนี้ <b style="color:var(--text)">${st.play.used} / ${st.play.cap}</b>${st.play.boost > 1 ? ` <span class="chip" title="EXP ตามหลังค่ากลางห้อง จึงได้เพดานสูงขึ้นอัตโนมัติ" style="font-size:11px">🚀 โบนัสไล่ตามทัน ×${st.play.boost}</span>` : ""}${st.play.coin_cap > 0 ? ` · 🪙 เหรียญ <b style="color:var(--text)">${st.play.coin_used} / ${st.play.coin_cap}</b>` : ""}${st.play.used >= st.play.cap ? " · EXP ครบแล้ว" : ""}</p>` : ""}
       <p class="muted" style="margin:4px 0 0">${s.exp_today >= s.cap ? "วันนี้ได้ EXP จากเกมครบแล้ว พรุ่งนี้มาเล่นต่อนะ 🌙" : "เล่นให้ครบทุกวันเพื่อเก็บ EXP และสะสมวันติดต่อกัน"}</p></div>`;
   }
 
@@ -42,8 +59,8 @@ const GAMES = (() => {
     if (st.mode === "kb") return KB.view();
     if (st.mode === "run") return RUN.view();
     if (!s) return head();
-    if (!st.list) return head() + CITY.html(s);
-    return head() + `<p class="center" style="margin:0 0 6px"><button class="btn small ghost" onclick="GAMES.setList(false)">🗺️ กลับแผนที่เมือง</button></p><div class="gm-grid">
+    if (!st.list) return head() + flipHtml() + CITY.html(s);
+    return head() + flipHtml() + `<p class="center" style="margin:0 0 6px"><button class="btn small ghost" onclick="GAMES.setList(false)">🗺️ กลับแผนที่เมือง</button></p><div class="gm-grid">
       <div class="card gm-card">
         <div class="gm-ico">🧠</div><h3>ควิซประจำวัน</h3>
         <p class="muted">${s.quiz_total} ข้อ · ถูกข้อละ +${s.per_correct} EXP${s.perfect_bonus ? ` · ถูกหมดโบนัส +${s.perfect_bonus}` : ""} · วันละ 1 ครั้ง</p>
