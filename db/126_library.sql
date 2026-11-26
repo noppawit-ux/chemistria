@@ -38,7 +38,7 @@ begin
   return json_build_object(
     'today', (select count(*) from library_reads where student_id = sid and done_at >= today_th()::timestamp at time zone 'Asia/Bangkok'),
     'limit', _setting_int('library_daily_max', 5),
-    'items', (select coalesce(json_agg(json_build_object('id', i.id, 'kind', i.kind, 'title', i.title, 'summary', i.summary, 'icon', i.icon, 'category', i.category,
+    'items', (select coalesce(json_agg(json_build_object('id', i.id, 'kind', i.kind, 'title', i.title, 'summary', i.summary, 'icon', i.icon, 'category', i.category, 'url', i.url,
           'min_secs', i.min_secs, 'exp', i.exp, 'coins', i.coins, 'quiz', nullif(btrim(i.q_text), '') is not null, 'started', r.started_at is not null, 'done', r.done_at is not null)
           order by (r.done_at is not null), i.sort desc, i.created_at desc), '[]'::json)
         from library_items i left join library_reads r on r.item_id = i.id and r.student_id = sid
